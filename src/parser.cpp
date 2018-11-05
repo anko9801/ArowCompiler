@@ -161,7 +161,7 @@ PrototypeAST *Parser::visitPrototype(){
 	int bkup=Tokens->getCurIndex();
 
 	//type_specifier
-	if(Tokens->getCurType() ==TOK_INT || Tokens->getCurType() == TOK_BOOL){
+	if(Tokens->getCurType() == TOK_TYPE){
 		var_type = Tokens->getCurString();
 		Tokens->getNextToken();
 	}else{
@@ -174,7 +174,7 @@ PrototypeAST *Parser::visitPrototype(){
 		func_name=Tokens->getCurString();
 		Tokens->getNextToken();
 	}else{
-		Tokens->ungetToken(1);	//unget TOK_INT
+		Tokens->applyTokenIndex(bkup);
 		return NULL;
 	}
 
@@ -182,7 +182,7 @@ PrototypeAST *Parser::visitPrototype(){
 	if(Tokens->getCurString() =="("){
 		Tokens->getNextToken();
 	}else{
-		Tokens->ungetToken(2);	//unget TOK_INT IDENTIFIER
+		Tokens->applyTokenIndex(bkup);
 		return NULL;
 	}
 
@@ -197,7 +197,7 @@ PrototypeAST *Parser::visitPrototype(){
 			Tokens->getNextToken();
 		}
 
-		if(Tokens->getCurType() ==TOK_INT || Tokens->getCurType() == TOK_BOOL){
+		if(Tokens->getCurType() == TOK_TYPE){
 			param_type = Tokens->getCurString();
 			Tokens->getNextToken();
 		}else{
@@ -278,6 +278,7 @@ FunctionStmtAST *Parser::visitFunctionStatement(PrototypeAST *proto){
 		// 変数宣言
 		}else if (var_decl = visitVariableDeclaration()){
 			var_decl->setDeclType(VariableDeclAST::local);
+
 			for (int i = 0;i < VariableTable.size();i++) {
 				if (VariableTable[i].Name == Tokens->getCurString()) {
 					SAFE_DELETE(var_decl);
@@ -289,6 +290,21 @@ FunctionStmtAST *Parser::visitFunctionStatement(PrototypeAST *proto){
 			func_stmt->addVariableDeclaration(var_decl);
 			// fprintf(stderr, "%d: %s %s\n", __LINE__, var_decl->getType().c_str(), var_decl->getName().c_str());
 			VariableTable.push_back(Seq(var_decl->getType(), var_decl->getName()));
+
+			if (Tokens->getCurString() == "="){
+				BaseAST *lhs, *rhs;
+				lhs = new VariableAST(var_decl->getType(), var_decl->getName());
+				Tokens->getNextToken();
+				if (rhs = visitAdditiveExpression(NULL)) {
+					func_stmt->addStatement(new BinaryExprAST("=", lhs, rhs));
+					Tokens->getNextToken();
+				}else{
+					SAFE_DELETE(lhs);
+					SAFE_DELETE(var_decl);
+					SAFE_DELETE(func_stmt);
+					return NULL;
+				}
+			}
 
 		}else if(Tokens->getCurString() == "}") {
 			break;
@@ -331,7 +347,7 @@ VariableDeclAST *Parser::visitVariableDeclaration(){
 	std::string type;
 
 	// 型
-	if(Tokens->getCurType() == TOK_INT || Tokens->getCurType() == TOK_BOOL){
+	if(Tokens->getCurType() == TOK_TYPE){
 		type = Tokens->getCurString();
 		Tokens->getNextToken();
 	}else{
@@ -351,6 +367,10 @@ VariableDeclAST *Parser::visitVariableDeclaration(){
 	//';'
 	if(Tokens->getCurString() == ";"){
 		Tokens->getNextToken();
+		return new VariableDeclAST(type, name);
+
+	//'='
+	}else if(Tokens->getCurString() == "="){
 		return new VariableDeclAST(type, name);
 	}else{
 		Tokens->applyTokenIndex(bkup);
@@ -387,7 +407,7 @@ BaseAST *Parser::visitExpressionStatement(){
 	if(Tokens->getCurString() == ";"){
 		Tokens->getNextToken();
 		return new NullExprAST();
-	}else if((assign_expr = visitAssignmentExpression())){
+	}else if(assign_expr = visitAssignmentExpression()){
 		if(Tokens->getCurString() == ";"){
 			Tokens->getNextToken();
 			return assign_expr;
@@ -505,8 +525,8 @@ BaseAST *Parser::visitAssignmentExpression(){
 				lhs = new VariableAST(VariableTable[i].Type, VariableTable[i].Name);
 				Tokens->getNextToken();
 				BaseAST *rhs;
-				if(Tokens->getCurType() ==TOK_SYMBOL &&
-						Tokens->getCurString() =="="){
+				if(Tokens->getCurType() == TOK_SYMBOL &&
+						Tokens->getCurString() == "="){
 					Tokens->getNextToken();
 					if(rhs = visitAdditiveExpression(NULL)){
 						return new BinaryExprAST("=", lhs, rhs);

@@ -19,8 +19,7 @@ enum TokenType{
 	TOK_TRUE,
 	TOK_FALSE,
 	TOK_SYMBOL,			//記号
-	TOK_INT,			//INT
-	TOK_BOOL,			//BOOL
+	TOK_TYPE,			//型
 	TOK_IF,
 	TOK_WHILE,
 	TOK_FOR,
