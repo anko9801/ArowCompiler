@@ -120,13 +120,13 @@ llvm::Function *CodeGen::generateFunctionDefinition(FunctionAST *func_ast,
   */
 llvm::Function *CodeGen::generatePrototype(PrototypeAST *proto, llvm::Module *mod){
 	//already declared?
-	llvm::Function *func=mod->getFunction(proto->getFuncName());
+	llvm::Function *func=mod->getFunction(proto->getName());
 	if(func){
 		if(func->arg_size()==proto->getParamNum() && 
 				func->empty()){
 			return func;
 		}else{
-			fprintf(stderr, "error::function %s is redefined",proto->getFuncName().c_str());
+			fprintf(stderr, "error::function %s is redefined",proto->getName().c_str());
 			return NULL;
 		}
 	}
@@ -143,7 +143,7 @@ llvm::Function *CodeGen::generatePrototype(PrototypeAST *proto, llvm::Module *mo
 	//create function
 	func=llvm::Function::Create(func_type, 
 							llvm::Function::ExternalLinkage,
-							proto->getFuncName(),
+							proto->getName(),
 							mod);
 
 	//set names
@@ -198,18 +198,26 @@ llvm::Value *CodeGen::generateFunctionStatement(FunctionStmtAST *func_stmt){
   */
 llvm::Value *CodeGen::generateVariableDeclaration(VariableDeclAST *vdecl){
 	//create alloca
-	llvm::AllocaInst *alloca=Builder->CreateAlloca(
+	llvm::AllocaInst *alloca;
+	if (vdecl->getType() == "i32") {
+		alloca = Builder->CreateAlloca(
 			llvm::Type::getInt32Ty(llvm::getGlobalContext()),
 			0,
-			vdecl->getVarName());
+			vdecl->getName());
+	}else if (vdecl->getType() == "bool") {
+		alloca = Builder->CreateAlloca(
+			llvm::Type::getInt1Ty(llvm::getGlobalContext()),
+			0,
+			vdecl->getName());
+	}
 
 	//if args alloca
-	if(vdecl->getType()==VariableDeclAST::param){
+	if(vdecl->getDeclType() == VariableDeclAST::param){
 		//store args
 		llvm::ValueSymbolTable &vs_table = CurFunc->getValueSymbolTable();
-		Builder->CreateStore(vs_table.lookup(vdecl->getVarName().append("_arg")), alloca);
+		Builder->CreateStore(vs_table.lookup(vdecl->getName().append("_arg")), alloca);
 	}
-	//ValueMap[vdecl->getVarName()]=alloca;
+	//ValueMap[vdecl->getName()]=alloca;
 	return alloca;
 }
 
@@ -266,7 +274,7 @@ llvm::Value *CodeGen::generateBinaryExpression(BinaryExprAST *bin_expr){
 		//Number?
         }else if(llvm::isa<NumberAST>(lhs)){
 			NumberAST *num=llvm::dyn_cast<NumberAST>(lhs);
-			lhs_v=generateNumber(num->getNumberValue());
+			lhs_v=generateNumber(num->getValue());
 		}
 	}
 
@@ -285,8 +293,13 @@ llvm::Value *CodeGen::generateBinaryExpression(BinaryExprAST *bin_expr){
 
 	//Number?
     }else if(llvm::isa<NumberAST>(rhs)){
-		NumberAST *num=llvm::dyn_cast<NumberAST>(rhs);
-		rhs_v=generateNumber(num->getNumberValue());
+		NumberAST *num = llvm::dyn_cast<NumberAST>(rhs);
+		rhs_v=generateNumber(num->getValue());
+
+	//TRUTH?
+	}else if(llvm::isa<BoolAST>(rhs)){
+		BoolAST *truth = llvm::dyn_cast<BoolAST>(rhs);
+		rhs_v = generateBool(truth->getValue());
 	}
 
 	
@@ -349,7 +362,7 @@ llvm::Value *CodeGen::generateCallExpression(CallExprAST *call_expr){
 		//isNumber
 		else if(llvm::isa<NumberAST>(arg)){
 			NumberAST *num=llvm::dyn_cast<NumberAST>(arg);
-			arg_v=generateNumber(num->getNumberValue());
+			arg_v=generateNumber(num->getValue());
 		}
 		arg_vec.push_back(arg_v);
 	}
@@ -373,7 +386,7 @@ llvm::Value *CodeGen::generateJumpStatement(JumpStmtAST *jump_stmt){
 		ret_v = generateVariable(var);
 	}else if(llvm::isa<NumberAST>(expr)){
 		NumberAST *num=llvm::dyn_cast<NumberAST>(expr);
-		ret_v=generateNumber(num->getNumberValue());
+		ret_v=generateNumber(num->getValue());
 
 	}
 	Builder->CreateRet(ret_v);
@@ -394,6 +407,13 @@ llvm::Value *CodeGen::generateVariable(VariableAST *var){
 llvm::Value *CodeGen::generateNumber(int value){
 	return llvm::ConstantInt::get(
 			llvm::Type::getInt32Ty(llvm::getGlobalContext()),
+			value);
+}
+
+
+llvm::Value *CodeGen::generateBool(bool value) {
+	return llvm::ConstantBool::get(
+			llvm::Type::getInt1Ty(llvm::getGlobalContext()),
 			value);
 }
 

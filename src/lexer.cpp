@@ -59,6 +59,8 @@ TokenStream *LexicalAnalysis(std::string input_filename){
 				}
 				index--;
 		
+				// switch使いてぇええ
+				// 予約語と識別子
 				if(token_str == "int" || token_str == "i32"){
 					next_token = new Token(token_str, TOK_INT, line_num);
 				}else if(token_str == "bool") {
@@ -73,8 +75,10 @@ TokenStream *LexicalAnalysis(std::string input_filename){
 					next_token = new Token(token_str, TOK_MATCH, line_num);
 				}else if(token_str == "return") {
 					next_token = new Token(token_str, TOK_RETURN, line_num);
-				}else if (token_str == "true" || token_str == "false") {
-					next_token = new Token(token_str, TOK_TRUTH, line_num);
+				}else if (token_str == "true") {
+					next_token = new Token(token_str, TOK_TRUE, line_num);
+				}else if (token_str == "false") {
+					next_token = new Token(token_str, TOK_FALSE, line_num);
 				}else{
 					next_token = new Token(token_str, TOK_IDENTIFIER, line_num);
 				}

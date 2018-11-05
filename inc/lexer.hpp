@@ -16,7 +16,8 @@
 enum TokenType{
 	TOK_IDENTIFIER,		//識別子
 	TOK_DIGIT,			//数字
-	TOK_TRUTH,			//真偽値
+	TOK_TRUE,
+	TOK_FALSE,
 	TOK_SYMBOL,			//記号
 	TOK_INT,			//INT
 	TOK_BOOL,			//BOOL
@@ -51,7 +52,7 @@ typedef class Token{
 			Number = atoi(string.c_str());
 		else
 			Number = 0x7fffffff;
-		if (type == TOK_TRUTH)
+		if (type == TOK_TRUE || type == TOK_FALSE)
 			Bool = true;
 		else
 			Bool = NULL;
@@ -103,8 +104,6 @@ class TokenStream{
 		bool printTokens();
 		int getCurIndex(){return CurIndex;}
 		bool applyTokenIndex(int index){CurIndex=index;return true;}
-		
-		
 
 	private:
 

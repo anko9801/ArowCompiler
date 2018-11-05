@@ -54,9 +54,6 @@ struct Seq {
 	std::string Name;
 
 	Seq(std::string type, std::string name) : Type(type), Name(name){}
-	bool operator==(const std::string name) {
-		return Name == name;
-	}
 };
 
 /**
@@ -174,7 +171,7 @@ class VariableDeclAST: public BaseAST {
 		std::string Name;
 		DeclType Decltype;
 	public:
-		VariableDeclAST(const std::string &name, const std::string &type) : BaseAST(VariableDeclID), Type(type), Name(name){
+		VariableDeclAST(const std::string &type, const std::string &name) : BaseAST(VariableDeclID), Type(type), Name(name){
 		}
 		static inline bool classof(VariableDeclAST const*){return true;}
 		static inline bool classof(BaseAST const* base){
@@ -184,8 +181,8 @@ class VariableDeclAST: public BaseAST {
 
 		bool setDeclType(DeclType type){Decltype=type;return true;};
 
-		std::string getVarName(){return Name;}
-		std::string getVarType(){return Type;}
+		std::string getName(){return Name;}
+		std::string getType(){return Type;}
 		DeclType getDeclType(){return Decltype;}
 };
 
@@ -303,8 +300,28 @@ class NumberAST : public BaseAST {
 	}
 
 	std::string getType(){return "int";}
-	int getNumberValue(){return Val;}
+	int getValue(){return Val;}
 };
+
+
+/**
+  * 真偽値を表すAST
+  */
+class BoolAST : public BaseAST {
+	bool Val;
+
+	public:
+	BoolAST(bool val) : BaseAST(BoolID), Val(val){};
+	~BoolAST(){}
+	static inline bool classof(BoolAST const*){return true;}
+	static inline bool classof(BaseAST const* base){
+		return base->getValueID() == BoolID;
+	}
+
+	std::string getType(){return "bool";}
+	bool getValue(){return Val;}
+};
+
 
 
 /**
@@ -329,23 +346,7 @@ class ConditionalExprAST : public BaseAST {
 
 
 
-/**
-  * 真偽値を表すAST
-  */
-class BoolAST : public BaseAST {
-	bool Val;
 
-	public:
-	BoolAST(bool val) : BaseAST(BoolID), Val(val){};
-	~BoolAST(){}
-	static inline bool classof(BoolAST const*){return true;}
-	static inline bool classof(BaseAST const* base){
-		return base->getValueID() == BoolID;
-	}
-
-	std::string getType(){return "bool";}
-	bool getBoolValue(){return Val;}
-};
 
 
 
