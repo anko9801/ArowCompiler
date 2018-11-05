@@ -199,7 +199,7 @@ llvm::Value *CodeGen::generateFunctionStatement(FunctionStmtAST *func_stmt){
 llvm::Value *CodeGen::generateVariableDeclaration(VariableDeclAST *vdecl){
 	//create alloca
 	llvm::AllocaInst *alloca;
-	if (vdecl->getType() == "i32") {
+	if (vdecl->getType() == "i32" || vdecl->getType() == "int") {
 		alloca = Builder->CreateAlloca(
 			llvm::Type::getInt32Ty(llvm::getGlobalContext()),
 			0,
@@ -273,8 +273,13 @@ llvm::Value *CodeGen::generateBinaryExpression(BinaryExprAST *bin_expr){
 
 		//Number?
         }else if(llvm::isa<NumberAST>(lhs)){
-			NumberAST *num=llvm::dyn_cast<NumberAST>(lhs);
-			lhs_v=generateNumber(num->getValue());
+			NumberAST *num = llvm::dyn_cast<NumberAST>(lhs);
+			lhs_v = generateNumber(num->getValue());
+
+		//Boolean?
+		}else if(llvm::isa<BooleanAST>(rhs)){
+			BooleanAST *boolean = llvm::dyn_cast<BooleanAST>(rhs);
+			rhs_v = generateBoolean(boolean->getValue());
 		}
 	}
 
@@ -298,8 +303,8 @@ llvm::Value *CodeGen::generateBinaryExpression(BinaryExprAST *bin_expr){
 
 	//Boolean?
 	}else if(llvm::isa<BooleanAST>(rhs)){
-		BooleanAST *truth = llvm::dyn_cast<BooleanAST>(rhs);
-		rhs_v = generateBoolean(truth->getValue());
+		BooleanAST *boolean = llvm::dyn_cast<BooleanAST>(rhs);
+		rhs_v = generateBoolean(boolean->getValue());
 	}
 
 	
@@ -364,6 +369,13 @@ llvm::Value *CodeGen::generateCallExpression(CallExprAST *call_expr){
 			NumberAST *num=llvm::dyn_cast<NumberAST>(arg);
 			arg_v=generateNumber(num->getValue());
 		}
+
+		//isBoolean
+		else if(llvm::isa<BooleanAST>(arg)) {
+			BooleanAST *boolean = llvm::dyn_cast<BooleanAST>(arg);
+			arg_v = generateBoolean(boolean->getValue());
+		}
+
 		arg_vec.push_back(arg_v);
 	}
 	return Builder->CreateCall( Mod->getFunction(call_expr->getCallee()),
@@ -380,15 +392,21 @@ llvm::Value *CodeGen::generateJumpStatement(JumpStmtAST *jump_stmt){
 	BaseAST *expr=jump_stmt->getExpr();
 	llvm::Value *ret_v;
 	if(llvm::isa<BinaryExprAST>(expr)){
-		ret_v=generateBinaryExpression(llvm::dyn_cast<BinaryExprAST>(expr));
+		ret_v = generateBinaryExpression(llvm::dyn_cast<BinaryExprAST>(expr));
+
 	}else if(llvm::isa<VariableAST>(expr)){
 		VariableAST *var=llvm::dyn_cast<VariableAST>(expr);
 		ret_v = generateVariable(var);
+
 	}else if(llvm::isa<NumberAST>(expr)){
 		NumberAST *num=llvm::dyn_cast<NumberAST>(expr);
-		ret_v=generateNumber(num->getValue());
+		ret_v = generateNumber(num->getValue());
 
+	}else if(llvm::isa<BooleanAST>(expr)){
+		BooleanAST *boolean = llvm::dyn_cast<BooleanAST>(expr);
+		ret_v = generateBoolean(boolean->getValue());
 	}
+
 	Builder->CreateRet(ret_v);
 }
 
