@@ -296,10 +296,10 @@ llvm::Value *CodeGen::generateBinaryExpression(BinaryExprAST *bin_expr){
 		NumberAST *num = llvm::dyn_cast<NumberAST>(rhs);
 		rhs_v=generateNumber(num->getValue());
 
-	//TRUTH?
-	}else if(llvm::isa<BoolAST>(rhs)){
-		BoolAST *truth = llvm::dyn_cast<BoolAST>(rhs);
-		rhs_v = generateBool(truth->getValue());
+	//Boolean?
+	}else if(llvm::isa<BooleanAST>(rhs)){
+		BooleanAST *truth = llvm::dyn_cast<BooleanAST>(rhs);
+		rhs_v = generateBoolean(truth->getValue());
 	}
 
 	
@@ -411,8 +411,8 @@ llvm::Value *CodeGen::generateNumber(int value){
 }
 
 
-llvm::Value *CodeGen::generateBool(bool value) {
-	return llvm::ConstantBool::get(
+llvm::Value *CodeGen::generateBoolean(bool value) {
+	return llvm::ConstantInt::get(
 			llvm::Type::getInt1Ty(llvm::getGlobalContext()),
 			value);
 }

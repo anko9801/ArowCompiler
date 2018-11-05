@@ -30,7 +30,7 @@ class VariableAST;
 class NumberAST;
 
 class ConditionalExprAST;
-class BoolAST;
+class BooleanAST;
 
 
 /**
@@ -46,7 +46,7 @@ enum AstID{
 	VariableID,
 	NumberID,
 	ConditionalExprID,
-	BoolID,
+	BooleanID,
 };
 
 struct Seq {
@@ -307,15 +307,15 @@ class NumberAST : public BaseAST {
 /**
   * 真偽値を表すAST
   */
-class BoolAST : public BaseAST {
+class BooleanAST : public BaseAST {
 	bool Val;
 
 	public:
-	BoolAST(bool val) : BaseAST(BoolID), Val(val){};
-	~BoolAST(){}
-	static inline bool classof(BoolAST const*){return true;}
+	BooleanAST(bool val) : BaseAST(BooleanID), Val(val){};
+	~BooleanAST(){}
+	static inline bool classof(BooleanAST const*){return true;}
 	static inline bool classof(BaseAST const* base){
-		return base->getValueID() == BoolID;
+		return base->getValueID() == BooleanID;
 	}
 
 	std::string getType(){return "bool";}

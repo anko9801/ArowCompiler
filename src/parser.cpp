@@ -773,10 +773,10 @@ BaseAST *Parser::visitPrimaryExpression(){
 	// true / false
 	}else if(Tokens->getCurType() == TOK_TRUE) {
 		Tokens->getNextToken();
-		return new BoolAST(true);
+		return new BooleanAST(true);
 	}else if(Tokens->getCurType() == TOK_FALSE) {
 		Tokens->getNextToken();
-		return new BoolAST(false);
+		return new BooleanAST(false);
 
 	// '(' expression ')'
 	}else if(Tokens->getCurType() == TOK_SYMBOL &&
