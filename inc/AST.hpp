@@ -27,9 +27,8 @@ class NullExprAST;
 class CallExprAST;
 class JumpStmtAST;
 class VariableAST;
+class IfExprAST;
 class NumberAST;
-
-class ConditionalExprAST;
 class BooleanAST;
 
 
@@ -45,8 +44,8 @@ enum AstID{
 	JumpStmtID,
 	VariableID,
 	NumberID,
-	ConditionalExprID,
 	BooleanID,
+	IfExprID,
 };
 
 struct Seq {
@@ -323,31 +322,23 @@ class BooleanAST : public BaseAST {
 };
 
 
-
-/**
-  * 条件式を表すAST
-  */
-class ConditionalExprAST : public BaseAST {
-	std::string Op;
-	BaseAST *LHS, *RHS;
+class IfExprAST : public BaseAST {
+	BaseAST *Cond, *Then, *Else;
 
 	public:
-	ConditionalExprAST(std::string op, BaseAST *lhs, BaseAST *rhs) : BaseAST(ConditionalExprID), Op(op), LHS(lhs), RHS(rhs){};
-	~ConditionalExprAST(){SAFE_DELETE(LHS);SAFE_DELETE(RHS);}
-	static inline bool classof(ConditionalExprAST const*){return true;}
-	static inline bool classof(BaseAST const* base) {
-		return base->getValueID() == ConditionalExprID;
+	IfExprAST(BaseAST *Cond, BaseAST *Then, BaseAST *Else)
+		: BaseAST(IfExprID),Cond(Cond), Then(Then), Else(Else){}
+	~IfExprAST(){}
+	static inline bool classof(IfExprAST const*){return true;}
+	static inline bool classof(BaseAST const* base){
+		return base->getValueID() == IfExprID;
 	}
 
-	std::string getOp(){return Op;}
-	BaseAST *getLHS(){return LHS;}
-	BaseAST *getRHS(){return RHS;}
+	BaseAST* getCond(){return Cond;}
+	BaseAST* getThen(){return Then;}
+	BaseAST* getElse(){return Else;}
+
 };
-
-
-
-
-
 
 
 #endif

@@ -264,16 +264,17 @@ FunctionStmtAST *Parser::visitFunctionStatement(PrototypeAST *proto){
 	BaseAST *last_stmt;
 
 	while(true) {
+		//fprintf(stderr, "%d: %s %s\n", __LINE__, __func__, Tokens->getCurString().c_str());
 		// 色々な文
-		if(stmt = visitExpressionStatement()){
+		if(stmt = visitStatement()){
 			last_stmt = stmt;
 			func_stmt->addStatement(stmt);
 
-		// return文
-		}else if(stmt = visitJumpStatement()){
+		// if文
+		}else if(stmt = visitIfExpression()){
+			fprintf(stderr, "%d: %s %s\n", __LINE__, __func__, Tokens->getCurString().c_str());
 			last_stmt = stmt;
 			func_stmt->addStatement(stmt);
-			break;
 
 		// 変数宣言
 		}else if (var_decl = visitVariableDeclaration()){
@@ -287,6 +288,7 @@ FunctionStmtAST *Parser::visitFunctionStatement(PrototypeAST *proto){
 					return NULL;
 				}
 			}
+
 			func_stmt->addVariableDeclaration(var_decl);
 			// fprintf(stderr, "%d: %s %s\n", __LINE__, var_decl->getType().c_str(), var_decl->getName().c_str());
 			VariableTable.push_back(Seq(var_decl->getType(), var_decl->getName()));
@@ -385,11 +387,14 @@ VariableDeclAST *Parser::visitVariableDeclaration(){
   * @return 解析成功：AST　解析失敗：NULL
   */
 BaseAST *Parser::visitStatement(){
-	BaseAST *stmt=NULL;
-	if(stmt=visitExpressionStatement()){
+	BaseAST *stmt = NULL;
+
+	if(stmt = visitExpressionStatement()){
 		return stmt;
-	}else if(stmt=visitJumpStatement()){
+	}else if(stmt = visitJumpStatement()){
 		return stmt;
+	//}else if(stmt = visitIfExpression()){
+	//	return stmt;
 	}else{
 		return NULL;
 	} 
@@ -446,20 +451,35 @@ BaseAST *Parser::visitJumpStatement(){
 
 
 /**
-  * IfFunction用構文解析メソッド
+  * IfExpression用構文解析メソッド
   * @return 解析成功：AST　解析失敗：NULL
   */
-BaseAST *Parser::visitIfStatement() {
+BaseAST *Parser::visitIfExpression() {
 	int bkup = Tokens->getCurIndex();
 
 	if (Tokens->getCurType() == TOK_IF) {
 		Tokens->getNextToken();
-		BaseAST *expr;
-		if (Tokens->getCurString() == "(") {
-			if (expr = visitBoolExpression()) {
-			}
+		if (Tokens->getCurType() == TOK_TRUE)
+			Tokens->getNextToken();
+		else{
 		}
+
+		if (Tokens->getCurString() == "{") {
+			Tokens->getNextToken();
+		}
+		BaseAST *stmt;
+		//while(true) {
+		//	if (Tokens->getCurString() == "}") {
+		//		Tokens->getNextToken();
+		//		break;
+		//	}
+			if (stmt = visitStatement()) {
+				Tokens->getNextToken();
+			}
+		//}
+		return new IfExprAST(new BooleanAST(true), stmt, stmt);
 	}else{
+		Tokens->applyTokenIndex(bkup);
 		return NULL;
 	}
 }
@@ -490,7 +510,7 @@ BaseAST *Parser::visitBoolExpression() {
 			op = Tokens->getCurString();
 			Tokens->getNextToken();
 			if (rhs = visitAdditiveExpression(NULL)) {
-				return new ConditionalExprAST(op, lhs, rhs);
+				return new BinaryExprAST(op, lhs, rhs);
 			}else{
 				SAFE_DELETE(lhs);
 				Tokens->applyTokenIndex(bkup);

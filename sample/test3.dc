@@ -1,0 +1,5 @@
+i32 main() {
+	i32 k = 23;
+	printnum(k);
+	return 0;
+}
