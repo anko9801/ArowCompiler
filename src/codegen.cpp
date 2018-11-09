@@ -243,17 +243,24 @@ Value *CodeGen::generateIfExpr(IfExprAST *if_expr) {
 
 	Builder->CreateCondBr(CondV, ThenBB, ElseBB);
 
+	//function->getBasicBlockList().push_back(ThenBB);
 	Builder->SetInsertPoint(ThenBB);
-	Builder->CreateBr(MergeBB);
+
+	// if文がネストしたとき
+	//auto lastThenBB = Builder->GetInsertBlock();
+
 	ThenBB = Builder->GetInsertBlock();
+	Builder->CreateBr(MergeBB);
 
 	function->getBasicBlockList().push_back(ElseBB);
 	Builder->SetInsertPoint(ElseBB);
-	Builder->CreateBr(MergeBB);
-	ElseBB = Builder->GetInsertBlock();
-	function->getBasicBlockList().push_back(MergeBB);
 
+	ElseBB = Builder->GetInsertBlock();
+	Builder->CreateBr(MergeBB);
+
+	function->getBasicBlockList().push_back(MergeBB);
 	Builder->SetInsertPoint(MergeBB);
+
 	PHINode *PN = Builder->CreatePHI(Type::getDoubleTy(getGlobalContext()), 2, "iftmp");
 
 	PN->addIncoming(ThenV, ThenBB);
@@ -384,30 +391,30 @@ Value *CodeGen::generateCallExpression(CallExprAST *call_expr){
 
 		//isCall
 		if(isa<CallExprAST>(arg))
-			arg_v=generateCallExpression(dyn_cast<CallExprAST>(arg));
+			arg_v = generateCallExpression(dyn_cast<CallExprAST>(arg));
 
 		//isBinaryExpr
 		else if(isa<BinaryExprAST>(arg)){
 			BinaryExprAST *bin_expr = dyn_cast<BinaryExprAST>(arg);
 
 			//二項演算命令を生成
-			arg_v=generateBinaryExpression(dyn_cast<BinaryExprAST>(arg));
+			arg_v = generateBinaryExpression(dyn_cast<BinaryExprAST>(arg));
 
 			//代入の時はLoad命令を追加
 			if(bin_expr->getOp()=="="){
-				VariableAST *var= dyn_cast<VariableAST>(bin_expr->getLHS());
+				VariableAST *var = dyn_cast<VariableAST>(bin_expr->getLHS());
 				arg_v=Builder->CreateLoad(vs_table.lookup(var->getName()), "arg_val");
 			}
 		}
 
 		//isVar
 		else if(isa<VariableAST>(arg))
-			arg_v=generateVariable(dyn_cast<VariableAST>(arg));
+			arg_v = generateVariable(dyn_cast<VariableAST>(arg));
 		
 		//isNumber
 		else if(isa<NumberAST>(arg)){
 			NumberAST *num=dyn_cast<NumberAST>(arg);
-			arg_v=generateNumber(num->getValue());
+			arg_v = generateNumber(num->getValue());
 		}
 
 		//isBoolean
@@ -418,8 +425,8 @@ Value *CodeGen::generateCallExpression(CallExprAST *call_expr){
 
 		arg_vec.push_back(arg_v);
 	}
-	return Builder->CreateCall( Mod->getFunction(call_expr->getCallee()),
-										arg_vec,"call_tmp" );
+	return Builder->CreateCall(Mod->getFunction(call_expr->getCallee()),
+										arg_vec,"call_tmp");
 }
 
 

@@ -272,7 +272,6 @@ FunctionStmtAST *Parser::visitFunctionStatement(PrototypeAST *proto){
 
 		// if文
 		}else if(stmt = visitIfExpression()){
-			fprintf(stderr, "%d: %s %s\n", __LINE__, __func__, Tokens->getCurString().c_str());
 			last_stmt = stmt;
 			func_stmt->addStatement(stmt);
 
