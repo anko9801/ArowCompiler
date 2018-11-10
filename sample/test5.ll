@@ -6,11 +6,10 @@ target triple = "x86_64-unknown-linux-gnu"
 
 define i32 @main() {
 entry:
-  %call_tmp = call i32 @printnum(i32 32)
-  %call_tmp2 = call i32 @printnum(i32 32)
   br i1 true, label %then, label %else
 
 then:                                             ; preds = %entry
+  %call_tmp = call i32 @printnum(i32 32)
   br label %ifcont
 
 else:                                             ; preds = %entry

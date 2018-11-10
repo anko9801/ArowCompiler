@@ -40,7 +40,7 @@ TranslationUnitAST &Parser::getAST(){
   */
 bool Parser::visitTranslationUnit(){
 	//最初にprintnumの宣言追加
-	TU=new TranslationUnitAST();
+	TU = new TranslationUnitAST();
 	std::vector<Seq> param_list;
 	param_list.push_back(Seq("int", "i"));
 	TU->addPrototype(new PrototypeAST("bool", "printnum", param_list));
@@ -91,8 +91,9 @@ bool Parser::visitExternalDeclaration(
   * @return 解析成功：PrototypeAST　解析失敗：NULL
   */
 PrototypeAST *Parser::visitFunctionDeclaration(){
-	int bkup=Tokens->getCurIndex();
-	PrototypeAST *proto=visitPrototype();
+	int bkup = Tokens->getCurIndex();
+
+	PrototypeAST *proto = visitPrototype();
 	if(!proto){
 		return NULL;
 	}
@@ -114,7 +115,6 @@ PrototypeAST *Parser::visitFunctionDeclaration(){
 		Tokens->applyTokenIndex(bkup);
 		return NULL;
 	}
-	
 }
 
 
@@ -220,7 +220,6 @@ PrototypeAST *Parser::visitPrototype(){
 		}
 		is_first_param = false;
 	}
-	
 
 	//')'
 	if(Tokens->getCurString() ==")"){
@@ -456,27 +455,62 @@ BaseAST *Parser::visitJumpStatement(){
 BaseAST *Parser::visitIfExpression() {
 	int bkup = Tokens->getCurIndex();
 
+	std::vector<BaseAST*> ThenStmt, ElseStmt;
+	BaseAST *stmt;
+
 	if (Tokens->getCurType() == TOK_IF) {
 		Tokens->getNextToken();
-		if (Tokens->getCurType() == TOK_TRUE)
-			Tokens->getNextToken();
-		else{
-		}
 
-		if (Tokens->getCurString() == "{") {
-			Tokens->getNextToken();
+		if (Tokens->getCurType() != TOK_TRUE){
+			Tokens->applyTokenIndex(bkup);
+			return NULL;
 		}
-		BaseAST *stmt;
-		//while(true) {
-		//	if (Tokens->getCurString() == "}") {
-		//		Tokens->getNextToken();
-		//		break;
-		//	}
+		Tokens->getNextToken();
+
+		if (Tokens->getCurString() != "{") {
+			Tokens->applyTokenIndex(bkup);
+			return NULL;
+		}
+		Tokens->getNextToken();
+
+		while(true) {
 			if (stmt = visitStatement()) {
+				ThenStmt.push_back(stmt);
+				continue;
+			}
+
+			if (Tokens->getCurString() != "}") {
+				Tokens->applyTokenIndex(bkup);
+				return NULL;
+			}
+			Tokens->getNextToken();
+
+			if (Tokens->getCurString() != "else") {
+				return new IfExprAST(new BooleanAST(true), ThenStmt, ElseStmt);
+			}
+			Tokens->getNextToken();
+
+			if (Tokens->getCurString() != "{") {
+				Tokens->applyTokenIndex(bkup);
+				return NULL;
+			}
+			Tokens->getNextToken();
+
+			while(true) {
+				if (stmt = visitStatement()) {
+					ElseStmt.push_back(stmt);
+					continue;
+				}
+
+				if (Tokens->getCurString() != "}") {
+					Tokens->applyTokenIndex(bkup);
+					return NULL;
+				}
 				Tokens->getNextToken();
 			}
-		//}
-		return new IfExprAST(new BooleanAST(true), stmt, stmt);
+			break;
+		}
+		return new IfExprAST(new BooleanAST(true), ThenStmt, ElseStmt);
 	}else{
 		Tokens->applyTokenIndex(bkup);
 		return NULL;

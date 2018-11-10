@@ -231,13 +231,6 @@ Value *CodeGen::generateIfExpr(IfExprAST *if_expr) {
 	CondV = Builder->CreateFCmpONE(
 			ConstantFP::get(getGlobalContext(), APFloat(3.0)),
 			ConstantFP::get(getGlobalContext(), APFloat(0.0)), "ifcond");
-	
-	Value *ThenV = generateStatement(if_expr->getThen());
-	Value *ElseV = generateStatement(if_expr->getElse());
-
-	CondV = Builder->CreateFCmpONE(
-			ConstantFP::get(getGlobalContext(), APFloat(3.0)),
-			ConstantFP::get(getGlobalContext(), APFloat(0.0)), "ifcond");
 
 	Function *function = Builder->GetInsertBlock()->getParent();
 
@@ -253,12 +246,16 @@ Value *CodeGen::generateIfExpr(IfExprAST *if_expr) {
 	//auto lastThenBB = Builder->GetInsertBlock();
 
 	ThenBB = Builder->GetInsertBlock();
+	for (int i = 0;i < if_expr->getThen().size();i++)
+		generateStatement(if_expr->getThen()[i]);
 	Builder->CreateBr(MergeBB);
 
 	function->getBasicBlockList().push_back(ElseBB);
 	Builder->SetInsertPoint(ElseBB);
 
 	ElseBB = Builder->GetInsertBlock();
+	for (int i = 0;i < if_expr->getElse().size();i++)
+		generateStatement(if_expr->getElse()[i]);
 	Builder->CreateBr(MergeBB);
 
 	function->getBasicBlockList().push_back(MergeBB);
@@ -268,7 +265,7 @@ Value *CodeGen::generateIfExpr(IfExprAST *if_expr) {
 
 	//PN->addIncoming(ThenV, ThenBB);
 	//PN->addIncoming(ElseV, ElseBB);
-	return ThenV;
+	return CondV;
 }
 
 
@@ -404,9 +401,9 @@ Value *CodeGen::generateCallExpression(CallExprAST *call_expr){
 			arg_v = generateBinaryExpression(dyn_cast<BinaryExprAST>(arg));
 
 			//代入の時はLoad命令を追加
-			if(bin_expr->getOp()=="="){
+			if(bin_expr->getOp() == "="){
 				VariableAST *var = dyn_cast<VariableAST>(bin_expr->getLHS());
-				arg_v=Builder->CreateLoad(vs_table.lookup(var->getName()), "arg_val");
+				arg_v = Builder->CreateLoad(vs_table.lookup(var->getName()), "arg_val");
 			}
 		}
 
@@ -439,7 +436,7 @@ Value *CodeGen::generateCallExpression(CallExprAST *call_expr){
   * @return 生成したValueのポインタ
   */
 Value *CodeGen::generateJumpStatement(JumpStmtAST *jump_stmt){
-	BaseAST *expr=jump_stmt->getExpr();
+	BaseAST *expr = jump_stmt->getExpr();
 	Value *ret_v;
 	if(isa<BinaryExprAST>(expr)){
 		ret_v = generateBinaryExpression(dyn_cast<BinaryExprAST>(expr));
@@ -503,3 +500,4 @@ bool CodeGen::linkModule(Module *dest, std::string file_name){
 
 	return true;
 }
+

@@ -323,11 +323,12 @@ class BooleanAST : public BaseAST {
 
 
 class IfExprAST : public BaseAST {
-	BaseAST *Cond, *Then, *Else;
+	BaseAST *Cond;
+	std::vector<BaseAST*> ThenStmt, ElseStmt;
 
 	public:
-	IfExprAST(BaseAST *Cond, BaseAST *Then, BaseAST *Else)
-		: BaseAST(IfExprID),Cond(Cond), Then(Then), Else(Else){}
+	IfExprAST(BaseAST *Cond, std::vector<BaseAST*> Then, std::vector<BaseAST*> Else)
+		: BaseAST(IfExprID),Cond(Cond), ThenStmt(Then), ElseStmt(Else){}
 	~IfExprAST(){}
 	static inline bool classof(IfExprAST const*){return true;}
 	static inline bool classof(BaseAST const* base){
@@ -335,8 +336,8 @@ class IfExprAST : public BaseAST {
 	}
 
 	BaseAST* getCond(){return Cond;}
-	BaseAST* getThen(){return Then;}
-	BaseAST* getElse(){return Else;}
+	std::vector<BaseAST*> getThen(){return ThenStmt;}
+	std::vector<BaseAST*> getElse(){return ElseStmt;}
 
 };
 
