@@ -6,6 +6,8 @@ target triple = "x86_64-unknown-linux-gnu"
 
 define i32 @main() {
 entry:
+  %call_tmp = call i32 @printnum(i32 32)
+  %call_tmp2 = call i32 @printnum(i32 32)
   br i1 true, label %then, label %else
 
 then:                                             ; preds = %entry
@@ -15,7 +17,6 @@ else:                                             ; preds = %entry
   br label %ifcont
 
 ifcont:                                           ; preds = %else, %then
-  %iftmp = phi double [ 3.000000e+00, %then ], [ 3.000000e+00, %else ]
   ret i32 0
 }
 

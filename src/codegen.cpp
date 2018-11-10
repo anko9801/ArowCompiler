@@ -80,7 +80,7 @@ bool CodeGen::generateTranslationUnit(TranslationUnitAST &tunit, std::string nam
 
 	//function definition
 	for(int i=0; ; i++){
-		FunctionAST *func=tunit.getFunction(i);
+		FunctionAST *func = tunit.getFunction(i);
 		if(!func)
 			break;
 		else if(!(generateFunctionDefinition(func, Mod))){
@@ -100,12 +100,12 @@ bool CodeGen::generateTranslationUnit(TranslationUnitAST &tunit, std::string nam
   */
 Function *CodeGen::generateFunctionDefinition(FunctionAST *func_ast,
 		Module *mod){
-	Function *func=generatePrototype(func_ast->getPrototype(), mod);
+	Function *func = generatePrototype(func_ast->getPrototype(), mod);
 	if(!func){
 		return NULL;
 	}
 	CurFunc = func;
-	BasicBlock *bblock=BasicBlock::Create(getGlobalContext(), "entry", func);
+	BasicBlock *bblock = BasicBlock::Create(getGlobalContext(), "entry", func);
 	Builder->SetInsertPoint(bblock);
 	generateFunctionStatement(func_ast->getBody());
 
@@ -141,7 +141,7 @@ Function *CodeGen::generatePrototype(PrototypeAST *proto, Module *mod){
 							int_types,false
 							);
 	//create function
-	func=Function::Create(func_type, 
+	func = Function::Create(func_type, 
 							Function::ExternalLinkage,
 							proto->getName(),
 							mod);
@@ -227,7 +227,11 @@ Value *CodeGen::generateVariableDeclaration(VariableDeclAST *vdecl){
 
 // IfExpr
 Value *CodeGen::generateIfExpr(IfExprAST *if_expr) {
-	Value *CondV/* = if_expr->getCond()*/;
+	Value *CondV;
+	CondV = Builder->CreateFCmpONE(
+			ConstantFP::get(getGlobalContext(), APFloat(3.0)),
+			ConstantFP::get(getGlobalContext(), APFloat(0.0)), "ifcond");
+	
 	Value *ThenV = generateStatement(if_expr->getThen());
 	Value *ElseV = generateStatement(if_expr->getElse());
 
@@ -243,7 +247,6 @@ Value *CodeGen::generateIfExpr(IfExprAST *if_expr) {
 
 	Builder->CreateCondBr(CondV, ThenBB, ElseBB);
 
-	//function->getBasicBlockList().push_back(ThenBB);
 	Builder->SetInsertPoint(ThenBB);
 
 	// if文がネストしたとき
@@ -261,11 +264,11 @@ Value *CodeGen::generateIfExpr(IfExprAST *if_expr) {
 	function->getBasicBlockList().push_back(MergeBB);
 	Builder->SetInsertPoint(MergeBB);
 
-	PHINode *PN = Builder->CreatePHI(Type::getDoubleTy(getGlobalContext()), 2, "iftmp");
+	//PHINode *PN = Builder->CreatePHI(Type::getDoubleTy(getGlobalContext()), 2, "iftmp");
 
-	PN->addIncoming(ThenV, ThenBB);
-	PN->addIncoming(ElseV, ElseBB);
-	return PN;
+	//PN->addIncoming(ThenV, ThenBB);
+	//PN->addIncoming(ElseV, ElseBB);
+	return ThenV;
 }
 
 
