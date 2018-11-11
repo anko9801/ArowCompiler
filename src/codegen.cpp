@@ -228,9 +228,24 @@ Value *CodeGen::generateVariableDeclaration(VariableDeclAST *vdecl){
 // IfExpr
 Value *CodeGen::generateIfExpr(IfExprAST *if_expr) {
 	Value *CondV;
-	CondV = Builder->CreateFCmpONE(
-			ConstantFP::get(getGlobalContext(), APFloat(3.0)),
-			ConstantFP::get(getGlobalContext(), APFloat(0.0)), "ifcond");
+
+	if (isa<BooleanAST>(if_expr->getCond())) {
+		if (dyn_cast<BooleanAST>(if_expr->getCond())->getValue())
+			CondV = ConstantInt::get(
+				Type::getInt1Ty(getGlobalContext()),
+				1);
+		else
+			CondV = ConstantInt::get(
+				Type::getInt1Ty(getGlobalContext()),
+				0);
+
+	}else if (isa<BinaryExprAST>(if_expr->getCond())) {
+		auto CondBinary = dyn_cast<BinaryExprAST>(if_expr->getCond());
+		if (CondBinary->getOp() == "==")
+			CondV = Builder->CreateFCmpOEQ(
+				generateStatement(CondBinary->getLHS()),
+				generateStatement(CondBinary->getRHS()), "ifcond");
+	}
 
 	Function *function = Builder->GetInsertBlock()->getParent();
 
@@ -261,10 +276,6 @@ Value *CodeGen::generateIfExpr(IfExprAST *if_expr) {
 	function->getBasicBlockList().push_back(MergeBB);
 	Builder->SetInsertPoint(MergeBB);
 
-	//PHINode *PN = Builder->CreatePHI(Type::getDoubleTy(getGlobalContext()), 2, "iftmp");
-
-	//PN->addIncoming(ThenV, ThenBB);
-	//PN->addIncoming(ElseV, ElseBB);
 	return CondV;
 }
 

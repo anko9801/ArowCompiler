@@ -507,6 +507,7 @@ BaseAST *Parser::visitIfExpression() {
 					return NULL;
 				}
 				Tokens->getNextToken();
+				break;
 			}
 			break;
 		}
@@ -524,6 +525,12 @@ BaseAST *Parser::visitBoolExpression() {
 	bool isnot = false;
 	BaseAST *expr;
 	BaseAST *lhs;
+
+	if (Tokens->getCurType() == TOK_TRUE) {
+		return new BooleanAST(true);
+	}else if (Tokens->getCurType() == TOK_FALSE) {
+		return new BooleanAST(false);
+	}
 
 	if (Tokens->getCurString() == "!") {
 		isnot = !isnot;
@@ -546,6 +553,7 @@ BaseAST *Parser::visitBoolExpression() {
 				return new BinaryExprAST(op, lhs, rhs);
 			}else{
 				SAFE_DELETE(lhs);
+				SAFE_DELETE(rhs);
 				Tokens->applyTokenIndex(bkup);
 			}
 		}else{
