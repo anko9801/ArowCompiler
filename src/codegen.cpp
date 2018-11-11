@@ -245,6 +245,27 @@ Value *CodeGen::generateIfExpr(IfExprAST *if_expr) {
 			CondV = Builder->CreateFCmpOEQ(
 				generateStatement(CondBinary->getLHS()),
 				generateStatement(CondBinary->getRHS()), "ifcond");
+		else if (CondBinary->getOp() == "!=")
+			CondV = Builder->CreateFCmpONE(
+				generateStatement(CondBinary->getLHS()),
+				generateStatement(CondBinary->getRHS()), "ifcond");
+		else if (CondBinary->getOp() == ">")
+			CondV = Builder->CreateFCmpOGT(
+				generateStatement(CondBinary->getLHS()),
+				generateStatement(CondBinary->getRHS()), "ifcond");
+		else if (CondBinary->getOp() == "<")
+			CondV = Builder->CreateFCmpOLT(
+				generateStatement(CondBinary->getLHS()),
+				generateStatement(CondBinary->getRHS()), "ifcond");
+		else if (CondBinary->getOp() == ">=")
+			CondV = Builder->CreateFCmpOGE(
+				generateStatement(CondBinary->getLHS()),
+				generateStatement(CondBinary->getRHS()), "ifcond");
+		else if (CondBinary->getOp() == "<=")
+			CondV = Builder->CreateFCmpOLE(
+				generateStatement(CondBinary->getLHS()),
+				generateStatement(CondBinary->getRHS()), "ifcond");
+        
 	}
 
 	Function *function = Builder->GetInsertBlock()->getParent();

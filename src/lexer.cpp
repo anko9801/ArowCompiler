@@ -120,16 +120,29 @@ TokenStream *LexicalAnalysis(std::string input_filename){
 			//それ以外(記号)
 			}else{
 				token_str += next_char;
-				if (!(index == length)) {
+				if (index != length) {
 					next_char = cur_line.at(index++);
-					while(!isalpha(next_char) && !isdigit(next_char) && !isspace(next_char) && !next_char == EOF) {
-						token_str += next_char;
-						next_char = cur_line.at(index++);
-						if(index == length)
+
+					while(!isalpha(next_char) && !isdigit(next_char) && !isspace(next_char)) {
+						if (token_str == "+" ||
+							token_str == "-" ||
+							token_str == "*" ||
+							token_str == ">" ||
+							token_str == "<" ||
+							token_str == "=" ||
+							token_str == "!" ||
+							token_str == "|" ||
+							token_str == "&") {
+							token_str += next_char;
+							next_char = cur_line.at(index++);
+						}else
+							break;
+						if(index == length || next_char == EOF)
 							break;
 					}
-					index--; 
+					index--;
 				}
+
 				if(token_str == "+" ||
 						token_str == "-" ||
 						token_str == "*" ||

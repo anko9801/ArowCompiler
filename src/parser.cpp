@@ -461,11 +461,10 @@ BaseAST *Parser::visitIfExpression() {
 	if (Tokens->getCurType() == TOK_IF) {
 		Tokens->getNextToken();
 
-		if (Tokens->getCurType() != TOK_TRUE){
+		if (!(stmt = visitBoolExpression())){
 			Tokens->applyTokenIndex(bkup);
 			return NULL;
 		}
-		Tokens->getNextToken();
 
 		if (Tokens->getCurString() != "{") {
 			Tokens->applyTokenIndex(bkup);
@@ -538,9 +537,9 @@ BaseAST *Parser::visitBoolExpression() {
 	}
 
 	if (lhs = visitAdditiveExpression(NULL)) {
-		Tokens->getNextToken();
 		std::string op;
 		BaseAST *rhs;
+
 		if (Tokens->getCurString() == "<" ||
 			Tokens->getCurString() == ">" ||
 			Tokens->getCurString() == "<=" ||
