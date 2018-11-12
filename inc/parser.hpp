@@ -6,6 +6,7 @@
 #include<cstdlib>
 #include<map>
 #include<string>
+#include<string.h>
 #include<vector>
 #include"APP.hpp"
 #include"AST.hpp"
@@ -49,14 +50,13 @@ typedef class Parser{
 		VariableDeclAST *visitVariableDeclaration();
 		BaseAST *visitStatement();
 		BaseAST *visitExpressionStatement();
-		BaseAST *visitJumpStatement();
+		BaseAST *visitJumpStatement(const char* Type);
 		BaseAST *visitIfExpression();
-		BaseAST *visitBoolExpression();
 		BaseAST *visitAssignmentExpression();
-		BaseAST *visitAdditiveExpression(BaseAST *lhs);
-		BaseAST *visitMultiplicativeExpression(BaseAST *lhs);
-		BaseAST *visitPostfixExpression();
-		BaseAST *visitPrimaryExpression();
+		BaseAST *visitAdditiveExpression(BaseAST *lhs, const char* Type);
+		BaseAST *visitMultiplicativeExpression(BaseAST *lhs, const char* Type);
+		BaseAST *visitPostfixExpression(const char* Type);
+		BaseAST *visitPrimaryExpression(const char* Type);
 
 
 	protected:

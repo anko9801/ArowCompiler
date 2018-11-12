@@ -207,6 +207,7 @@ class  BinaryExprAST : public BaseAST{
 
 	bool setType(std::string type){Type = type;return true;}
 
+	std::string getType(){return Type;}
 	std::string getOp(){return Op;}
 	BaseAST *getLHS(){return LHS;}
 	BaseAST *getRHS(){return RHS;}
@@ -242,6 +243,8 @@ class CallExprAST : public BaseAST{
 	static inline bool classof(BaseAST const* base){
 		return base->getValueID()==CallExprID;
 	}
+
+	std::string getType(){return Type;}
 	std::string getCallee(){return Callee;}
 	BaseAST *getArgs(int i){if(i<Args.size())return Args.at(i);else return NULL;}
 };
@@ -252,6 +255,7 @@ class CallExprAST : public BaseAST{
   */
 class JumpStmtAST : public BaseAST{
 	BaseAST *Expr;
+
 	public:
 		JumpStmtAST(BaseAST *expr) : BaseAST(JumpStmtID), Expr(expr){}
 		~JumpStmtAST(){SAFE_DELETE(Expr);}

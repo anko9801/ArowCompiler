@@ -131,6 +131,7 @@ int main(int argc, char **argv) {
 		exit(1);
 	}
 
+	fprintf(stderr, "pass lex and parse\n");
 	CodeGen *codegen=new CodeGen();
 	if(!codegen->doCodeGen(tunit, opt.getInputFileName(), 
 				opt.getLinkFileName(), opt.getWithJit()) ){
