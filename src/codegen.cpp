@@ -66,13 +66,15 @@ Module &CodeGen::getModule(){
   * @return 成功時：true　失敗時：false　
   */
 bool CodeGen::generateTranslationUnit(TranslationUnitAST &tunit, std::string name){
+	fprintf(stderr, "%d: %s %s\n", __LINE__, __func__, name.c_str());
 	Mod = new Module(name, getGlobalContext());
 	//funtion declaration
 	for(int i=0; ; i++){
-		PrototypeAST *proto=tunit.getPrototype(i);
+		PrototypeAST *proto = tunit.getPrototype(i);
 		if(!proto)
 			break;
 		else if(!generatePrototype(proto, Mod)){
+			fprintf(stderr, "%d: error at Prototype\n", __LINE__);
 			SAFE_DELETE(Mod);
 			return false;
 		}
@@ -84,6 +86,7 @@ bool CodeGen::generateTranslationUnit(TranslationUnitAST &tunit, std::string nam
 		if(!func)
 			break;
 		else if(!(generateFunctionDefinition(func, Mod))){
+			fprintf(stderr, "%d: error at Function Definition\n", __LINE__);
 			SAFE_DELETE(Mod);
 			return false;
 		}
@@ -100,6 +103,7 @@ bool CodeGen::generateTranslationUnit(TranslationUnitAST &tunit, std::string nam
   */
 Function *CodeGen::generateFunctionDefinition(FunctionAST *func_ast,
 		Module *mod){
+	fprintf(stderr, "%d: %s %s %s\n", __LINE__, __func__, func_ast->getType().c_str(), func_ast->getName().c_str());
 	Function *func = generatePrototype(func_ast->getPrototype(), mod);
 	if(!func){
 		return NULL;
@@ -119,6 +123,7 @@ Function *CodeGen::generateFunctionDefinition(FunctionAST *func_ast,
   * @return 生成したFunctionのポインタ
   */
 Function *CodeGen::generatePrototype(PrototypeAST *proto, Module *mod){
+	fprintf(stderr, "%d: %s %s\n", __LINE__, __func__, proto->getType().c_str());
 	//already declared?
 	Function *func=mod->getFunction(proto->getName());
 	if(func){
@@ -164,10 +169,11 @@ Function *CodeGen::generatePrototype(PrototypeAST *proto, Module *mod){
   * @return 最後に生成したValueのポインタ
   */
 Value *CodeGen::generateFunctionStatement(FunctionStmtAST *func_stmt){
+	fprintf(stderr, "%d: %s\n", __LINE__, __func__);
 	//insert variable decls
 	VariableDeclAST *vdecl;
-	Value *v=NULL;
-	for(int i=0; ; i++){
+	Value *v = NULL;
+	for(int i = 0; ; i++){
 		//最後まで見たら終了
 		if(!func_stmt->getVariableDecl(i))
 			break;
@@ -179,8 +185,8 @@ Value *CodeGen::generateFunctionStatement(FunctionStmtAST *func_stmt){
 
 	//insert expr statement
 	BaseAST *stmt;
-	for(int i=0; ; i++){
-		stmt=func_stmt->getStatement(i);
+	for(int i = 0; ; i++){
+		stmt = func_stmt->getStatement(i);
 		if(!stmt)
 			break;
 		else if(isa<IfExprAST>(stmt))
@@ -199,6 +205,7 @@ Value *CodeGen::generateFunctionStatement(FunctionStmtAST *func_stmt){
   * @return 生成したValueのポインタ
   */
 Value *CodeGen::generateVariableDeclaration(VariableDeclAST *vdecl){
+	fprintf(stderr, "%d: %s %s %s\n", __LINE__, __func__, vdecl->getType().c_str(), vdecl->getName().c_str());
 	//create alloca
 	AllocaInst *alloca;
 	if (vdecl->getType() == "i32" || vdecl->getType() == "int") {
@@ -227,6 +234,7 @@ Value *CodeGen::generateVariableDeclaration(VariableDeclAST *vdecl){
 
 // IfExpr
 Value *CodeGen::generateIfExpr(IfExprAST *if_expr) {
+	fprintf(stderr, "%d: %s\n", __LINE__, __func__);
 	Value *CondV;
 
 	if (isa<BooleanAST>(if_expr->getCond())) {
@@ -308,6 +316,7 @@ Value *CodeGen::generateIfExpr(IfExprAST *if_expr) {
   * @return 生成したValueのポインタ
   */
 Value *CodeGen::generateStatement(BaseAST *stmt){
+	fprintf(stderr, "%d: %s\n", __LINE__, __func__);
 	if(isa<BinaryExprAST>(stmt)){
 		return generateBinaryExpression(dyn_cast<BinaryExprAST>(stmt));
 	}else if(isa<CallExprAST>(stmt)){
@@ -326,16 +335,18 @@ Value *CodeGen::generateStatement(BaseAST *stmt){
   * @return 生成したValueのポインタ
   */
 Value *CodeGen::generateBinaryExpression(BinaryExprAST *bin_expr){
-	BaseAST *lhs=bin_expr->getLHS();
-	BaseAST *rhs=bin_expr->getRHS();
+	fprintf(stderr, "%d: %s %s %s\n", __LINE__, __func__, bin_expr->getType().c_str(), bin_expr->getOp().c_str());
+	BaseAST *lhs = bin_expr->getLHS();
+	BaseAST *rhs = bin_expr->getRHS();
 
 	Value *lhs_v;
 	Value *rhs_v;
 
+
 	//assignment
-	if(bin_expr->getOp()=="="){
+	if(bin_expr->getOp() == "="){
 		//lhs is variable
-		VariableAST *lhs_var=dyn_cast<VariableAST>(lhs);
+		VariableAST *lhs_var = dyn_cast<VariableAST>(lhs);
 		ValueSymbolTable &vs_table = CurFunc->getValueSymbolTable();
 		lhs_v = vs_table.lookup(lhs_var->getName());
 
@@ -344,11 +355,11 @@ Value *CodeGen::generateBinaryExpression(BinaryExprAST *bin_expr){
 		//lhs=?
 		//Binary?
 		if(isa<BinaryExprAST>(lhs)){
-			lhs_v=generateBinaryExpression(dyn_cast<BinaryExprAST>(lhs));
+			lhs_v = generateBinaryExpression(dyn_cast<BinaryExprAST>(lhs));
 
 		//Variable?
         }else if(isa<VariableAST>(lhs)){
-			lhs_v=generateVariable(dyn_cast<VariableAST>(lhs));
+			lhs_v = generateVariable(dyn_cast<VariableAST>(lhs));
 
 		//Number?
         }else if(isa<NumberAST>(lhs)){
@@ -356,24 +367,26 @@ Value *CodeGen::generateBinaryExpression(BinaryExprAST *bin_expr){
 			lhs_v = generateNumber(num->getValue());
 
 		//Boolean?
-		}else if(isa<BooleanAST>(rhs)){
-			BooleanAST *boolean = dyn_cast<BooleanAST>(rhs);
-			rhs_v = generateBoolean(boolean->getValue());
+		}else if(isa<BooleanAST>(lhs)){
+			BooleanAST *boolean = dyn_cast<BooleanAST>(lhs);
+			lhs_v = generateBoolean(boolean->getValue());
+		}else{
+			fprintf(stderr, "%d: cannot find AST\n", __LINE__);
 		}
 	}
 
 
 	//create rhs value
 	if(isa<BinaryExprAST>(rhs)){
-		rhs_v=generateBinaryExpression(dyn_cast<BinaryExprAST>(rhs));
+		rhs_v = generateBinaryExpression(dyn_cast<BinaryExprAST>(rhs));
 
 	//CallExpr?
     }else if(isa<CallExprAST>(rhs)){
-		rhs_v=generateCallExpression(dyn_cast<CallExprAST>(rhs));
+		rhs_v = generateCallExpression(dyn_cast<CallExprAST>(rhs));
 
 	//Variable?
     }else if(isa<VariableAST>(rhs)){
-		rhs_v=generateVariable(dyn_cast<VariableAST>(rhs));
+		rhs_v = generateVariable(dyn_cast<VariableAST>(rhs));
 
 	//Number?
     }else if(isa<NumberAST>(rhs)){
@@ -382,8 +395,12 @@ Value *CodeGen::generateBinaryExpression(BinaryExprAST *bin_expr){
 
 	//Boolean?
 	}else if(isa<BooleanAST>(rhs)){
+		fprintf(stderr, "%d: boolean\n", __LINE__);
 		BooleanAST *boolean = dyn_cast<BooleanAST>(rhs);
 		rhs_v = generateBoolean(boolean->getValue());
+
+	}else{
+		fprintf(stderr, "%d: cannot find AST\n", __LINE__);
 	}
 
 
@@ -403,6 +420,8 @@ Value *CodeGen::generateBinaryExpression(BinaryExprAST *bin_expr){
 	}else if(bin_expr->getOp()=="/"){
 		//div
 		return Builder->CreateSDiv(lhs_v, rhs_v, "div_tmp");
+	}else{
+		fprintf(stderr, "%d: cannot find operater\n", __LINE__);
 	}
 }
 
@@ -413,12 +432,13 @@ Value *CodeGen::generateBinaryExpression(BinaryExprAST *bin_expr){
   * @return 生成したValueのポインタ　
   */
 Value *CodeGen::generateCallExpression(CallExprAST *call_expr){
+	fprintf(stderr, "%d: %s %s %s\n", __LINE__, __func__, call_expr->getType().c_str(), call_expr->getCallee().c_str());
 	std::vector<Value*> arg_vec;
 	BaseAST *arg;
 	Value *arg_v;
 	ValueSymbolTable &vs_table = CurFunc->getValueSymbolTable();
-	for(int i=0; ; i++){
-		if(!(arg=call_expr->getArgs(i)))
+	for(int i = 0; ; i++){
+		if(!(arg = call_expr->getArgs(i)))
 			break;
 
 		//isCall
@@ -468,6 +488,7 @@ Value *CodeGen::generateCallExpression(CallExprAST *call_expr){
   * @return 生成したValueのポインタ
   */
 Value *CodeGen::generateJumpStatement(JumpStmtAST *jump_stmt){
+	fprintf(stderr, "%d: %s\n", __LINE__, __func__);
 	BaseAST *expr = jump_stmt->getExpr();
 	Value *ret_v;
 	if(isa<BinaryExprAST>(expr)){
@@ -496,6 +517,7 @@ Value *CodeGen::generateJumpStatement(JumpStmtAST *jump_stmt){
   * @return  生成したValueのポインタ
   */
 Value *CodeGen::generateVariable(VariableAST *var){
+	fprintf(stderr, "%d: %s %s %s\n", __LINE__, __func__, var->getType().c_str(), var->getName().c_str());
 	ValueSymbolTable &vs_table = CurFunc->getValueSymbolTable();
 	return Builder->CreateLoad(vs_table.lookup(var->getName()), "var_tmp");
 }
@@ -503,6 +525,7 @@ Value *CodeGen::generateVariable(VariableAST *var){
 
 // Number
 Value *CodeGen::generateNumber(int value){
+	fprintf(stderr, "%d: %s %d\n", __LINE__, __func__, value);
 	return ConstantInt::get(
 			Type::getInt32Ty(getGlobalContext()),
 			value);
@@ -511,6 +534,7 @@ Value *CodeGen::generateNumber(int value){
 
 // Boolean
 Value *CodeGen::generateBoolean(bool value) {
+	fprintf(stderr, "%d: %s %s\n", __LINE__, __func__, value);
 	return ConstantInt::get(
 			Type::getInt1Ty(getGlobalContext()),
 			value);

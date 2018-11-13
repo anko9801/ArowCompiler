@@ -263,7 +263,7 @@ FunctionStmtAST *Parser::visitFunctionStatement(PrototypeAST *proto){
 	BaseAST *last_stmt;
 
 	while(true) {
-		//fprintf(stderr, "%d: %s %s\n", __LINE__, __func__, Tokens->getCurString().c_str());
+		fprintf(stderr, "%d: %s %s\n", __LINE__, __func__, Tokens->getCurString().c_str());
 		// 色々な文
 		if(stmt = visitStatement()){
 			last_stmt = stmt;
@@ -901,6 +901,7 @@ BaseAST *Parser::visitPrimaryExpression(const char* Type){
 			}
 
 		}else if (Tokens->getCurType() == TOK_TRUE) {
+			fprintf(stderr, "%d: %s\n", __LINE__, Tokens->getCurString().c_str());
 			Tokens->getNextToken();
 			return new BooleanAST(true);
 		}else if (Tokens->getCurType() == TOK_FALSE) {
