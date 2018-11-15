@@ -137,7 +137,7 @@ TokenStream *LexicalAnalysis(std::string input_filename){
 							next_char = cur_line.at(index++);
 						}else
 							break;
-						if(index == length || next_char == EOF)
+						if(index == length)
 							break;
 					}
 					index--;

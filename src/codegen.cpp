@@ -237,31 +237,66 @@ Value *CodeGen::generateIfExpr(IfExprAST *if_expr) {
 
 	}else if (isa<BinaryExprAST>(if_expr->getCond())) {
 		auto CondBinary = dyn_cast<BinaryExprAST>(if_expr->getCond());
+		BaseAST *lhs = CondBinary->getLHS();
+		BaseAST *rhs = CondBinary->getRHS();
+		Value *lhs_v, *rhs_v;
+
+		//Binary?
+		if(isa<BinaryExprAST>(lhs)){
+			lhs_v=generateBinaryExpression(dyn_cast<BinaryExprAST>(lhs));
+
+			//Variable?
+		}else if(isa<VariableAST>(lhs)){
+			lhs_v=generateVariable(dyn_cast<VariableAST>(lhs));
+
+			//Number?
+		}else if(isa<NumberAST>(lhs)){
+			NumberAST *num = dyn_cast<NumberAST>(lhs);
+			lhs_v = generateNumber(num->getValue());
+
+			//Boolean?
+		}else if(isa<BooleanAST>(lhs)){
+			BooleanAST *boolean = dyn_cast<BooleanAST>(lhs);
+			lhs_v = generateBoolean(boolean->getValue());
+		}
+
+
+		//create rhs value
+		if(isa<BinaryExprAST>(rhs)){
+			rhs_v=generateBinaryExpression(dyn_cast<BinaryExprAST>(rhs));
+
+			//CallExpr?
+		}else if(isa<CallExprAST>(rhs)){
+			rhs_v=generateCallExpression(dyn_cast<CallExprAST>(rhs));
+
+			//Variable?
+		}else if(isa<VariableAST>(rhs)){
+			rhs_v=generateVariable(dyn_cast<VariableAST>(rhs));
+
+			//Number?
+		}else if(isa<NumberAST>(rhs)){
+			NumberAST *num = dyn_cast<NumberAST>(rhs);
+			rhs_v=generateNumber(num->getValue());
+
+			//Boolean?
+		}else if(isa<BooleanAST>(rhs)){
+			BooleanAST *boolean = dyn_cast<BooleanAST>(rhs);
+			rhs_v = generateBoolean(boolean->getValue());
+		}
+
+
 		if (CondBinary->getOp() == "==")
-			CondV = Builder->CreateFCmpOEQ(
-				generateStatement(CondBinary->getLHS()),
-				generateStatement(CondBinary->getRHS()), "ifcond");
+			CondV = Builder->CreateICmpEQ(lhs_v, rhs_v, "ifcond");
 		else if (CondBinary->getOp() == "!=")
-			CondV = Builder->CreateFCmpONE(
-				generateStatement(CondBinary->getLHS()),
-				generateStatement(CondBinary->getRHS()), "ifcond");
+			CondV = Builder->CreateICmpNE(lhs_v, rhs_v, "ifcond");
 		else if (CondBinary->getOp() == ">")
-			CondV = Builder->CreateFCmpOGT(
-				generateStatement(CondBinary->getLHS()),
-				generateStatement(CondBinary->getRHS()), "ifcond");
+			CondV = Builder->CreateICmpSGT(lhs_v, rhs_v, "ifcond");
 		else if (CondBinary->getOp() == "<")
-			CondV = Builder->CreateFCmpOLT(
-				generateStatement(CondBinary->getLHS()),
-				generateStatement(CondBinary->getRHS()), "ifcond");
+			CondV = Builder->CreateICmpSLT(lhs_v, rhs_v, "ifcond");
 		else if (CondBinary->getOp() == ">=")
-			CondV = Builder->CreateFCmpOGE(
-				generateStatement(CondBinary->getLHS()),
-				generateStatement(CondBinary->getRHS()), "ifcond");
+			CondV = Builder->CreateICmpSGE(lhs_v, rhs_v, "ifcond");
 		else if (CondBinary->getOp() == "<=")
-			CondV = Builder->CreateFCmpOLE(
-				generateStatement(CondBinary->getLHS()),
-				generateStatement(CondBinary->getRHS()), "ifcond");
-        
+			CondV = Builder->CreateICmpSLE(lhs_v, rhs_v, "ifcond");
 	}
 
 	Function *function = Builder->GetInsertBlock()->getParent();
@@ -292,7 +327,6 @@ Value *CodeGen::generateIfExpr(IfExprAST *if_expr) {
 
 	function->getBasicBlockList().push_back(MergeBB);
 	Builder->SetInsertPoint(MergeBB);
-
 	return CondV;
 }
 

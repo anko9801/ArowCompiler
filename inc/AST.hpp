@@ -186,6 +186,13 @@ class VariableDeclAST: public BaseAST {
 };
 
 
+/**
+ * タプルを表すAST
+ */
+/*class TupleAST : public BaseAST {
+	std::vector<>
+};*/
+
 
 /** 
   * 二項演算を表すAST
@@ -207,11 +214,35 @@ class  BinaryExprAST : public BaseAST{
 
 	bool setType(std::string type){Type = type;return true;}
 
-	std::string getType(){return Type;}
 	std::string getOp(){return Op;}
 	BaseAST *getLHS(){return LHS;}
 	BaseAST *getRHS(){return RHS;}
 };
+
+
+
+/**
+ * If文を表すAST
+ */
+class IfExprAST : public BaseAST {
+	BaseAST *Cond;
+	std::vector<BaseAST*> ThenStmt, ElseStmt;
+
+	public:
+	IfExprAST(BaseAST *Cond, std::vector<BaseAST*> Then, std::vector<BaseAST*> Else)
+		: BaseAST(IfExprID),Cond(Cond), ThenStmt(Then), ElseStmt(Else){}
+	~IfExprAST(){}
+	static inline bool classof(IfExprAST const*){return true;}
+	static inline bool classof(BaseAST const* base){
+		return base->getValueID() == IfExprID;
+	}
+
+	BaseAST* getCond(){return Cond;}
+	std::vector<BaseAST*> getThen(){return ThenStmt;}
+	std::vector<BaseAST*> getElse(){return ElseStmt;}
+
+};
+
 
 
 /** 
@@ -243,8 +274,6 @@ class CallExprAST : public BaseAST{
 	static inline bool classof(BaseAST const* base){
 		return base->getValueID()==CallExprID;
 	}
-
-	std::string getType(){return Type;}
 	std::string getCallee(){return Callee;}
 	BaseAST *getArgs(int i){if(i<Args.size())return Args.at(i);else return NULL;}
 };
@@ -255,7 +284,6 @@ class CallExprAST : public BaseAST{
   */
 class JumpStmtAST : public BaseAST{
 	BaseAST *Expr;
-
 	public:
 		JumpStmtAST(BaseAST *expr) : BaseAST(JumpStmtID), Expr(expr){}
 		~JumpStmtAST(){SAFE_DELETE(Expr);}
@@ -323,26 +351,6 @@ class BooleanAST : public BaseAST {
 
 	std::string getType(){return "bool";}
 	bool getValue(){return Val;}
-};
-
-
-class IfExprAST : public BaseAST {
-	BaseAST *Cond;
-	std::vector<BaseAST*> ThenStmt, ElseStmt;
-
-	public:
-	IfExprAST(BaseAST *Cond, std::vector<BaseAST*> Then, std::vector<BaseAST*> Else)
-		: BaseAST(IfExprID),Cond(Cond), ThenStmt(Then), ElseStmt(Else){}
-	~IfExprAST(){}
-	static inline bool classof(IfExprAST const*){return true;}
-	static inline bool classof(BaseAST const* base){
-		return base->getValueID() == IfExprID;
-	}
-
-	BaseAST* getCond(){return Cond;}
-	std::vector<BaseAST*> getThen(){return ThenStmt;}
-	std::vector<BaseAST*> getElse(){return ElseStmt;}
-
 };
 
 
