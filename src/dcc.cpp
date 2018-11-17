@@ -126,7 +126,7 @@ int main(int argc, char **argv) {
 	//get AST
 	TranslationUnitAST &tunit=parser->getAST();
 	if(tunit.empty()){
-		fprintf(stderr,"TranslationUnit is empty");
+		fprintf(stderr,"TranslationUnit is empty\n");
 		SAFE_DELETE(parser);
 		exit(1);
 	}
@@ -143,7 +143,7 @@ int main(int argc, char **argv) {
 	//get Module
 	llvm::Module &mod=codegen->getModule();
 	if(mod.empty()){
-		fprintf(stderr,"Module is empty");
+		fprintf(stderr,"Module is empty\n");
 		SAFE_DELETE(parser);
 		SAFE_DELETE(codegen);
 		exit(1);

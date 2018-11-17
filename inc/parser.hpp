@@ -24,7 +24,7 @@ typedef class Parser{
 		TranslationUnitAST *TU;
 
 		//意味解析用各種識別子表
-		std::vector<Seq> VariableTable;
+		std::vector<VariableDeclAST*> VariableTable;
 		std::map<std::string, int> PrototypeTable;
 		std::map<std::string, int> FunctionTable;
 
@@ -47,8 +47,8 @@ typedef class Parser{
 		PrototypeAST *visitPrototype();
 		FunctionStmtAST *visitFunctionStatement(PrototypeAST *proto);
 		VariableDeclAST *visitVariableDeclaration();
-		BaseAST *visitStatement();
-		BaseAST *visitExpressionStatement();
+		BaseAST *visitArrayExpression(std::string Type, int Size);
+		BaseAST *visitStatement(std::string func_type);
 		BaseAST *visitJumpStatement(std::string Type);
 		BaseAST *visitIfExpression();
 		BaseAST *visitAssignmentExpression();

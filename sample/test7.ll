@@ -6,20 +6,21 @@ target triple = "x86_64-unknown-linux-gnu"
 
 define i32 @main() {
 entry:
-  br i1 true, label %then, label %else
+  %ifcond = icmp eq i32 4, 4
+  br i1 %ifcond, label %then, label %else
 
 then:                                             ; preds = %entry
   %add_tmp = add i32 4, 5
   %call_tmp = call i32 @printnum(i32 %add_tmp)
   %sub_tmp = sub i32 4, 5
-  %call_tmp4 = call i32 @printnum(i32 %sub_tmp)
+  %call_tmp5 = call i32 @printnum(i32 %sub_tmp)
   br label %ifcont
 
 else:                                             ; preds = %entry
   %mul_tmp = mul i32 4, 5
-  %call_tmp7 = call i32 @printnum(i32 %mul_tmp)
+  %call_tmp8 = call i32 @printnum(i32 %mul_tmp)
   %div_tmp = sdiv i32 4, 5
-  %call_tmp10 = call i32 @printnum(i32 %div_tmp)
+  %call_tmp11 = call i32 @printnum(i32 %div_tmp)
   br label %ifcont
 
 ifcont:                                           ; preds = %else, %then

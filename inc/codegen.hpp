@@ -46,8 +46,8 @@ class CodeGen{
 		bool generateTranslationUnit(TranslationUnitAST &tunit, std::string name);
 		Function *generateFunctionDefinition(FunctionAST *func, Module *mod);
 		Function *generatePrototype(PrototypeAST *proto, Module *mod);
-		Value *generateFunctionStatement(FunctionStmtAST *func_stmt);
-		Value *generateVariableDeclaration(VariableDeclAST *vdecl);
+		Value *generateFunctionStatement(FunctionStmtAST *func_stmt, BasicBlock* bblock);
+		Value *generateVariableDeclaration(VariableDeclAST *vdecl, BasicBlock* bblock);
 		Value *generateStatement(BaseAST *stmt);
 		Value *generateBinaryExpression(BinaryExprAST *bin_expr);
 		Value *generateCallExpression(CallExprAST *call_expr);

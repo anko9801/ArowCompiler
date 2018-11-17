@@ -168,12 +168,14 @@ TokenStream *LexicalAnalysis(std::string input_filename){
 						token_str == ")" ||
 						token_str == "{" ||
 						token_str == "}" ||
+						token_str == "[" ||
+						token_str == "]" ||
 						token_str == "=>"){
 					next_token = new Token(token_str, TOK_SYMBOL, line_num);
 
 				//解析不能字句
 				}else{
-					fprintf(stderr, "unclear token : %c", next_char);
+					fprintf(stderr, "unclear token : %s\n", token_str.c_str());
 					SAFE_DELETE(tokens);
 					return NULL;
 				}
@@ -250,7 +252,7 @@ bool TokenStream::ungetToken(int times) {
 bool TokenStream::printTokens() {
 	std::vector<Token*>::iterator titer = Tokens.begin();
 	while(titer != Tokens.end()) {
-		fprintf(stdout, "%d:", (*titer)->getTokenType());
+		fprintf(stdout, "%d: \n", (*titer)->getTokenType());
 		if ((*titer)->getTokenType() != TOK_EOF)
 			fprintf(stdout, "%s\n", (*titer)->getTokenString().c_str());
 		++titer;
