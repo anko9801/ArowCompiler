@@ -51,6 +51,7 @@ typedef class Parser{
 		BaseAST *visitStatement(std::string func_type);
 		BaseAST *visitJumpStatement(std::string Type);
 		BaseAST *visitIfExpression();
+		BaseAST *visitWhileExpression();
 		BaseAST *visitAssignmentExpression();
 		BaseAST *visitAdditiveExpression(BaseAST *lhs, std::string Type);
 		BaseAST *visitMultiplicativeExpression(BaseAST *lhs, std::string Type);

@@ -131,6 +131,7 @@ int main(int argc, char **argv) {
 		exit(1);
 	}
 
+
 	CodeGen *codegen=new CodeGen();
 	if(!codegen->doCodeGen(tunit, opt.getInputFileName(), 
 				opt.getLinkFileName(), opt.getWithJit()) ){
@@ -139,6 +140,7 @@ int main(int argc, char **argv) {
 		SAFE_DELETE(codegen);
 		exit(1);
 	}
+
 
 	//get Module
 	llvm::Module &mod=codegen->getModule();
@@ -149,7 +151,7 @@ int main(int argc, char **argv) {
 		exit(1);
 	}
 
-	
+
 	llvm::PassManager pm;
 
 	//SSA化

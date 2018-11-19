@@ -59,28 +59,11 @@ FunctionAST::~FunctionAST(){
   * デストラクタ
   */
 FunctionStmtAST::~FunctionStmtAST(){
-	//delete variable_declaration
-	for(int i=0; i<VariableDecls.size(); i++){
-		SAFE_DELETE(VariableDecls[i]);
-	}
-	VariableDecls.clear();
-
 	//delete statements
 	for(int i=0; i<StmtLists.size(); i++){
 		SAFE_DELETE(StmtLists[i]);
 	}
 	StmtLists.clear();
-}
-
-
-/**
-  * VariableDeclAST(変数宣言追加)メソッド
-  * @param  VariableDeclAST
-  * @retirm true
-  */
-bool FunctionStmtAST::addVariableDeclaration(VariableDeclAST *vdecl){
-		VariableDecls.push_back(vdecl);
-		return true;
 }
 
 

@@ -1,6 +1,7 @@
 #include "codegen.hpp"
 
-bool llvmDebbug = true;
+bool llvmDebbug = false;
+
 
 /**
   * コンストラクタ
@@ -9,6 +10,7 @@ CodeGen::CodeGen(){
 	Builder = new IRBuilder<>(getGlobalContext());
 	Mod = NULL;
 }
+
 
 /**
   * デストラクタ
@@ -26,7 +28,7 @@ CodeGen::~CodeGen(){
   */
 bool CodeGen::doCodeGen(TranslationUnitAST &tunit, std::string name, 
 		std::string link_file, bool with_jit=false){
-
+	if (llvmDebbug) fprintf(stderr, "%d: %s\n", __LINE__, __func__);
 	if(!generateTranslationUnit(tunit, name)){
 		return false;
 	}
@@ -68,6 +70,7 @@ Module &CodeGen::getModule(){
   * @return 成功時：true　失敗時：false　
   */
 bool CodeGen::generateTranslationUnit(TranslationUnitAST &tunit, std::string name){
+	if (llvmDebbug) fprintf(stderr, "%d: %s\n", __LINE__, __func__);
 	Mod = new Module(name, getGlobalContext());
 	//funtion declaration
 	for(int i=0; ; i++){
@@ -108,9 +111,9 @@ Function *CodeGen::generateFunctionDefinition(FunctionAST *func_ast,
 		return NULL;
 	}
 	CurFunc = func;
-	BasicBlock *bblock = BasicBlock::Create(getGlobalContext(), "entry", func);
-	Builder->SetInsertPoint(bblock);
-	generateFunctionStatement(func_ast->getBody(), bblock);
+	CurBB = BasicBlock::Create(getGlobalContext(), "entry", func);
+	Builder->SetInsertPoint(CurBB);
+	generateFunctionStatement(func_ast->getBody());
 
 	return func;
 }
@@ -167,34 +170,47 @@ Function *CodeGen::generatePrototype(PrototypeAST *proto, Module *mod){
   * @param  FunctionStmtAST
   * @return 最後に生成したValueのポインタ
   */
-Value *CodeGen::generateFunctionStatement(FunctionStmtAST *func_stmt, BasicBlock* bblock){
+Value *CodeGen::generateFunctionStatement(FunctionStmtAST *func_stmt){
 	if (llvmDebbug) fprintf(stderr, "%d: %s\n", __LINE__, __func__);
-	//insert variable decls
-	VariableDeclAST *vdecl;
 	Value *v=NULL;
-	for(int i=0; ; i++){
-		//最後まで見たら終了
-		if(!func_stmt->getVariableDecl(i))
-			break;
-
-		//create alloca
-		vdecl = dyn_cast<VariableDeclAST>(func_stmt->getVariableDecl(i));
-		v = generateVariableDeclaration(vdecl, bblock);
-	}
 
 	//insert expr statement
 	BaseAST *stmt;
 	for(int i=0; ; i++){
+		if (llvmDebbug) fprintf(stderr, "%d\n", i);
 		stmt=func_stmt->getStatement(i);
 		if(!stmt)
 			break;
-		else if(isa<IfExprAST>(stmt))
-			v = generateIfExpr(dyn_cast<IfExprAST>(stmt));
 		else if(!isa<NullExprAST>(stmt))
 			v = generateStatement(stmt);
 	}
+	if (llvmDebbug) fprintf(stderr, "finish\n");
 
 	return v;
+}
+
+
+/**
+  * ステートメント生成メソッド
+  * 実際にはASTの種類を確認して各種生成メソッドを呼び出し
+  * @param  JumpStmtAST
+  * @return 生成したValueのポインタ
+  */
+Value *CodeGen::generateStatement(BaseAST *stmt){
+	if (llvmDebbug) fprintf(stderr, "%d: %s\n", __LINE__, __func__);
+
+	if(isa<VariableDeclAST>(stmt))
+		return generateVariableDeclaration(dyn_cast<VariableDeclAST>(stmt));
+	else if(isa<BinaryExprAST>(stmt))
+		return generateBinaryExpression(dyn_cast<BinaryExprAST>(stmt));
+	else if(isa<CallExprAST>(stmt))
+		return generateCallExpression(dyn_cast<CallExprAST>(stmt));
+	else if(isa<JumpStmtAST>(stmt))
+		return generateJumpStatement(dyn_cast<JumpStmtAST>(stmt));
+	else if(isa<IfExprAST>(stmt))
+		return generateIfExpr(dyn_cast<IfExprAST>(stmt));
+	else
+		return NULL;
 }
 
 
@@ -203,7 +219,7 @@ Value *CodeGen::generateFunctionStatement(FunctionStmtAST *func_stmt, BasicBlock
   * @param VariableDeclAST
   * @return 生成したValueのポインタ
   */
-Value *CodeGen::generateVariableDeclaration(VariableDeclAST *vdecl, BasicBlock* bblock){
+Value *CodeGen::generateVariableDeclaration(VariableDeclAST *vdecl){
 	if (llvmDebbug) fprintf(stderr, "%d: %s\n", __LINE__, __func__);
 	//create alloca
 	AllocaInst *alloca;
@@ -219,11 +235,11 @@ Value *CodeGen::generateVariableDeclaration(VariableDeclAST *vdecl, BasicBlock* 
 		alloca = new AllocaInst(
 				ArrayType::get(type, vdecl->getSize()),
 				vdecl->getName(),
-				bblock);
-		auto zero = ConstantInt::get(getGlobalContext(), APInt(64, 0, true));
-		auto index = ConstantInt::get(getGlobalContext(), APInt(32, vdecl->getSize(), true));
-		auto ptr = GetElementPtrInst::Create(alloca, {zero, index}, "", bblock);
-		auto store = new StoreInst(index, ptr, false, bblock);
+				CurBB);
+		//auto zero = ConstantInt::get(getGlobalContext(), APInt(64, 0, true));
+		//auto index = ConstantInt::get(getGlobalContext(), APInt(32, vdecl->getSize(), true));
+		//auto ptr = GetElementPtrInst::Create(alloca, {zero, index}, "", bblock);
+		//auto store = new StoreInst(index, ptr, false, bblock);
 
 
 	}else{
@@ -264,41 +280,8 @@ Value *CodeGen::generateIfExpr(IfExprAST *if_expr) {
 		BaseAST *rhs = CondBinary->getRHS();
 		Value *lhs_v, *rhs_v;
 
-		//Binary?
-		if(isa<BinaryExprAST>(lhs)){
-			lhs_v=generateBinaryExpression(dyn_cast<BinaryExprAST>(lhs));
-
-		//Variable?
-		}else if(isa<VariableAST>(lhs)){
-			lhs_v=generateVariable(dyn_cast<VariableAST>(lhs));
-
-		//Number?
-		}else if(isa<NumberAST>(lhs)){
-			NumberAST *num = dyn_cast<NumberAST>(lhs);
-			lhs_v = generateNumber(num->getValue());
-
-		//Boolean?
-		}else if(isa<BooleanAST>(lhs)){
-			BooleanAST *boolean = dyn_cast<BooleanAST>(lhs);
-			lhs_v = generateBoolean(boolean->getValue());
-		}
-
-
-		//create rhs value
-		if(isa<BinaryExprAST>(rhs)){
-			rhs_v=generateBinaryExpression(dyn_cast<BinaryExprAST>(rhs));
-		}else if(isa<CallExprAST>(rhs)){
-			rhs_v=generateCallExpression(dyn_cast<CallExprAST>(rhs));
-		}else if(isa<VariableAST>(rhs)){
-			rhs_v=generateVariable(dyn_cast<VariableAST>(rhs));
-		}else if(isa<NumberAST>(rhs)){
-			NumberAST *num = dyn_cast<NumberAST>(rhs);
-			rhs_v=generateNumber(num->getValue());
-		}else if(isa<BooleanAST>(rhs)){
-			BooleanAST *boolean = dyn_cast<BooleanAST>(rhs);
-			rhs_v = generateBoolean(boolean->getValue());
-		}
-
+		lhs_v = generateExpression(lhs);
+		rhs_v = generateExpression(rhs);
 
 		if (CondBinary->getOp() == "==")
 			CondV = Builder->CreateICmpEQ(lhs_v, rhs_v, "ifcond");
@@ -346,24 +329,99 @@ Value *CodeGen::generateIfExpr(IfExprAST *if_expr) {
 }
 
 
+
 /**
-  * ステートメント生成メソッド
-  * 実際にはASTの種類を確認して各種生成メソッドを呼び出し
-  * @param  JumpStmtAST
+  * While文生成メソッド
+  * @param WhileExprAST
   * @return 生成したValueのポインタ
   */
-Value *CodeGen::generateStatement(BaseAST *stmt){
+Value *CodeGen::generateWhileExpr(WhileExprAST *while_expr) {
 	if (llvmDebbug) fprintf(stderr, "%d: %s\n", __LINE__, __func__);
-	if(isa<BinaryExprAST>(stmt)){
-		return generateBinaryExpression(dyn_cast<BinaryExprAST>(stmt));
-	}else if(isa<CallExprAST>(stmt)){
-		return generateCallExpression(dyn_cast<CallExprAST>(stmt));
-	}else if(isa<JumpStmtAST>(stmt)){
-		return generateJumpStatement(dyn_cast<JumpStmtAST>(stmt));
-	}else{
-		return NULL;
+	Value *CondV;
+
+	if (isa<BooleanAST>(while_expr->getCond())) {
+		CondV = generateBoolean(dyn_cast<BooleanAST>(while_expr->getCond())->getValue());
+
+	}else if (isa<BinaryExprAST>(while_expr->getCond())) {
+		auto CondBinary = dyn_cast<BinaryExprAST>(while_expr->getCond());
+		BaseAST *lhs = CondBinary->getLHS();
+		BaseAST *rhs = CondBinary->getRHS();
+		Value *lhs_v, *rhs_v;
+
+		lhs_v = generateExpression(lhs);
+		rhs_v = generateExpression(rhs);
+
+		if (CondBinary->getOp() == "==")
+			CondV = Builder->CreateICmpEQ(lhs_v, rhs_v, "ifcond");
+		else if (CondBinary->getOp() == "!=")
+			CondV = Builder->CreateICmpNE(lhs_v, rhs_v, "ifcond");
+		else if (CondBinary->getOp() == ">")
+			CondV = Builder->CreateICmpSGT(lhs_v, rhs_v, "ifcond");
+		else if (CondBinary->getOp() == "<")
+			CondV = Builder->CreateICmpSLT(lhs_v, rhs_v, "ifcond");
+		else if (CondBinary->getOp() == ">=")
+			CondV = Builder->CreateICmpSGE(lhs_v, rhs_v, "ifcond");
+		else if (CondBinary->getOp() == "<=")
+			CondV = Builder->CreateICmpSLE(lhs_v, rhs_v, "ifcond");
 	}
+
+	Function *function = Builder->GetInsertBlock()->getParent();
+
+	BasicBlock *ThenBB = BasicBlock::Create(getGlobalContext(), "then", function);
+	BasicBlock *ElseBB = BasicBlock::Create(getGlobalContext(), "else");
+	BasicBlock *MergeBB = BasicBlock::Create(getGlobalContext(), "ifcont");
+
+	Builder->CreateCondBr(CondV, ThenBB, ElseBB);
+
+	Builder->SetInsertPoint(ThenBB);
+
+	// if文がネストしたとき
+	//auto lastThenBB = Builder->GetInsertBlock();
+
+	ThenBB = Builder->GetInsertBlock();
+	for (int i = 0;i < if_expr->getThen().size();i++)
+		generateStatement(if_expr->getThen()[i]);
+	Builder->CreateBr(MergeBB);
+
+	function->getBasicBlockList().push_back(ElseBB);
+	Builder->SetInsertPoint(ElseBB);
+
+	ElseBB = Builder->GetInsertBlock();
+	for (int i = 0;i < if_expr->getElse().size();i++)
+		generateStatement(if_expr->getElse()[i]);
+	Builder->CreateBr(MergeBB);
+
+	function->getBasicBlockList().push_back(MergeBB);
+	Builder->SetInsertPoint(MergeBB);
+	return CondV;
 }
+
+
+Value *CodeGen::generateExpression(BaseAST *expr) {
+	if(isa<BinaryExprAST>(expr)){
+		return generateBinaryExpression(dyn_cast<BinaryExprAST>(expr));
+
+	}else if(isa<CallExprAST>(expr)){
+		return generateCallExpression(dyn_cast<CallExprAST>(expr));
+
+	}else if(isa<VariableAST>(expr)){
+		return generateVariable(dyn_cast<VariableAST>(expr));
+
+	}else if(isa<NumberAST>(expr)){
+		NumberAST *num = dyn_cast<NumberAST>(expr);
+		return generateNumber(num->getValue());
+
+	}else if(isa<BooleanAST>(expr)){
+		BooleanAST *boolean = dyn_cast<BooleanAST>(expr);
+		return generateBoolean(boolean->getValue());
+	}
+	//}else if(isa<ArrayAST>(rhs)){
+	//	ArrayAST *array = dyn_cast<ArrayAST>(rhs);
+	//	rhs_v = generateArray(array);
+
+	return NULL;
+}
+
 
 
 /**
@@ -385,59 +443,13 @@ Value *CodeGen::generateBinaryExpression(BinaryExprAST *bin_expr){
 		VariableAST *lhs_var=dyn_cast<VariableAST>(lhs);
 		ValueSymbolTable &vs_table = CurFunc->getValueSymbolTable();
 		lhs_v = vs_table.lookup(lhs_var->getName());
-
-	//other operand
+		if (!lhs_v) fprintf(stderr, "null\n");
 	}else{
-		//lhs=?
-		//Binary?
-		if(isa<BinaryExprAST>(lhs)){
-			lhs_v=generateBinaryExpression(dyn_cast<BinaryExprAST>(lhs));
-
-		//Variable?
-        }else if(isa<VariableAST>(lhs)){
-			lhs_v=generateVariable(dyn_cast<VariableAST>(lhs));
-
-		//Number?
-        }else if(isa<NumberAST>(lhs)){
-			NumberAST *num = dyn_cast<NumberAST>(lhs);
-			lhs_v = generateNumber(num->getValue());
-
-		//Boolean?
-		}else if(isa<BooleanAST>(lhs)){
-			BooleanAST *boolean = dyn_cast<BooleanAST>(lhs);
-			lhs_v = generateBoolean(boolean->getValue());
-		}
+		lhs_v = generateExpression(lhs);
 	}
 
-
-	//create rhs value
-	if(isa<BinaryExprAST>(rhs)){
-		rhs_v=generateBinaryExpression(dyn_cast<BinaryExprAST>(rhs));
-
-	//CallExpr?
-    }else if(isa<CallExprAST>(rhs)){
-		rhs_v=generateCallExpression(dyn_cast<CallExprAST>(rhs));
-
-	//Variable?
-    }else if(isa<VariableAST>(rhs)){
-		rhs_v=generateVariable(dyn_cast<VariableAST>(rhs));
-
-	//Number?
-    }else if(isa<NumberAST>(rhs)){
-		NumberAST *num = dyn_cast<NumberAST>(rhs);
-		rhs_v=generateNumber(num->getValue());
-
-	//Boolean?
-	}else if(isa<BooleanAST>(rhs)){
-		BooleanAST *boolean = dyn_cast<BooleanAST>(rhs);
-		rhs_v = generateBoolean(boolean->getValue());
-	
-	//}else if(isa<ArrayAST>(rhs)){
-	//	ArrayAST *array = dyn_cast<ArrayAST>(rhs);
-	//	rhs_v = generateArray(array);
-	}
-
-
+	rhs_v = generateExpression(rhs);
+	if (llvmDebbug)fprintf(stderr, "%d: lhs and rhs exist\n", __LINE__);
 
 	if(bin_expr->getOp()=="="){
 		//store
@@ -458,6 +470,7 @@ Value *CodeGen::generateBinaryExpression(BinaryExprAST *bin_expr){
 }
 
 
+
 /**
   * 関数呼び出し(Call命令)生成メソッド
   * @param CallExprAST
@@ -473,12 +486,8 @@ Value *CodeGen::generateCallExpression(CallExprAST *call_expr){
 		if(!(arg=call_expr->getArgs(i)))
 			break;
 
-		//isCall
-		if(isa<CallExprAST>(arg))
-			arg_v = generateCallExpression(dyn_cast<CallExprAST>(arg));
-
 		//isBinaryExpr
-		else if(isa<BinaryExprAST>(arg)){
+		if(isa<BinaryExprAST>(arg)){
 			BinaryExprAST *bin_expr = dyn_cast<BinaryExprAST>(arg);
 
 			//二項演算命令を生成
@@ -489,22 +498,8 @@ Value *CodeGen::generateCallExpression(CallExprAST *call_expr){
 				VariableAST *var = dyn_cast<VariableAST>(bin_expr->getLHS());
 				arg_v = Builder->CreateLoad(vs_table.lookup(var->getName()), "arg_val");
 			}
-		}
-
-		//isVar
-		else if(isa<VariableAST>(arg))
-			arg_v = generateVariable(dyn_cast<VariableAST>(arg));
-		
-		//isNumber
-		else if(isa<NumberAST>(arg)){
-			NumberAST *num=dyn_cast<NumberAST>(arg);
-			arg_v = generateNumber(num->getValue());
-		}
-
-		//isBoolean
-		else if(isa<BooleanAST>(arg)) {
-			BooleanAST *boolean = dyn_cast<BooleanAST>(arg);
-			arg_v = generateBoolean(boolean->getValue());
+		}else{
+			arg_v = generateExpression(arg);
 		}
 
 		arg_vec.push_back(arg_v);
@@ -512,6 +507,7 @@ Value *CodeGen::generateCallExpression(CallExprAST *call_expr){
 	return Builder->CreateCall(Mod->getFunction(call_expr->getCallee()),
 										arg_vec,"call_tmp");
 }
+
 
 
 /**
@@ -523,24 +519,10 @@ Value *CodeGen::generateJumpStatement(JumpStmtAST *jump_stmt){
 	if (llvmDebbug) fprintf(stderr, "%d: %s\n", __LINE__, __func__);
 	BaseAST *expr = jump_stmt->getExpr();
 	Value *ret_v;
-	if(isa<BinaryExprAST>(expr)){
-		ret_v = generateBinaryExpression(dyn_cast<BinaryExprAST>(expr));
-
-	}else if(isa<VariableAST>(expr)){
-		VariableAST *var=dyn_cast<VariableAST>(expr);
-		ret_v = generateVariable(var);
-
-	}else if(isa<NumberAST>(expr)){
-		NumberAST *num=dyn_cast<NumberAST>(expr);
-		ret_v = generateNumber(num->getValue());
-
-	}else if(isa<BooleanAST>(expr)){
-		BooleanAST *boolean = dyn_cast<BooleanAST>(expr);
-		ret_v = generateBoolean(boolean->getValue());
-	}
-
+	ret_v = generateExpression(expr);
 	Builder->CreateRet(ret_v);
 }
+
 
 
 /**
@@ -559,6 +541,7 @@ Value *CodeGen::generateVariable(VariableAST *var){
 }
 
 
+
 // Number
 Value *CodeGen::generateNumber(int value){
 	if (llvmDebbug) fprintf(stderr, "%d: %s\n", __LINE__, __func__);
@@ -566,6 +549,7 @@ Value *CodeGen::generateNumber(int value){
 			Type::getInt32Ty(getGlobalContext()),
 			value);
 }
+
 
 
 // Boolean

@@ -28,6 +28,7 @@ class CallExprAST;
 class JumpStmtAST;
 class VariableAST;
 class IfExprAST;
+class WhileExprAST;
 class ArrayAST;
 class TupleAST;
 class NumberAST;
@@ -50,6 +51,7 @@ enum AstID{
 	NumberID,
 	BooleanID,
 	IfExprID,
+	WhileExprID,
 };
 
 struct Seq {
@@ -144,17 +146,14 @@ class FunctionAST{
   * 関数定義(本文)を表すAST
   */
 class FunctionStmtAST{
-	std::vector<VariableDeclAST*> VariableDecls;
 	std::vector<BaseAST*> StmtLists;
 
 	public:
 	FunctionStmtAST(){}
 	~FunctionStmtAST();
 
-	bool addVariableDeclaration(VariableDeclAST *vdecl);
 	bool addStatement(BaseAST *stmt){StmtLists.push_back(stmt);}
 
-	VariableDeclAST *getVariableDecl(int i){if(i<VariableDecls.size())return VariableDecls.at(i);else return NULL;}
 	BaseAST *getStatement(int i){if(i<StmtLists.size())return StmtLists.at(i);else return NULL;}
 };
 
@@ -240,9 +239,29 @@ class IfExprAST : public BaseAST {
 	BaseAST* getCond(){return Cond;}
 	std::vector<BaseAST*> getThen(){return ThenStmt;}
 	std::vector<BaseAST*> getElse(){return ElseStmt;}
-
 };
 
+
+
+/**
+ * While文を表すAST
+ */
+class WhileExprAST : public BaseAST {
+	BaseAST *Cond;
+	std::vector<BaseAST*> LoopStmt;
+
+	public:
+	WhileExprAST(BaseAST *Cond, std::vector<BaseAST*> LoopStmt)
+		: BaseAST(IfExprID), Cond(Cond), LoopStmt(LoopStmt){}
+	~WhileExprAST(){}
+	static inline bool classof(WhileExprAST const*){return true;}
+	static inline bool classof(BaseAST const* base){
+		return base->getValueID() == WhileExprID;
+	}
+
+	BaseAST* getCond(){return Cond;}
+	std::vector<BaseAST*> getLoop(){return LoopStmt;}
+};
 
 
 /** 
