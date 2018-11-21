@@ -252,7 +252,7 @@ class WhileExprAST : public BaseAST {
 
 	public:
 	WhileExprAST(BaseAST *Cond, std::vector<BaseAST*> LoopStmt)
-		: BaseAST(IfExprID), Cond(Cond), LoopStmt(LoopStmt){}
+		: BaseAST(WhileExprID), Cond(Cond), LoopStmt(LoopStmt){}
 	~WhileExprAST(){}
 	static inline bool classof(WhileExprAST const*){return true;}
 	static inline bool classof(BaseAST const* base){

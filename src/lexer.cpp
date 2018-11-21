@@ -31,7 +31,7 @@ TokenStream *LexicalAnalysis(std::string input_filename){
 			//コメントアウト読み飛ばし
 			if(iscomment){
 				if( (length-index) < 2 
-					||	(cur_line.at(index) != '*') 
+					|| (cur_line.at(index) != '*') 
 					|| (cur_line.at(index++) != '/') ){
 					continue;
 				}else{
@@ -54,11 +54,11 @@ TokenStream *LexicalAnalysis(std::string input_filename){
 				while(isalnum(next_char)){
 					token_str += next_char;
 					next_char = cur_line.at(index++);
-					if(index==length)
+					if(index == length)
 						break;
 				}
 				index--;
-		
+
 				// switch使いてぇええ
 				// 予約語と識別子
 				if(token_str == "int" || token_str == "i32" || token_str == "bool"){
@@ -96,90 +96,212 @@ TokenStream *LexicalAnalysis(std::string input_filename){
 					next_token = new Token(token_str, TOK_DIGIT, line_num);
 					index--;
 				}
-		
-			//コメント or '/'
-			}else if(next_char == '/'){
+
+			}else if(next_char == '/') {
 				token_str += next_char;
 				next_char = cur_line.at(index++);
 
 				//コメントの場合
 				if(next_char == '/'){
-						break;
-		
-				//コメントの場合
+					break;
+
+					//コメントの場合
 				}else if(next_char == '*'){
 					iscomment=true;
 					continue;
-		
-				//DIVIDER('/')
+
+				}else if(next_char == '='){
+					token_str += next_char;
+					next_token = new Token(token_str, TOK_SYMBOL, line_num);
+					//DIVIDER('/')
 				}else{
 					index--;
 					next_token = new Token(token_str, TOK_SYMBOL, line_num);
 				}
-		
+
 			//それ以外(記号)
 			}else{
-				token_str += next_char;
-				if (index != length) {
-					next_char = cur_line.at(index++);
-
-					while(!isalpha(next_char) && !isdigit(next_char) && !isspace(next_char)) {
-						if (token_str == "+" ||
-							token_str == "-" ||
-							token_str == "*" ||
-							token_str == ">" ||
-							token_str == "<" ||
-							token_str == "=" ||
-							token_str == "!" ||
-							token_str == "|" ||
-							token_str == "&") {
+				switch (next_char) {
+					case '+':
+						token_str += next_char;
+						next_char = cur_line.at(index++);
+						if (next_char == '=') {
 							token_str += next_char;
-							next_char = cur_line.at(index++);
-						}else
-							break;
-						if(index == length)
-							break;
-					}
-					index--;
-				}
+							next_token = new Token(token_str, TOK_SYMBOL, line_num);
+						}else if (next_char == '+') {
+							token_str += next_char;
+							next_token = new Token(token_str, TOK_SYMBOL, line_num);
+						}else{
+							index--;
+							next_token = new Token(token_str, TOK_SYMBOL, line_num);
+						}
+						break;
 
-				if(token_str == "+" ||
-						token_str == "-" ||
-						token_str == "*" ||
-						token_str == "%" ||
-						token_str == "++" ||
-						token_str == "--" ||
-						token_str == "+=" ||
-						token_str == "-=" ||
-						token_str == "*=" ||
-						token_str == "=" ||
-						token_str == ">" ||
-						token_str == "<" ||
-						token_str == ">=" ||
-						token_str == "<=" ||
-						token_str == "==" ||
-						token_str == "!=" ||
-						token_str == "!" ||
-						token_str == "||" ||
-						token_str == "&&" ||
-						token_str == ";" ||
-						token_str == "," ||
-						token_str == "(" ||
-						token_str == ")" ||
-						token_str == "{" ||
-						token_str == "}" ||
-						token_str == "[" ||
-						token_str == "]" ||
-						token_str == "=>"){
-					next_token = new Token(token_str, TOK_SYMBOL, line_num);
+					case '-':
+						token_str += next_char;
+						next_char = cur_line.at(index++);
+						if (next_char == '=') {
+							token_str += next_char;
+							next_token = new Token(token_str, TOK_SYMBOL, line_num);
+						}else if (next_char == '-') {
+							token_str += next_char;
+							next_token = new Token(token_str, TOK_SYMBOL, line_num);
+						}else{
+							index--;
+							next_token = new Token(token_str, TOK_SYMBOL, line_num);
+						}
+						break;
 
-				//解析不能字句
-				}else{
-					fprintf(stderr, "unclear token : %s\n", token_str.c_str());
-					SAFE_DELETE(tokens);
-					return NULL;
+					case '*':
+						token_str += next_char;
+						next_char = cur_line.at(index++);
+						if (next_char == '=') {
+							token_str += next_char;
+							next_token = new Token(token_str, TOK_SYMBOL, line_num);
+						}else{
+							index--;
+							next_token = new Token(token_str, TOK_SYMBOL, line_num);
+						}
+						break;
+
+					case '%':
+						token_str += next_char;
+						next_char = cur_line.at(index++);
+						if (next_char == '=') {
+							token_str += next_char;
+							next_token = new Token(token_str, TOK_SYMBOL, line_num);
+						}else{
+							index--;
+							next_token = new Token(token_str, TOK_SYMBOL, line_num);
+						}
+						break;
+
+					case '=':
+						token_str += next_char;
+						next_char = cur_line.at(index++);
+						if (next_char == '=') {
+							token_str += next_char;
+							next_token = new Token(token_str, TOK_SYMBOL, line_num);
+						}else if (next_char == '>') {
+							token_str += next_char;
+							next_token = new Token(token_str, TOK_SYMBOL, line_num);
+						}else{
+							index--;
+							next_token = new Token(token_str, TOK_SYMBOL, line_num);
+						}
+						break;
+
+					case '!':
+						token_str += next_char;
+						next_char = cur_line.at(index++);
+						if (next_char == '=') {
+							token_str += next_char;
+							next_token = new Token(token_str, TOK_SYMBOL, line_num);
+						}else{
+							index--;
+							next_token = new Token(token_str, TOK_SYMBOL, line_num);
+						}
+						break;
+
+					case '>':
+						token_str += next_char;
+						next_char = cur_line.at(index++);
+						if (next_char == '=') {
+							token_str += next_char;
+							next_token = new Token(token_str, TOK_SYMBOL, line_num);
+						}else{
+							index--;
+							next_token = new Token(token_str, TOK_SYMBOL, line_num);
+						}
+						break;
+
+					case '<':
+						token_str += next_char;
+						next_char = cur_line.at(index++);
+						if (next_char == '=') {
+							token_str += next_char;
+							next_token = new Token(token_str, TOK_SYMBOL, line_num);
+						}else{
+							index--;
+							next_token = new Token(token_str, TOK_SYMBOL, line_num);
+						}
+						break;
+
+					case '|':
+						token_str += next_char;
+						next_char = cur_line.at(index++);
+						if (next_char == '|') {
+							token_str += next_char;
+							next_token = new Token(token_str, TOK_SYMBOL, line_num);
+						}else{
+							index--;
+							fprintf(stderr, "unclear token : %s\n", token_str.c_str());
+							SAFE_DELETE(tokens);
+							return NULL;
+						}
+						break;
+
+					case '&':
+						token_str += next_char;
+						next_char = cur_line.at(index++);
+						if (next_char == '&') {
+							token_str += next_char;
+							next_token = new Token(token_str, TOK_SYMBOL, line_num);
+						}else{
+							index--;
+							fprintf(stderr, "unclear token : %s\n", token_str.c_str());
+							SAFE_DELETE(tokens);
+							return NULL;
+						}
+						break;
+
+					case ';':
+						token_str += next_char;
+						next_token = new Token(token_str, TOK_SYMBOL, line_num);
+						break;
+
+					case ',':
+						token_str += next_char;
+						next_token = new Token(token_str, TOK_SYMBOL, line_num);
+						break;
+
+					case '(':
+						token_str += next_char;
+						next_token = new Token(token_str, TOK_SYMBOL, line_num);
+						break;
+
+					case ')':
+						token_str += next_char;
+						next_token = new Token(token_str, TOK_SYMBOL, line_num);
+						break;
+
+					case '{':
+						token_str += next_char;
+						next_token = new Token(token_str, TOK_SYMBOL, line_num);
+						break;
+
+					case '}':
+						token_str += next_char;
+						next_token = new Token(token_str, TOK_SYMBOL, line_num);
+						break;
+
+					case '[':
+						token_str += next_char;
+						next_token = new Token(token_str, TOK_SYMBOL, line_num);
+						break;
+
+					case ']':
+						token_str += next_char;
+						next_token = new Token(token_str, TOK_SYMBOL, line_num);
+						break;
+
+					default:
+						fprintf(stderr, "unclear token : %s\n", token_str.c_str());
+						SAFE_DELETE(tokens);
+						return NULL;
 				}
 			}
+			fprintf(stderr, "%s ", token_str.c_str());
 			//Tokensに追加
 			tokens->pushToken(next_token);
 			token_str.clear();

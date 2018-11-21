@@ -1,6 +1,6 @@
 #include "parser.hpp"
 
-bool Debbug = true;
+bool Debbug = false;
 
 /**
   * コンストラクタ
@@ -353,6 +353,7 @@ VariableDeclAST *Parser::visitVariableDeclaration(){
 	int bkup = Tokens->getCurIndex();
 	std::string name;
 	std::string type;
+	std::vector<std::string> Type;
 	int size;
 
 	// 型
@@ -361,6 +362,10 @@ VariableDeclAST *Parser::visitVariableDeclaration(){
 		Tokens->getNextToken();
 	}else{
 		return NULL;
+	}
+	while(Tokens->getCurType() == TOK_TYPE){
+		Type.push_back(Tokens->getCurString());
+		Tokens->getNextToken();
 	}
 
 	//IDENTIFIER
@@ -466,6 +471,7 @@ BaseAST *Parser::visitIfExpression(){
 		return NULL;
 	}
 	Tokens->getNextToken();
+	fprintf(stderr, "adfsa\n");
 
 	if (!(stmt = visitAdditiveExpression(NULL, "bool"))){
 		Tokens->applyTokenIndex(bkup);
@@ -560,7 +566,7 @@ BaseAST *Parser::visitWhileExpression(){
 
 	while(true) {
 		if (stmt = visitStatement()) {
-			if (Debbug) fprintf(stderr, "%d: %s\n", __LINE__, Tokens->getCurString().c_str());
+			if (Debbug) fprintf(stderr, "%d: while %s\n", __LINE__, Tokens->getCurString().c_str());
 			LoopStmt.push_back(stmt);
 			continue;
 		}
@@ -826,8 +832,8 @@ BaseAST *Parser::visitPostfixExpression(std::string Type){
 	}
 
 	//RIGHT PALEN
-	if(Tokens->getCurType() ==TOK_SYMBOL &&
-			Tokens->getCurString() ==")"){
+	if(Tokens->getCurType() == TOK_SYMBOL &&
+			Tokens->getCurString() == ")"){
 		Tokens->getNextToken();
 		return new CallExprAST("int", Callee, args);
 	}else{

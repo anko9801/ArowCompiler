@@ -1,6 +1,6 @@
 #include "codegen.hpp"
 
-bool llvmDebbug = false;
+bool llvmDebbug = true;
 
 
 /**
@@ -28,7 +28,6 @@ CodeGen::~CodeGen(){
   */
 bool CodeGen::doCodeGen(TranslationUnitAST &tunit, std::string name, 
 		std::string link_file, bool with_jit=false){
-	if (llvmDebbug) fprintf(stderr, "%d: %s\n", __LINE__, __func__);
 	if(!generateTranslationUnit(tunit, name)){
 		return false;
 	}
@@ -70,7 +69,6 @@ Module &CodeGen::getModule(){
   * @return 成功時：true　失敗時：false　
   */
 bool CodeGen::generateTranslationUnit(TranslationUnitAST &tunit, std::string name){
-	if (llvmDebbug) fprintf(stderr, "%d: %s\n", __LINE__, __func__);
 	Mod = new Module(name, getGlobalContext());
 	//funtion declaration
 	for(int i=0; ; i++){
@@ -105,11 +103,10 @@ bool CodeGen::generateTranslationUnit(TranslationUnitAST &tunit, std::string nam
   */
 Function *CodeGen::generateFunctionDefinition(FunctionAST *func_ast,
 		Module *mod){
-	if (llvmDebbug) fprintf(stderr, "%d: %s\n", __LINE__, __func__);
 	Function *func = generatePrototype(func_ast->getPrototype(), mod);
-	if(!func){
+	if(!func)
 		return NULL;
-	}
+	if (llvmDebbug) fprintf(stderr, "%d: %s\n", __LINE__, __func__);
 	CurFunc = func;
 	CurBB = BasicBlock::Create(getGlobalContext(), "entry", func);
 	Builder->SetInsertPoint(CurBB);
@@ -171,7 +168,6 @@ Function *CodeGen::generatePrototype(PrototypeAST *proto, Module *mod){
   * @return 最後に生成したValueのポインタ
   */
 Value *CodeGen::generateFunctionStatement(FunctionStmtAST *func_stmt){
-	if (llvmDebbug) fprintf(stderr, "%d: %s\n", __LINE__, __func__);
 	Value *v=NULL;
 
 	//insert expr statement
@@ -197,18 +193,24 @@ Value *CodeGen::generateFunctionStatement(FunctionStmtAST *func_stmt){
   * @return 生成したValueのポインタ
   */
 Value *CodeGen::generateStatement(BaseAST *stmt){
-	if (llvmDebbug) fprintf(stderr, "%d: %s\n", __LINE__, __func__);
-
 	if(isa<VariableDeclAST>(stmt))
 		return generateVariableDeclaration(dyn_cast<VariableDeclAST>(stmt));
+
 	else if(isa<BinaryExprAST>(stmt))
 		return generateBinaryExpression(dyn_cast<BinaryExprAST>(stmt));
+
 	else if(isa<CallExprAST>(stmt))
 		return generateCallExpression(dyn_cast<CallExprAST>(stmt));
+
 	else if(isa<JumpStmtAST>(stmt))
 		return generateJumpStatement(dyn_cast<JumpStmtAST>(stmt));
+
+	else if(isa<WhileExprAST>(stmt))
+		return generateWhileExpr(dyn_cast<WhileExprAST>(stmt));
+
 	else if(isa<IfExprAST>(stmt))
 		return generateIfExpr(dyn_cast<IfExprAST>(stmt));
+
 	else
 		return NULL;
 }
@@ -240,10 +242,7 @@ Value *CodeGen::generateVariableDeclaration(VariableDeclAST *vdecl){
 		//auto index = ConstantInt::get(getGlobalContext(), APInt(32, vdecl->getSize(), true));
 		//auto ptr = GetElementPtrInst::Create(alloca, {zero, index}, "", bblock);
 		//auto store = new StoreInst(index, ptr, false, bblock);
-
-
 	}else{
-		fprintf(stderr, "%d: variable\n", __LINE__);
 		alloca = Builder->CreateAlloca(type, 0, vdecl->getName());
 	}
 
@@ -295,6 +294,8 @@ Value *CodeGen::generateIfExpr(IfExprAST *if_expr) {
 			CondV = Builder->CreateICmpSGE(lhs_v, rhs_v, "ifcond");
 		else if (CondBinary->getOp() == "<=")
 			CondV = Builder->CreateICmpSLE(lhs_v, rhs_v, "ifcond");
+	}else{
+		return NULL;
 	}
 
 	Function *function = Builder->GetInsertBlock()->getParent();
@@ -367,36 +368,36 @@ Value *CodeGen::generateWhileExpr(WhileExprAST *while_expr) {
 
 	Function *function = Builder->GetInsertBlock()->getParent();
 
-	BasicBlock *ThenBB = BasicBlock::Create(getGlobalContext(), "then", function);
-	BasicBlock *ElseBB = BasicBlock::Create(getGlobalContext(), "else");
-	BasicBlock *MergeBB = BasicBlock::Create(getGlobalContext(), "ifcont");
+	BasicBlock *LoopBB = BasicBlock::Create(getGlobalContext(), "loop", function);
+	BasicBlock *AfterBB = BasicBlock::Create(getGlobalContext(), "afterloop", function);
 
-	Builder->CreateCondBr(CondV, ThenBB, ElseBB);
+	Builder->CreateBr(LoopBB);
+	Builder->SetInsertPoint(LoopBB);
 
-	Builder->SetInsertPoint(ThenBB);
+	if (llvmDebbug) fprintf(stderr, "%d: basicblock\n", __LINE__);
+	function->removeFromParent();
+	if (llvmDebbug) fprintf(stderr, "%d: basicblock\n", __LINE__);
 
-	// if文がネストしたとき
-	//auto lastThenBB = Builder->GetInsertBlock();
+	LoopBB = Builder->GetInsertBlock();
+	for (int i = 0;i < while_expr->getLoop().size();i++)
+		generateStatement(while_expr->getLoop()[i]);
 
-	ThenBB = Builder->GetInsertBlock();
-	for (int i = 0;i < if_expr->getThen().size();i++)
-		generateStatement(if_expr->getThen()[i]);
-	Builder->CreateBr(MergeBB);
+	Builder->CreateCondBr(CondV, LoopBB, AfterBB);
+	//function->removeFromParent();
 
-	function->getBasicBlockList().push_back(ElseBB);
-	Builder->SetInsertPoint(ElseBB);
+	if (llvmDebbug) fprintf(stderr, "%d: basicblock\n", __LINE__);
+	function->getBasicBlockList().push_back(AfterBB);
+	if (llvmDebbug) fprintf(stderr, "%d: basicblock\n", __LINE__);
+	Builder->SetInsertPoint(AfterBB);
 
-	ElseBB = Builder->GetInsertBlock();
-	for (int i = 0;i < if_expr->getElse().size();i++)
-		generateStatement(if_expr->getElse()[i]);
-	Builder->CreateBr(MergeBB);
-
-	function->getBasicBlockList().push_back(MergeBB);
-	Builder->SetInsertPoint(MergeBB);
 	return CondV;
 }
 
 
+/*
+ *
+ *
+ */
 Value *CodeGen::generateExpression(BaseAST *expr) {
 	if(isa<BinaryExprAST>(expr)){
 		return generateBinaryExpression(dyn_cast<BinaryExprAST>(expr));
@@ -440,7 +441,7 @@ Value *CodeGen::generateBinaryExpression(BinaryExprAST *bin_expr){
 	//assignment
 	if(bin_expr->getOp()=="="){
 		//lhs is variable
-		VariableAST *lhs_var=dyn_cast<VariableAST>(lhs);
+		VariableAST *lhs_var = dyn_cast<VariableAST>(lhs);
 		ValueSymbolTable &vs_table = CurFunc->getValueSymbolTable();
 		lhs_v = vs_table.lookup(lhs_var->getName());
 		if (!lhs_v) fprintf(stderr, "null\n");
