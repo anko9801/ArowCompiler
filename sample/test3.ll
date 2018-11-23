@@ -4,6 +4,10 @@ target triple = "x86_64-unknown-linux-gnu"
 
 @.str = private unnamed_addr constant [4 x i8] c"%d\0A\00", align 1
 
+declare i32 @sleep(i32)
+
+declare i32 @unwrap(i32, i32)
+
 define i32 @main() {
 entry:
   %call_tmp = call i32 @printnum(i32 23)
@@ -20,14 +24,10 @@ declare i32 @printf(i8* nocapture, ...) nounwind
 
 define i32 @msleep(i32 %ms) nounwind uwtable {
 entry:
-  %retval = alloca i32, align 4
   %ms.addr = alloca i32, align 4
   store i32 %ms, i32* %ms.addr, align 4
-  %0 = load i32* %ms.addr, align 4
-  %mul = mul nsw i32 %0, 1000
-  %call = call i32 @usleep(i32 %mul)
-  %1 = load i32* %retval
-  ret i32 %1
+  %call = call i32 @usleep(i32 10)
+  ret i32 0
 }
 
 declare i32 @usleep(i32)

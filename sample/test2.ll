@@ -23,14 +23,10 @@ declare i32 @printf(i8* nocapture, ...) nounwind
 
 define i32 @msleep(i32 %ms) nounwind uwtable {
 entry:
-  %retval = alloca i32, align 4
   %ms.addr = alloca i32, align 4
   store i32 %ms, i32* %ms.addr, align 4
-  %0 = load i32* %ms.addr, align 4
-  %mul = mul nsw i32 %0, 1000
-  %call = call i32 @usleep(i32 %mul)
-  %1 = load i32* %retval
-  ret i32 %1
+  %call = call i32 @usleep(i32 10)
+  ret i32 0
 }
 
 declare i32 @usleep(i32)

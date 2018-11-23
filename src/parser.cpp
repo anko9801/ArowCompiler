@@ -91,9 +91,8 @@ bool Parser::visitTranslationUnit(){
 	param_list.clear();
 
 	param_list.push_back(Seq(Types::all, "a"));
-	param_list.push_back(Seq(Types::i32, "index"));
-	TU->addPrototype(new PrototypeAST(Types::i1, "unwrap", param_list));
-	PrototypeTable["unwrap"] = 2;
+	TU->addPrototype(new PrototypeAST(Types::i32, "unwrap", param_list));
+	PrototypeTable["unwrap"] = 1;
 
 	//ExternalDecl
 	while(true){
@@ -391,6 +390,7 @@ BaseAST *Parser::visitStatement(Types func_type = Types::all){
 }
 
 
+
 /**
   * VariableDeclaration用構文解析メソッド
   * @return 解析成功：VariableDeclAST　解析失敗：NULL
@@ -398,37 +398,22 @@ BaseAST *Parser::visitStatement(Types func_type = Types::all){
 VariableDeclAST *Parser::visitVariableDeclaration(){
 	int bkup = Tokens->getCurIndex();
 	std::string name;
-	std::vector<Types> types;
+	Types type;
 	int size;
 	bool type_class = false;
 
 	// 型
-	if(Tokens->getCurString() == "(") {
+	if(Tokens->getCurString() == "$") {
 		type_class = true;
 		Tokens->getNextToken();
-		while(true){
-			if (Tokens->getCurType() != TOK_TYPE) {
-				fprintf(stderr, "%d: type is no matching\n", __LINE__);
-				Tokens->applyTokenIndex(bkup);
-				return NULL;
-			}
-			types.push_back(str2Ty(Tokens->getCurString()));
-			Tokens->getNextToken();
-			if (Tokens->getCurString() == ",") {
-				Tokens->getNextToken();
-				continue;
-			}
-			if (Tokens->getCurString() == ")") {
-				break;
-			}
-		}
+	}
+
+	if (Tokens->getCurType() == TOK_TYPE){
+		type = str2Ty(Tokens->getCurString());
+		Tokens->getNextToken();
 	}else{
-		if(Tokens->getCurType() == TOK_TYPE){
-			types.push_back(str2Ty(Tokens->getCurString()));
-			Tokens->getNextToken();
-		}else{
-			return NULL;
-		}
+		Tokens->applyTokenIndex(bkup);
+		return NULL;
 	}
 
 	//IDENTIFIER
@@ -461,7 +446,7 @@ VariableDeclAST *Parser::visitVariableDeclaration(){
 
 	for (int i = 0;i < VariableTable.size();i++) {
 		if (VariableTable[i]->getName() == name) {
-			fprintf(stderr, "%d: error: redefinition of '%s' with a different type: '%s' vs '%s'\n", __LINE__, Ty2str(VariableTable[i]->getType()[0]).c_str(), Ty2str(VariableTable[i]->getType()[0]).c_str(), Ty2str(types[0]).c_str());
+			fprintf(stderr, "%d: error: redefinition of '%s' with a different type: '%s' vs '%s'\n", __LINE__, Ty2str(VariableTable[i]->getType()[0]).c_str(), Ty2str(VariableTable[i]->getType()[0]).c_str(), Ty2str(type).c_str());
 			return NULL;
 		}
 	}
@@ -470,16 +455,17 @@ VariableDeclAST *Parser::visitVariableDeclaration(){
 	//';'
 	if(Tokens->getCurString() == ";"){
 		Tokens->getNextToken();
-		return new VariableDeclAST(types, name);
+		return new VariableDeclAST(type, name);
 	//'='
 	}else if(Tokens->getCurString() == "="){
-		return new VariableDeclAST(types, name);
+		return new VariableDeclAST(type, name);
 	}else{
 		Tokens->applyTokenIndex(bkup);
 		fprintf(stderr, "%d: error: cannot find semicoron\n", __LINE__);
 		return NULL;
 	}
 }
+
 
 
 /**

@@ -3,7 +3,7 @@
 
 #include "codegen.hpp"
 
-bool llvmDebbug = false;
+bool llvmDebbug = true;
 
 /**
   * コンストラクタ
@@ -93,7 +93,6 @@ bool CodeGen::generateTranslationUnit(TranslationUnitAST &tunit, std::string nam
 			return false;
 		}
 	}
-
 	return true;
 }
 
