@@ -1,7 +1,9 @@
+#ifndef CODEGEN_CPP
+#define CODEGEN_CPP
+
 #include "codegen.hpp"
 
-bool llvmDebbug = true;
-
+bool llvmDebbug = false;
 
 /**
   * コンストラクタ
@@ -226,10 +228,18 @@ Value *CodeGen::generateVariableDeclaration(VariableDeclAST *vdecl){
 	//create alloca
 	AllocaInst *alloca;
 	Type* type;
-	if (vdecl->getType() == "i32" || vdecl->getType() == "int") {
-		type = Type::getInt32Ty(getGlobalContext());
-	}else if (vdecl->getType() == "bool") {
+	if (vdecl->getType()[0] == Types::i1) {
 		type = Type::getInt1Ty(getGlobalContext());
+	}else if (vdecl->getType()[0] == Types::i2) {
+		//type = Type::getInt2Ty(getGlobalContext());
+	}else if (vdecl->getType()[0] == Types::i4) {
+		//type = Type::getInt4Ty(getGlobalContext());
+	}else if (vdecl->getType()[0] == Types::i8) {
+		type = Type::getInt8Ty(getGlobalContext());
+	}else if (vdecl->getType()[0] == Types::i16) {
+		type = Type::getInt16Ty(getGlobalContext());
+	}else if (vdecl->getType()[0] == Types::i32) {
+		type = Type::getInt32Ty(getGlobalContext());
 	}
 
 	if (vdecl->getSize()) {
@@ -697,3 +707,4 @@ bool CodeGen::linkModule(Module *dest, std::string file_name){
 	return true;
 }
 
+#endif

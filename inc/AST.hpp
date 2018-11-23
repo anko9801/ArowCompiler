@@ -54,11 +54,24 @@ enum AstID{
 	WhileExprID,
 };
 
+enum Types{
+	i1,
+	i2,
+	i4,
+	i8,
+	i16,
+	i32,
+	string,
+	all,
+	null,
+};
+
+
 struct Seq {
-	std::string Type;
+	Types Type;
 	std::string Name;
 
-	Seq(std::string type, std::string name) : Type(type), Name(name){}
+	Seq(Types type, std::string name) : Type(type), Name(name){}
 };
 
 /**
@@ -104,24 +117,26 @@ class TranslationUnitAST{
 };
 
 
+
 /** 
   * 関数宣言を表すAST
   */
 class PrototypeAST{
-	std::string Type;
+	Types Type;
 	std::string Name;
 	std::vector<Seq> Params;
 
 	public:
-	PrototypeAST(const std::string &type, const std::string &name, const std::vector<Seq> &params)
+	PrototypeAST(const Types &type, const std::string &name, const std::vector<Seq> &params)
 		: Type(type), Name(name), Params(params){}
 
 	std::string getName(){return Name;}
-	std::string getType(){return Type;}
+	Types getType(){return Type;}
 	std::string getParamName(int i){if(i<Params.size())return Params.at(i).Name;return NULL;}
-	std::string getParamType(int i){if(i<Params.size())return Params.at(i).Type;return NULL;}
+	Types getParamType(int i){if(i<Params.size())return Params.at(i).Type;return Types::null;}
 	int getParamNum(){return Params.size();}
 };
+
 
 
 /**
@@ -135,11 +150,12 @@ class FunctionAST{
 	FunctionAST(PrototypeAST *proto, FunctionStmtAST *body) : Proto(proto), Body(body){}
 	~FunctionAST();
 
-	std::string getType(){return Proto->getType();}
+	Types getType(){return Proto->getType();}
 	std::string getName(){return Proto->getName();}
 	PrototypeAST *getPrototype(){return Proto;}
 	FunctionStmtAST *getBody(){return Body;}
 };
+
 
 
 /**
@@ -169,14 +185,14 @@ class VariableDeclAST: public BaseAST {
 		}DeclType;
 
 	private:
-		std::string Type;
+		std::vector<Types> Type;
 		std::string Name;
 		int Size;
 		DeclType Decltype;
 
 	public:
-		VariableDeclAST(const std::string &type, const std::string &name, const int &size = 0) : BaseAST(VariableDeclID), Type(type), Name(name), Size(size){
-		}
+		VariableDeclAST(const Types &type, const std::string &name, const int &size = 0) : BaseAST(VariableDeclID), Name(name), Size(size){std::vector<Types> a;a.push_back(type);Type = a;}
+		VariableDeclAST(const std::vector<Types> &type, const std::string &name, const int &size = 0) : BaseAST(VariableDeclID), Type(type), Name(name), Size(size){}
 		static inline bool classof(VariableDeclAST const*){return true;}
 		static inline bool classof(BaseAST const* base){
 			return base->getValueID()==VariableDeclID;
@@ -186,7 +202,7 @@ class VariableDeclAST: public BaseAST {
 		bool setDeclType(DeclType type){Decltype=type;return true;};
 
 		std::string getName(){return Name;}
-		std::string getType(){return Type;}
+		std::vector<Types> getType(){return Type;}
 		int getSize(){return Size;}
 		DeclType getDeclType(){return Decltype;}
 };
@@ -196,12 +212,12 @@ class VariableDeclAST: public BaseAST {
   * 二項演算を表すAST
   */
 class  BinaryExprAST : public BaseAST{
-	std::string Type;
+	Types Type;
 	std::string Op;
 	BaseAST *LHS, *RHS;
 
 	public:
-	BinaryExprAST(std::string op, BaseAST *lhs, BaseAST *rhs, std::string type)
+	BinaryExprAST(std::string op, BaseAST *lhs, BaseAST *rhs, Types type)
 		: BaseAST(BinaryExprID), Op(op), LHS(lhs), RHS(rhs), Type(type){
 		}
 	~BinaryExprAST(){SAFE_DELETE(LHS);SAFE_DELETE(RHS);}
@@ -210,9 +226,9 @@ class  BinaryExprAST : public BaseAST{
 		return base->getValueID()==BinaryExprID;
 	}
 
-	bool setType(std::string type){Type = type;return true;}
+	bool setType(Types type){Type = type;return true;}
 
-	std::string getType(){return Type;}
+	Types getType(){return Type;}
 	std::string getOp(){return Op;}
 	BaseAST *getLHS(){return LHS;}
 	BaseAST *getRHS(){return RHS;}
@@ -281,12 +297,12 @@ class NullExprAST : public BaseAST{
   * 関数呼び出しを表すAST
   */
 class CallExprAST : public BaseAST{
-	std::string Type;
+	Types Type;
 	std::string Callee;
 	std::vector<BaseAST*> Args;
 
 	public:
-	CallExprAST(const std::string &type, const std::string &callee, std::vector<BaseAST*> &args)
+	CallExprAST(const Types &type, const std::string &callee, std::vector<BaseAST*> &args)
 		: BaseAST(CallExprID), Type(type), Callee(callee), Args(args){}
 	~CallExprAST();
 	static inline bool classof(CallExprAST const*){return true;}
@@ -330,7 +346,7 @@ class VariableAST : public BaseAST{
 		return base->getValueID()==VariableID;
 	}
 
-	std::string getType(){return Var->getType();}
+	std::vector<Types> getType(){return Var->getType();}
 	std::string getName(){return Var->getName();}
 	int getSize(){return Var->getSize();}
 	int getIndex(){return Index;}
@@ -349,12 +365,12 @@ class TupleAST : public BaseAST {
   * 配列を表すAST
   */
 class ArrayAST : public BaseAST {
-	std::string Type;
+	Types Type;
 	int Size;
 	std::vector<BaseAST*> Elements;
 
 	public:
-	ArrayAST(std::string type, int size, std::vector<BaseAST*> elements) : BaseAST(ArrayID), Type(type), Size(size), Elements(elements){}
+	ArrayAST(Types type, int size, std::vector<BaseAST*> elements) : BaseAST(ArrayID), Type(type), Size(size), Elements(elements){}
 	~ArrayAST(){}
 
 	static inline bool classof(ArrayAST const*){return true;}
@@ -362,7 +378,7 @@ class ArrayAST : public BaseAST {
 		return base->getValueID()==ArrayID;
 	}
 
-	std::string getType(){return Type;}
+	Types getType(){return Type;}
 	int getSize(){return Size;}
 	BaseAST* getElement(int i){return Elements[i];}
 };
@@ -382,7 +398,7 @@ class NumberAST : public BaseAST {
 		return base->getValueID()==NumberID;
 	}
 
-	std::string getType(){return "int";}
+	Types getType(){return Types::i32;}
 	int getValue(){return Val;}
 };
 
@@ -401,7 +417,7 @@ class BooleanAST : public BaseAST {
 		return base->getValueID() == BooleanID;
 	}
 
-	std::string getType(){return "bool";}
+	Types getType(){return Types::i1;}
 	bool getValue(){return Val;}
 };
 

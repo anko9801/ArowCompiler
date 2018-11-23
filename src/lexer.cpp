@@ -61,22 +61,30 @@ TokenStream *LexicalAnalysis(std::string input_filename){
 
 				// switch使いてぇええ
 				// 予約語と識別子
-				if(token_str == "int" || token_str == "i32" || token_str == "bool"){
+				if(token_str == "i2" || token_str == "i4" ||  token_str == "i8" || token_str == "i16" || token_str == "i32" || token_str == "int" || token_str == "bool"){
 					next_token = new Token(token_str, TOK_TYPE, line_num);
+
 				}else if(token_str == "if") {
 					next_token = new Token(token_str, TOK_IF, line_num);
+
 				}else if(token_str == "while") {
 					next_token = new Token(token_str, TOK_WHILE, line_num);
+
 				}else if(token_str == "for") {
 					next_token = new Token(token_str, TOK_FOR, line_num);
+
 				}else if(token_str == "match") {
 					next_token = new Token(token_str, TOK_MATCH, line_num);
+
 				}else if(token_str == "return") {
 					next_token = new Token(token_str, TOK_RETURN, line_num);
+
 				}else if (token_str == "true") {
 					next_token = new Token(token_str, TOK_TRUE, line_num);
+
 				}else if (token_str == "false") {
 					next_token = new Token(token_str, TOK_FALSE, line_num);
+
 				}else{
 					next_token = new Token(token_str, TOK_IDENTIFIER, line_num);
 				}
@@ -318,6 +326,8 @@ TokenStream *LexicalAnalysis(std::string input_filename){
 				new Token(token_str, TOK_EOF, line_num)
 				);
 	}
+
+	fprintf(stderr, "\n");
 
 	//クローズ
 	ifs.close();

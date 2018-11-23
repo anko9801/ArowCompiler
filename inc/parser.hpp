@@ -12,7 +12,6 @@
 #include"lexer.hpp"
 //using namespace llvm;
 
-
 /**
   * 構文解析・意味解析クラス
   */
@@ -47,16 +46,16 @@ typedef class Parser{
 		PrototypeAST *visitPrototype();
 		FunctionStmtAST *visitFunctionStatement(PrototypeAST *proto);
 		VariableDeclAST *visitVariableDeclaration();
-		BaseAST *visitArrayExpression(std::string Type, int Size);
-		BaseAST *visitStatement(std::string func_type);
-		BaseAST *visitJumpStatement(std::string Type);
+		BaseAST *visitArrayExpression(Types Type, int Size);
+		BaseAST *visitStatement(Types func_type);
+		BaseAST *visitJumpStatement(Types Type);
 		BaseAST *visitIfExpression();
 		BaseAST *visitWhileExpression();
 		BaseAST *visitAssignmentExpression();
-		BaseAST *visitAdditiveExpression(BaseAST *lhs, std::string Type);
-		BaseAST *visitMultiplicativeExpression(BaseAST *lhs, std::string Type);
-		BaseAST *visitPostfixExpression(std::string Type);
-		BaseAST *visitPrimaryExpression(std::string Type);
+		BaseAST *visitAdditiveExpression(BaseAST *lhs, Types Type);
+		BaseAST *visitMultiplicativeExpression(BaseAST *lhs, Types Type);
+		BaseAST *visitPostfixExpression(Types Type);
+		BaseAST *visitPrimaryExpression(Types Type);
 
 
 	protected:
