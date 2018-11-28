@@ -1,6 +1,0 @@
-i32 main() {
-	i32 a;
-	bool b;
-	b = true;
-	return 0;
-}

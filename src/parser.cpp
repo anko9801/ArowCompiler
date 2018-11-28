@@ -1,9 +1,10 @@
 #include "parser.hpp"
-//#include"Ty.hpp"
 
-bool Debbug = false;
+bool Debbug = true;
 std::string Ty2str(Types type) {
-	if(type == Types::i2) {
+	if(type == Types::i1){
+		return "bool";
+	}else if(type == Types::i2) {
 		return "i2";
 	}else if(type == Types::i4) {
 		return "i4";
@@ -13,15 +14,19 @@ std::string Ty2str(Types type) {
 		return "i16";
 	}else if(type == Types::i32) {
 		return "i32";
-	}else if(type == Types::i1){
-		return "bool";
+	}else if(type == Types::$i32) {
+		return "$i32";
+	}else if(type == Types::$i1) {
+		return "$i1";
 	}else if(type == Types::null){
 		return "null";
 	}
 }
 
 Types str2Ty(std::string str) {
-	if(str == "i2") {
+	if(str == "bool"){
+		return Types::i1;
+	}else if(str == "i2") {
 		return Types::i2;
 	}else if(str == "i4") {
 		return Types::i4;
@@ -33,8 +38,10 @@ Types str2Ty(std::string str) {
 		return Types::i32;
 	}else if(str == "int") {
 		return Types::i32;
-	}else if(str == "bool"){
-		return Types::i1;
+	}else if(str == "$i32") {
+		return Types::$i32;
+	}else if(str == "$i1") {
+		return Types::$i1;
 	}else if(str == "null"){
 		return Types::null;
 	}
@@ -78,21 +85,23 @@ TranslationUnitAST &Parser::getAST(){
   * @return 解析成功：true　解析失敗：false
   */
 bool Parser::visitTranslationUnit(){
-	//最初にprintnumの宣言追加
+	// ライブラリの関数
 	TU = new TranslationUnitAST();
 	std::vector<Seq> param_list;
 
-	param_list.push_back(Seq(Types::i32, "i"));
-	TU->addPrototype(new PrototypeAST(Types::i1, "printnum", param_list));
-	PrototypeTable["printnum"] = 1;
-
-	TU->addPrototype(new PrototypeAST(Types::i1, "sleep", param_list));
-	PrototypeTable["sleep"] = 1;
+	param_list.push_back(Seq(Types::$i32, "i"));
+	TU->addPrototype(new PrototypeAST(Types::$i1, "printnum", param_list));
+	PrototypeTable.push_back(Func(Types::$i1, "printnum", param_list));
 	param_list.clear();
 
-	param_list.push_back(Seq(Types::all, "a"));
-	TU->addPrototype(new PrototypeAST(Types::i32, "unwrap", param_list));
-	PrototypeTable["unwrap"] = 1;
+	param_list.push_back(Seq(Types::$i32, "i"));
+	TU->addPrototype(new PrototypeAST(Types::$i1, "sleep", param_list));
+	PrototypeTable.push_back(Func(Types::$i1, "sleep", param_list));
+	param_list.clear();
+
+	TU->addPrototype(new PrototypeAST(Types::$i1, "usclock", param_list));
+	PrototypeTable.push_back(Func(Types::$i1, "usclock", param_list));
+	param_list.clear();
 
 	//ExternalDecl
 	while(true){
@@ -125,6 +134,7 @@ bool Parser::visitExternalDeclaration(
 
 	//FunctionDefinition
 	FunctionAST *func_def=visitFunctionDefinition();
+	fprintf(stderr, "%d: %s %s\n", __LINE__, __func__, Tokens->getCurString().c_str());
 	if(func_def){
 		tunit->addFunction(func_def);
 		return true;
@@ -148,14 +158,13 @@ PrototypeAST *Parser::visitFunctionDeclaration(){
 
 	//prototype;
 	if(Tokens->getCurString() ==";"){
-		if( PrototypeTable.find(proto->getName()) != PrototypeTable.end() ||
-			(FunctionTable.find(proto->getName()) != FunctionTable.end() &&
-			FunctionTable[proto->getName()] != proto->getParamNum() ) ){
-			fprintf(stderr, "Function：%s is redefined\n" ,proto->getName().c_str()); 
+		int index;
+		if(index = find(PrototypeTable, Seq(proto->getType(), proto->getName())) != PrototypeTable.size() || find(FunctionTable, Func(proto->getType(), proto->getName(), proto->getParam())) != FunctionTable.size()) {
+			fprintf(stderr, "Function：%s is redefined\n", proto->getName().c_str());
 			SAFE_DELETE(proto);
 			return NULL;
 		}
-		PrototypeTable[proto->getName()]=proto->getParamNum();
+		//PrototypeTable[index].setParamNum(proto->getParamNum());
 		Tokens->getNextToken();
 		return proto;
 	}else{
@@ -176,18 +185,18 @@ FunctionAST *Parser::visitFunctionDefinition(){
 	PrototypeAST *proto=visitPrototype();
 	if(!proto){
 		return NULL;
-	}else if( (PrototypeTable.find(proto->getName()) != PrototypeTable.end() &&
-				PrototypeTable[proto->getName()] != proto->getParamNum() ) ||
-				FunctionTable.find(proto->getName()) != FunctionTable.end()){
+	}else if(find(FunctionTable, Func(proto->getType(), proto->getName(), proto->getParam())) != FunctionTable.size()) {
 			fprintf(stderr, "Function：%s is redefined\n" ,proto->getName().c_str()); 
 			SAFE_DELETE(proto);
 			return NULL;
 	}
 
+	int index = find(FunctionTable, Func(proto->getType(), proto->getName(), proto->getParam()));
 	VariableTable.clear();
 	FunctionStmtAST *func_stmt = visitFunctionStatement(proto);
 	if(func_stmt){
-		FunctionTable[proto->getName()]=proto->getParamNum();
+		fprintf(stderr, "%d: %s %s\n", __LINE__, __func__, Tokens->getCurString().c_str());
+		//FunctionTable[index].setParamNum(proto->getParamNum());
 		return new FunctionAST(proto,func_stmt);
 	}else{
 		SAFE_DELETE(proto);
@@ -203,21 +212,31 @@ FunctionAST *Parser::visitFunctionDefinition(){
   */
 PrototypeAST *Parser::visitPrototype(){
 	std::string func_name;
-	std::string var_type;
+	Types var_type;
 
 	//bkup index
 	int bkup=Tokens->getCurIndex();
 
+	bool type_class = false;
+	if (Tokens->getCurString() == "$") {
+		type_class = true;
+		Tokens->getNextToken();
+	}
+
 	//type_specifier
 	if(Tokens->getCurType() == TOK_TYPE){
-		var_type = Tokens->getCurString();
+		if (type_class) {
+			var_type = str2Ty("$" + Tokens->getCurString());
+		}else{
+			var_type = str2Ty(Tokens->getCurString());
+		}
 		Tokens->getNextToken();
 	}else{
 		return NULL;
 	}
 
 	//IDENTIFIER
-	if(Tokens->getCurType() ==TOK_IDENTIFIER){
+	if(Tokens->getCurType() == TOK_IDENTIFIER){
 		func_name=Tokens->getCurString();
 		Tokens->getNextToken();
 	}else{
@@ -226,7 +245,7 @@ PrototypeAST *Parser::visitPrototype(){
 	}
 
 	//'('
-	if(Tokens->getCurString() =="("){
+	if(Tokens->getCurString() == "("){
 		Tokens->getNextToken();
 	}else{
 		Tokens->applyTokenIndex(bkup);
@@ -270,7 +289,7 @@ PrototypeAST *Parser::visitPrototype(){
 	//')'
 	if(Tokens->getCurString() ==")"){
 		Tokens->getNextToken();
-		return new PrototypeAST(Types::i32, func_name, param_list);
+		return new PrototypeAST(var_type, func_name, param_list);
 	}else{
 		Tokens->applyTokenIndex(bkup);
 		return NULL;
@@ -358,7 +377,7 @@ BaseAST *Parser::visitStatement(Types func_type = Types::all){
 		Tokens->getNextToken();
 		return new NullExprAST();
 	// 変数代入か式
-	}else if(stmt = visitAssignmentExpression()){
+	}else if(stmt = visitAssignmentExpression(Types::all)){
 		if(Tokens->getCurString() == ";"){
 			Tokens->getNextToken();
 			return stmt;
@@ -409,7 +428,11 @@ VariableDeclAST *Parser::visitVariableDeclaration(){
 	}
 
 	if (Tokens->getCurType() == TOK_TYPE){
-		type = str2Ty(Tokens->getCurString());
+		if (type_class) {
+			type = str2Ty("$" + Tokens->getCurString());
+		}else{
+			type = str2Ty(Tokens->getCurString());
+		}
 		Tokens->getNextToken();
 	}else{
 		Tokens->applyTokenIndex(bkup);
@@ -451,7 +474,7 @@ VariableDeclAST *Parser::visitVariableDeclaration(){
 		}
 	}
 
-	//式が終わったなら次の文、AssignもあるならFuncStmt関数でAssignmentExpression関数を呼び出す
+	//式が終わったなら次の文、AssignもあるならFuncStmtで一回ループ回った後にAssignmentExpression関数を呼び出す
 	//';'
 	if(Tokens->getCurString() == ";"){
 		Tokens->getNextToken();
@@ -482,7 +505,7 @@ BaseAST *Parser::visitJumpStatement(Types func_type){
 	}
 	Tokens->getNextToken();
 
-	if(!(expr = visitAssignmentExpression()) ){
+	if(!(expr = visitAssignmentExpression(func_type))){
 		if (Debbug) fprintf(stderr, "%d: return %s\n", __LINE__, Tokens->getCurString().c_str());
 		Tokens->applyTokenIndex(bkup);
 		return NULL;
@@ -520,9 +543,9 @@ BaseAST *Parser::visitIfExpression(){
 		return NULL;
 	}
 	Tokens->getNextToken();
-	fprintf(stderr, "%d: %s\n", __LINE__, __func__);
+	if (Debbug) fprintf(stderr, "%d: %s\n", __LINE__, __func__);
 
-	if (!(stmt = visitAdditiveExpression(NULL, Types::i1))){
+	if (!(stmt = visitAdditiveExpression(NULL, Types::$i1))){
 		Tokens->applyTokenIndex(bkup);
 		return NULL;
 	}
@@ -536,7 +559,7 @@ BaseAST *Parser::visitIfExpression(){
 
 	while(true) {
 		if (stmt = visitStatement()) {
-			if (Debbug) fprintf(stderr, "%d: %s\n", __LINE__, Tokens->getCurString().c_str());
+			if (Debbug) fprintf(stderr, "%d: %s %s\n", __LINE__, __func__, Tokens->getCurString().c_str());
 			ThenStmt.push_back(stmt);
 			continue;
 		}
@@ -549,7 +572,7 @@ BaseAST *Parser::visitIfExpression(){
 			return NULL;
 		}
 	}
-	if (Debbug) fprintf(stderr, "%d: %s\n", __LINE__, Tokens->getCurString().c_str());
+	if (Debbug) fprintf(stderr, "%d: %s %s\n", __LINE__, __func__, Tokens->getCurString().c_str());
 
 	if (Tokens->getCurString() != "else") {
 		return new IfExprAST(CondStmt, ThenStmt, ElseStmt);
@@ -601,7 +624,7 @@ BaseAST *Parser::visitWhileExpression(){
 	}
 	Tokens->getNextToken();
 
-	if (!(stmt = visitAdditiveExpression(NULL, Types::i1))){
+	if (!(stmt = visitAdditiveExpression(NULL, Types::$i1))){
 		Tokens->applyTokenIndex(bkup);
 		return NULL;
 	}
@@ -637,12 +660,11 @@ BaseAST *Parser::visitWhileExpression(){
   * AssignmentExpression用構文解析メソッド
   * @return 解析成功：AST　解析失敗：NULL
   */
-BaseAST *Parser::visitAssignmentExpression(){
+BaseAST *Parser::visitAssignmentExpression(Types Type = Types::all){
 	int bkup = Tokens->getCurIndex();
 
 	//	| IDENTIFIER '=' additive_expression
 	BaseAST *lhs;
-	Types Type;
 
 	if(Tokens->getCurType() == TOK_IDENTIFIER){
 		//変数が宣言されているか確認
@@ -698,7 +720,7 @@ BaseAST *Parser::visitAssignmentExpression(){
 	}
 
 	//additive_expression
-	BaseAST *add_expr=visitAdditiveExpression(NULL, Types::all);
+	BaseAST *add_expr=visitAdditiveExpression(NULL, Type);
 	if(add_expr)
 		return add_expr;
 
@@ -730,7 +752,7 @@ BaseAST *Parser::visitAdditiveExpression(BaseAST *lhs, Types Type){
 		rhs=visitMultiplicativeExpression(NULL, Type);
 		if(rhs){
 			return visitAdditiveExpression(
-					new BinaryExprAST("+", lhs, rhs, Types::i32),
+					new BinaryExprAST("+", lhs, rhs, Types::$i32),
 					Type);
 		}else{
 			SAFE_DELETE(lhs);
@@ -745,7 +767,7 @@ BaseAST *Parser::visitAdditiveExpression(BaseAST *lhs, Types Type){
 		rhs=visitMultiplicativeExpression(NULL, Type);
 		if(rhs){
 			return visitAdditiveExpression(
-					new BinaryExprAST("-", lhs, rhs, Types::i32),
+					new BinaryExprAST("-", lhs, rhs, Types::$i32),
 					Type);
 		}else{
 			SAFE_DELETE(lhs);
@@ -777,12 +799,12 @@ BaseAST *Parser::visitMultiplicativeExpression(BaseAST *lhs, Types Type){
 
 	// *
 	if(Tokens->getCurType() ==TOK_SYMBOL &&
-			Tokens->getCurString() =="*"){
+			Tokens->getCurString() == "*"){
 		Tokens->getNextToken();
 		rhs=visitPostfixExpression(Type);
 		if(rhs){
 			return visitMultiplicativeExpression(
-					new BinaryExprAST("*", lhs, rhs, Types::i32),
+					new BinaryExprAST("*", lhs, rhs, Types::$i32),
 					Type);
 		}else{
 			SAFE_DELETE(lhs);
@@ -792,13 +814,13 @@ BaseAST *Parser::visitMultiplicativeExpression(BaseAST *lhs, Types Type){
 		}
 			
 	// /
-	}else if(Tokens->getCurType() ==TOK_SYMBOL &&
-				Tokens->getCurString() =="/"){
+	}else if(Tokens->getCurType() == TOK_SYMBOL &&
+				Tokens->getCurString() == "/"){
 		Tokens->getNextToken();
 		rhs=visitPostfixExpression(Type);
 		if(rhs){
 			return visitMultiplicativeExpression(
-					new BinaryExprAST("/", lhs, rhs, Types::i32),
+					new BinaryExprAST("/", lhs, rhs, Types::$i32),
 					Type);
 		}else{
 			SAFE_DELETE(lhs);
@@ -828,21 +850,9 @@ BaseAST *Parser::visitPostfixExpression(Types Type){
 	if(Tokens->getCurType() != TOK_IDENTIFIER)
 		return NULL;
 
-	//is FUNCTION_IDENTIFIER
-	int param_num;
-	if(PrototypeTable.find(Tokens->getCurString()) !=
-			PrototypeTable.end()){
-		param_num=PrototypeTable[Tokens->getCurString()];
-	}else if(FunctionTable.find(Tokens->getCurString()) !=
-			FunctionTable.end()){
-		param_num=FunctionTable[Tokens->getCurString()];
-	}else{
-		fprintf(stderr, "%d: error: function identifier is nothing\n", __LINE__);
-		return NULL;
-	}
-
 	//関数名取得
-	std::string Callee=Tokens->getCurString();
+	std::string Callee = Tokens->getCurString();
+	if (Debbug) fprintf(stderr, "%d: call function %s\n", __LINE__, Tokens->getCurString().c_str());
 	Tokens->getNextToken();
 
 	//LEFT PALEN
@@ -856,6 +866,7 @@ BaseAST *Parser::visitPostfixExpression(Types Type){
 	Tokens->getNextToken();
 	//argument list
 	std::vector<BaseAST*> args;
+
 	BaseAST *assign_expr=visitAssignmentExpression();
 	if(assign_expr){
 		args.push_back(assign_expr);
@@ -873,12 +884,31 @@ BaseAST *Parser::visitPostfixExpression(Types Type){
 		}
 	}
 
-	//引数の数を確認
-	if(args.size() != param_num){
-		for(int i=0;i<args.size();i++)
-			SAFE_DELETE(args[i]);
+	//関数の名前と引数の型の確認
+	int index;
+	if(index = find(PrototypeTable, Seq(Type, Tokens->getCurString())) != PrototypeTable.size()){
+		Func func = PrototypeTable[index];
+		for(int i=0;i<args.size();i++) {
+			if (args[i]->getType() != func.param[i].Type) {
+				SAFE_DELETE(args[i]);
+				fprintf(stderr, "%d: error: no match for function param '%s'\n", __LINE__, Callee.c_str());
+				Tokens->applyTokenIndex(bkup);
+				return NULL;
+			}
+		}
+	}else if(index = find(FunctionTable, Seq(Type, Tokens->getCurString())) != FunctionTable.size()){
+		Func func = FunctionTable[index];
+		for(int i=0;i<args.size();i++) {
+			if (args[i]->getType() != func.param[i].Type) {
+				SAFE_DELETE(args[i]);
+				fprintf(stderr, "%d: error: no match for function param '%s'\n", __LINE__, Callee.c_str());
+				Tokens->applyTokenIndex(bkup);
+				return NULL;
+			}
+		}
+	}else{
+		fprintf(stderr, "%d: error: undefined function\n", __LINE__);
 		Tokens->applyTokenIndex(bkup);
-		fprintf(stderr, "%d: error: no match for function param '%s' is %d %d\n", __LINE__, Callee.c_str(), args.size(), param_num);
 		return NULL;
 	}
 
@@ -886,7 +916,7 @@ BaseAST *Parser::visitPostfixExpression(Types Type){
 	if(Tokens->getCurType() == TOK_SYMBOL &&
 			Tokens->getCurString() == ")"){
 		Tokens->getNextToken();
-		return new CallExprAST(Types::i32, Callee, args);
+		return new CallExprAST(Types::$i1, Callee, args);
 	}else{
 		for(int i=0;i<args.size();i++)
 			SAFE_DELETE(args[i]);
@@ -905,7 +935,7 @@ BaseAST *Parser::visitPrimaryExpression(Types Type){
 	int bkup=Tokens->getCurIndex();
 
 	// 数値、真偽値、条件式、変数呼び出しなど
-	if (Type == Types::i32 || Type == Types::all) {
+	if (Type == Types::i32 || Type == Types::$i32 || Type == Types::all) {
 		//integer
 		if(Tokens->getCurType() == TOK_DIGIT){
 			int val = Tokens->getCurNumVal();
@@ -924,10 +954,19 @@ BaseAST *Parser::visitPrimaryExpression(Types Type){
 				Tokens->applyTokenIndex(bkup);
 				return NULL;
 			}
+		}else if(Tokens->getCurString() == "None"){
+			if (Type == Types::$i32) {
+				fprintf(stderr, "error: $i32 don't substitute None\n");
+				Tokens->applyTokenIndex(bkup);
+				return NULL;
+			}
+			Tokens->getNextToken();
+			return new NoneAST(Type);
 		}
+
 	}
 
-	if (Type == Types::i1 || Type == Types::all) {
+	if (Type == Types::i1 || Type == Types::$i1 || Type == Types::all) {
 		// true / false
 		if(Tokens->getCurType() == TOK_TRUE) {
 			Tokens->getNextToken();
@@ -935,11 +974,34 @@ BaseAST *Parser::visitPrimaryExpression(Types Type){
 		}else if(Tokens->getCurType() == TOK_FALSE) {
 			Tokens->getNextToken();
 			return new BooleanAST(false);
+		//integer
+		}else if(Tokens->getCurType() == TOK_DIGIT){
+			Tokens->getNextToken();
+			return new BooleanAST(true);
+		//integer(-)
+		}else if(Tokens->getCurType() == TOK_SYMBOL &&
+				Tokens->getCurString() == "-"){
+			Tokens->getNextToken();
+			if(Tokens->getCurType() == TOK_DIGIT){
+				Tokens->getNextToken();
+				return new BooleanAST(true);
+			}else{
+				Tokens->applyTokenIndex(bkup);
+				return NULL;
+			}
+		}else if(Tokens->getCurString() == "None"){
+			if (Type == Types::$i1) {
+				fprintf(stderr, "error: $i1 don't substitute None\n");
+				Tokens->applyTokenIndex(bkup);
+				return NULL;
+			}
+			Tokens->getNextToken();
+			return new NoneAST(Type);
 		}
 
 		BaseAST *expr;
 		BaseAST *lhs;
-		if (lhs = visitAdditiveExpression(NULL, Types::i32)) {
+		if (lhs = visitAdditiveExpression(NULL, Types::$i32)) {
 			if (Tokens->getCurString() == "<" ||
 				Tokens->getCurString() == ">" ||
 				Tokens->getCurString() == "<=" ||
@@ -950,8 +1012,8 @@ BaseAST *Parser::visitPrimaryExpression(Types Type){
 				BaseAST *rhs;
 
 				Tokens->getNextToken();
-				if (rhs = visitAdditiveExpression(NULL, Types::i32)) {
-					return new BinaryExprAST(op, lhs, rhs, Types::i1);
+				if (rhs = visitAdditiveExpression(NULL, Types::$i32)) {
+					return new BinaryExprAST(op, lhs, rhs, Types::$i1);
 				}else{
 					SAFE_DELETE(lhs);
 					SAFE_DELETE(rhs);
@@ -965,12 +1027,19 @@ BaseAST *Parser::visitPrimaryExpression(Types Type){
 			Tokens->applyTokenIndex(bkup);
 		}
 	}
-	
+
 	//VARIABLE_IDENTIFIER
 	if(Tokens->getCurType() == TOK_IDENTIFIER) {
 		for (int i = 0;i < VariableTable.size();i++) {
 			if (VariableTable[i]->getName() == Tokens->getCurString()) {
 				Tokens->getNextToken();
+				if(Tokens->getCurString() == "?") {
+					if (Type == Types::i32) {
+						Type = Types::$i32;
+						VariableTable[i]->setType(Types::$i32);
+					}
+					Tokens->getNextToken();
+				}
 				return new VariableAST(VariableTable[i]);
 			}
 		}

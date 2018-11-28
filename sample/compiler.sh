@@ -1,12 +1,12 @@
 #!/bin/bash
 
 FILE=$1
-FILE=${FILE:0:-3}
+FILE=${FILE:0:-5}
 
-cat $FILE.dc
+cat $FILE.arow
 echo
 
-~/ArowCompiler/bin/dcc -o $FILE.ll $FILE.dc
+~/ArowCompiler/bin/dcc -o $FILE.ll $FILE.arow
 
 if [ -e $FILE.ll ]; then
 	llvm-link $FILE.ll ../lib/lib.ll -S -o $FILE.ll

@@ -24,3 +24,15 @@ entry:
 }
 
 declare i32 @printf(i8*, ...)
+
+define i32 @usclock() nounwind uwtable {
+entry:
+  %call = call i64 @clock() nounwind
+  %conv = sitofp i64 %call to double
+  %mul = fmul double %conv, 1.000000e+06
+  %div = fdiv double %mul, 1.000000e+06
+  %conv1 = fptosi double %div to i32
+  ret i32 %conv1
+}
+
+declare i64 @clock() nounwind

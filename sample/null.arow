@@ -1,0 +1,15 @@
+i32 null(){
+	return None;
+}
+
+i32 main(){
+	i32 ab = null();
+	if ab {
+		printnum(1);
+		return ab;
+	}else{
+		printnum(ab?);
+		return ab;
+	}
+	return ab;
+}

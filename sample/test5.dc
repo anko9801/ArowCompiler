@@ -1,8 +1,0 @@
-i32 main() {
-	bool k = true;
-	i32 a = 32;
-	if true {
-		printnum(a);
-	}
-	return 0;
-}

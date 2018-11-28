@@ -3,7 +3,7 @@
 
 
 #include<string>
-#include<map>
+//#include<map>
 #include<vector>
 #include<llvm/Support/Casting.h>
 #include"APP.hpp"
@@ -33,6 +33,7 @@ class ArrayAST;
 class TupleAST;
 class NumberAST;
 class BooleanAST;
+class NoneAST;
 
 
 /**
@@ -50,6 +51,7 @@ enum AstID{
 	TupleID,
 	NumberID,
 	BooleanID,
+	NoneID,
 	IfExprID,
 	WhileExprID,
 };
@@ -61,10 +63,21 @@ enum Types{
 	i8,
 	i16,
 	i32,
+	i64,
+	f2,
+	f4,
+	f8,
+	f16,
+	f32,
+	f64,
+	character,
 	string,
+	$i1,
+	$i32,
 	all,
 	null,
 };
+
 
 
 struct Seq {
@@ -72,7 +85,53 @@ struct Seq {
 	std::string Name;
 
 	Seq(Types type, std::string name) : Type(type), Name(name){}
+	bool operator< (const Seq &rhs) const {
+		if (Name < rhs.Name) {
+			return true;
+		}
+		if (Name > rhs.Name) {
+			return false;
+		}
+		return false;
+	}
+	bool operator== (const Seq &rhs) const {
+		if (Type == rhs.Type && Name == rhs.Name) {
+			return true;
+		}
+		if (Type != rhs.Type || Name != rhs.Name) {
+			return false;
+		}
+		return false;
+	}
 };
+
+
+struct Func {
+	Seq function_seq;
+	std::vector<Seq> param;
+	Func(Types Type, std::string Name, std::vector<Seq> param) : function_seq(Seq(Type, Name)), param(param){}
+
+	Func(Seq function, std::vector<Seq> param) : function_seq(function), param(param){}
+
+	Types getType(){return this->function_seq.Type;}
+	std::string getName(){return this->function_seq.Name;}
+	int getParamNum(){return this->param.size();}
+	Seq getParam(int index){return this->param[index];}
+
+	bool operator== (const Func &rhs) const {
+		if (function_seq.Name == rhs.function_seq.Name && function_seq.Type == rhs.function_seq.Type) {
+			for(int i = 0;i < param.size();i++) {
+				if (param[i] == rhs.param[i]) {
+					return true;
+				}
+			}
+		}else{
+			return false;
+		}
+		return false;
+	}
+};
+
 
 /**
   * ASTの基底クラス
@@ -84,6 +143,7 @@ class BaseAST{
 	BaseAST(AstID id):ID(id){}
 	virtual ~BaseAST(){}
 	AstID getValueID() const {return ID;}
+	Types getType();
 };
 
 
@@ -135,6 +195,7 @@ class PrototypeAST{
 	std::string getParamName(int i){if(i<Params.size())return Params.at(i).Name;return NULL;}
 	Types getParamType(int i){if(i<Params.size())return Params.at(i).Type;return Types::null;}
 	int getParamNum(){return Params.size();}
+	std::vector<Seq> getParam(){return Params;}
 };
 
 
@@ -187,12 +248,13 @@ class VariableDeclAST: public BaseAST {
 	private:
 		std::vector<Types> Type;
 		std::string Name;
+		bool ImpType;
 		int Size;
 		DeclType Decltype;
 
 	public:
 		VariableDeclAST(const Types &type, const std::string &name, const int &size = 0) : BaseAST(VariableDeclID), Name(name), Size(size){std::vector<Types> a;a.push_back(type);Type = a;}
-		VariableDeclAST(const std::vector<Types> &type, const std::string &name, const int &size = 0) : BaseAST(VariableDeclID), Type(type), Name(name), Size(size){}
+		VariableDeclAST(const std::vector<Types> &type, const std::string &name, const bool &imptype = false, const int &size = 0) : BaseAST(VariableDeclID), Type(type), Name(name), ImpType(imptype), Size(size){}
 		static inline bool classof(VariableDeclAST const*){return true;}
 		static inline bool classof(BaseAST const* base){
 			return base->getValueID()==VariableDeclID;
@@ -200,9 +262,11 @@ class VariableDeclAST: public BaseAST {
 		~VariableDeclAST(){}
 
 		bool setDeclType(DeclType type){Decltype=type;return true;};
+		bool setType(Types type){Type[0] = type;return true;}
 
 		std::string getName(){return Name;}
 		std::vector<Types> getType(){return Type;}
+		bool getImp(){return ImpType;}
 		int getSize(){return Size;}
 		DeclType getDeclType(){return Decltype;}
 };
@@ -398,7 +462,7 @@ class NumberAST : public BaseAST {
 		return base->getValueID()==NumberID;
 	}
 
-	Types getType(){return Types::i32;}
+	Types getType(){return Types::$i32;}
 	int getValue(){return Val;}
 };
 
@@ -417,10 +481,27 @@ class BooleanAST : public BaseAST {
 		return base->getValueID() == BooleanID;
 	}
 
-	Types getType(){return Types::i1;}
+	Types getType(){return Types::$i1;}
 	bool getValue(){return Val;}
 };
 
+
+/**
+  * Noneを表すAST
+  */
+class NoneAST : public BaseAST {
+	Types Type;
+
+	public:
+	NoneAST(Types type) : BaseAST(NoneID), Type(type){};
+	~NoneAST(){}
+	static inline bool classof(NoneAST const*){return true;}
+	static inline bool classof(BaseAST const* base){
+		return base->getValueID()==NoneID;
+	}
+
+	Types getType(){return Types::null;}
+};
 
 
 #endif

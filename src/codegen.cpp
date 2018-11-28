@@ -1,9 +1,6 @@
-#ifndef CODEGEN_CPP
-#define CODEGEN_CPP
-
 #include "codegen.hpp"
 
-bool llvmDebbug = true;
+bool llvmDebbug = false;
 
 /**
   * コンストラクタ
@@ -143,8 +140,8 @@ Function *CodeGen::generatePrototype(PrototypeAST *proto, Module *mod){
 	//create func type
 	FunctionType *func_type = FunctionType::get(
 							Type::getInt32Ty(getGlobalContext()),
-							int_types,false
-							);
+							int_types,
+							false);
 	//create function
 	func = Function::Create(func_type, 
 							Function::ExternalLinkage,
@@ -227,7 +224,7 @@ Value *CodeGen::generateVariableDeclaration(VariableDeclAST *vdecl){
 	//create alloca
 	AllocaInst *alloca;
 	Type* type;
-	if (vdecl->getType()[0] == Types::i1) {
+	if (vdecl->getType()[0] == Types::i1 || vdecl->getType()[0] == Types::$i1) {
 		type = Type::getInt1Ty(getGlobalContext());
 	}else if (vdecl->getType()[0] == Types::i2) {
 		//type = Type::getInt2Ty(getGlobalContext());
@@ -237,7 +234,7 @@ Value *CodeGen::generateVariableDeclaration(VariableDeclAST *vdecl){
 		type = Type::getInt8Ty(getGlobalContext());
 	}else if (vdecl->getType()[0] == Types::i16) {
 		type = Type::getInt16Ty(getGlobalContext());
-	}else if (vdecl->getType()[0] == Types::i32) {
+	}else if (vdecl->getType()[0] == Types::i32 || vdecl->getType()[0] == Types::$i32) {
 		type = Type::getInt32Ty(getGlobalContext());
 	}
 
@@ -542,7 +539,12 @@ Value *CodeGen::generateExpression(BaseAST *expr) {
 	}else if(isa<BooleanAST>(expr)){
 		BooleanAST *boolean = dyn_cast<BooleanAST>(expr);
 		return generateBoolean(boolean->getValue());
+
+	}else if(isa<NoneAST>(expr)){
+		return generateNone(dyn_cast<NoneAST>(expr));
+
 	}
+
 	//}else if(isa<ArrayAST>(rhs)){
 	//	ArrayAST *array = dyn_cast<ArrayAST>(rhs);
 	//	rhs_v = generateArray(array);
@@ -632,8 +634,7 @@ Value *CodeGen::generateCallExpression(CallExprAST *call_expr){
 
 		arg_vec.push_back(arg_v);
 	}
-	return Builder->CreateCall(Mod->getFunction(call_expr->getCallee()),
-										arg_vec,"call_tmp");
+	return Builder->CreateCall(Mod->getFunction(call_expr->getCallee()), arg_vec, "call_tmp");
 }
 
 
@@ -690,6 +691,23 @@ Value *CodeGen::generateBoolean(bool value) {
 
 
 
+// Null
+Value *CodeGen::generateNone(NoneAST *expr) {
+	if (llvmDebbug) fprintf(stderr, "%d: %s\n", __LINE__, __func__);
+	if (expr->getType() == Types::i32) {
+		return ConstantInt::get(
+				Type::getInt32Ty(getGlobalContext()),
+				0);
+	}else if (expr->getType() == Types::i1) {
+		return ConstantInt::get(
+				Type::getInt1Ty(getGlobalContext()),
+				0);
+	}
+	fprintf(stderr, "asdf\n");
+}
+
+
+
 bool CodeGen::linkModule(Module *dest, std::string file_name){
 	if (llvmDebbug) fprintf(stderr, "%d: %s\n", __LINE__, __func__);
 	SMDiagnostic err;
@@ -706,4 +724,3 @@ bool CodeGen::linkModule(Module *dest, std::string file_name){
 	return true;
 }
 
-#endif

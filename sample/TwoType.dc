@@ -1,6 +1,0 @@
-i32 main() {
-	$i32 a = 43;
-	printnum(unwrap(a));
-	return 0;
-}
-

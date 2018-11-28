@@ -8,6 +8,7 @@
 #include "llvm/Support/PrettyStackTrace.h"
 #include "llvm/Support/Signals.h"
 #include "llvm/Support/TargetSelect.h"
+#include "time.h"
 #include "lexer.hpp"
 #include "AST.hpp"
 #include "parser.hpp"
@@ -17,8 +18,7 @@
 /**
  * オプション切り出し用クラス
  */
-class OptionParser
-{
+class OptionParser {
 	private:
 		std::string InputFileName;
 		std::string OutputFileName;
@@ -98,6 +98,8 @@ bool OptionParser::parseOption(){
  * main関数
  */
 int main(int argc, char **argv) {
+	clock_t start = clock();
+	clock_t left, right = clock();
 	llvm::InitializeNativeTarget();
 	llvm::sys::PrintStackTraceOnErrorSignal();
 	llvm::PrettyStackTraceProgram X(argc, argv);
@@ -106,13 +108,16 @@ int main(int argc, char **argv) {
 
 	OptionParser opt(argc, argv);
 	if(!opt.parseOption())
-	  exit(1);
+		exit(1);
 
 	//check
 	if(opt.getInputFileName().length()==0){
 		fprintf(stderr,"入力ファイル名が指定されていません\n");
 		exit(1);
 	}
+	left = clock();
+	fprintf(stderr, "%.3f ms : file read\n", (double)(left - right) * 1000 / CLOCKS_PER_SEC);
+	right = left;
 
 	//lex and parse
 	Parser *parser=new Parser(opt.getInputFileName());
@@ -121,6 +126,9 @@ int main(int argc, char **argv) {
 		SAFE_DELETE(parser);
 		exit(1);
 	}
+	left = clock();
+	fprintf(stderr, "%.3f ms : lex and parse\n", (double)(left - right) * 1000 / CLOCKS_PER_SEC);
+	right = left;
 
 
 	//get AST
@@ -134,12 +142,15 @@ int main(int argc, char **argv) {
 
 	CodeGen *codegen=new CodeGen();
 	if(!codegen->doCodeGen(tunit, opt.getInputFileName(), 
-				opt.getLinkFileName(), opt.getWithJit()) ){
+				opt.getLinkFileName(), opt.getWithJit())){
 		fprintf(stderr, "err at codegen\n");
 		SAFE_DELETE(parser);
 		SAFE_DELETE(codegen);
 		exit(1);
 	}
+	left = clock();
+	fprintf(stderr, "%.3f ms : llvm ir generate\n", (double)(left - right) * 1000 / CLOCKS_PER_SEC);
+	right = left;
 
 
 	//get Module
@@ -167,6 +178,9 @@ int main(int argc, char **argv) {
 	//delete
 	SAFE_DELETE(parser);
 	SAFE_DELETE(codegen);
+	left = clock();
+	fprintf(stderr, "%.3f ms : llvm file write\n", (double)(left - right) * 1000 / CLOCKS_PER_SEC);
+	fprintf(stderr, "compile has been completed! total compile time is %.3f ms\n", (double)(left - start) * 1000 / CLOCKS_PER_SEC);
   
 	return 0;
 }

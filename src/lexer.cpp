@@ -308,6 +308,16 @@ TokenStream *LexicalAnalysis(std::string input_filename){
 						next_token = new Token(token_str, TOK_SYMBOL, line_num);
 						break;
 
+					case '?':
+						token_str += next_char;
+						next_token = new Token(token_str, TOK_SYMBOL, line_num);
+						break;
+
+					case '.':
+						token_str += next_char;
+						next_token = new Token(token_str, TOK_SYMBOL, line_num);
+						break;
+
 					default:
 						fprintf(stderr, "unclear token : %s\n", token_str.c_str());
 						SAFE_DELETE(tokens);

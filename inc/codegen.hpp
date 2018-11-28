@@ -4,7 +4,7 @@
 
 #include<cstdio>
 #include<cstdlib>
-#include<map>
+//#include<map>
 #include<string>
 #include<vector>
 #include<llvm/ADT/APInt.h>
@@ -59,6 +59,7 @@ class CodeGen{
 		Value *generateVariable(VariableAST *var);
 		Value *generateNumber(int value);
 		Value *generateBoolean(bool value);
+		Value *generateNone(NoneAST *expr);
 		bool linkModule(Module *dest, std::string file_name);
 };
 

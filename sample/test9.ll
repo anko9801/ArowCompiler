@@ -22,24 +22,35 @@ afterloop:                                        ; preds = %loop
   ret i32 %add_tmp
 }
 
-define i32 @printnum(i32 %i) nounwind uwtable {
-entry:
-  %call = tail call i32 (i8*, ...)* @printf(i8* getelementptr inbounds ([4 x i8]* @.str, i64 0, i64 0), i32 %i) nounwind
-  ret i32 %call
-}
-
-declare i32 @printf(i8* nocapture, ...) nounwind
-
 define i32 @msleep(i32 %ms) nounwind uwtable {
 entry:
-  %retval = alloca i32, align 4
   %ms.addr = alloca i32, align 4
   store i32 %ms, i32* %ms.addr, align 4
-  %0 = load i32* %ms.addr, align 4
-  %mul = mul nsw i32 %0, 1000
-  %call = call i32 @usleep(i32 %mul)
-  %1 = load i32* %retval
-  ret i32 %1
+  %call = call i32 @usleep(i32 10)
+  ret i32 0
 }
 
 declare i32 @usleep(i32)
+
+define i32 @printnum(i32 %i) nounwind uwtable {
+entry:
+  %i.addr = alloca i32, align 4
+  store i32 %i, i32* %i.addr, align 4
+  %0 = load i32* %i.addr, align 4
+  %call = call i32 (i8*, ...)* @printf(i8* getelementptr inbounds ([4 x i8]* @.str, i32 0, i32 0), i32 %0)
+  ret i32 %call
+}
+
+declare i32 @printf(i8*, ...)
+
+define i32 @usclock() nounwind uwtable {
+entry:
+  %call = call i64 @clock() nounwind
+  %conv = sitofp i64 %call to double
+  %mul = fmul double %conv, 1.000000e+06
+  %div = fdiv double %mul, 1.000000e+06
+  %conv1 = fptosi double %div to i32
+  ret i32 %conv1
+}
+
+declare i64 @clock() nounwind

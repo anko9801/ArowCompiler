@@ -77,3 +77,25 @@ CallExprAST::~CallExprAST(){
 }
 
 
+Types BaseAST::getType() {
+	if (llvm::isa<VariableDeclAST>(this)) {
+		return llvm::dyn_cast<VariableDeclAST>(this)->getType()[0];
+	}else if (llvm::isa<BinaryExprAST>(this)) {
+		return llvm::dyn_cast<BinaryExprAST>(this)->getType();
+	}else if (llvm::isa<CallExprAST>(this)) {
+		return llvm::dyn_cast<CallExprAST>(this)->getType();
+	}else if (llvm::isa<VariableAST>(this)) {
+		return llvm::dyn_cast<VariableAST>(this)->getType()[0];
+	}else if (llvm::isa<NumberAST>(this)) {
+		return llvm::dyn_cast<NumberAST>(this)->getType();
+	}else if (llvm::isa<BooleanAST>(this)) {
+		return llvm::dyn_cast<BooleanAST>(this)->getType();
+	}else if (llvm::isa<NoneAST>(this)) {
+		return llvm::dyn_cast<NoneAST>(this)->getType();
+	}
+
+	/*switch (this->getValueID()) {
+	  case VariableDeclID:
+	  (VariableDeclAST)this
+	  }*/
+}

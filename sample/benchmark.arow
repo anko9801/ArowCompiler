@@ -1,0 +1,10 @@
+i32 main() {
+	i32 i = 0;
+	i32 start = usclock();
+	while i < 1000000 {
+		i = i + 1;
+		printnum(i?);
+	}
+	printnum(usclock() - start?);
+	return i;
+}

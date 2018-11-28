@@ -1,9 +1,0 @@
-i32 main() {
-	i32 cnt = 0;
-	while cnt < 5 {
-		sleep(2);
-		cnt = cnt + 1;
-		printnum(cnt);
-	}
-	return cnt;
-}
