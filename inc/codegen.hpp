@@ -2,27 +2,28 @@
 #define CODEGEN_HPP
 
 
-#include<cstdio>
-#include<cstdlib>
+#include <cstdio>
+#include <cstdlib>
 //#include<map>
-#include<string>
-#include<vector>
-#include<llvm/ADT/APInt.h>
-#include<llvm/Constants.h>
-#include<llvm/ExecutionEngine/ExecutionEngine.h>
-#include<llvm/ExecutionEngine/JIT.h>
-#include<llvm/Linker.h>
-#include<llvm/LLVMContext.h>
-#include<llvm/Module.h>
-#include<llvm/Metadata.h>
-#include<llvm/Support/Casting.h>
-#include<llvm/IRBuilder.h>
-#include<llvm/Function.h>
-#include<llvm/Support/IRReader.h>
-#include<llvm/MDBuilder.h>
-#include<llvm/ValueSymbolTable.h>
-#include"APP.hpp"
-#include"AST.hpp"
+#include <string>
+#include <vector>
+#include "llvm/ADT/APInt.h"
+#include "llvm/IR/Constants.h"
+#include "llvm/ExecutionEngine/ExecutionEngine.h"
+#include "llvm/ExecutionEngine/JITSymbol.h"
+#include "llvm/Linker/Linker.h"
+#include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/Module.h"
+#include "llvm/IR/Metadata.h"
+#include "llvm/Support/Casting.h"
+#include "llvm/Support/SourceMgr.h"
+#include "llvm/IR/IRBuilder.h"
+#include "llvm/IR/Function.h"
+#include "llvm/IRReader/IRReader.h"
+#include "llvm/IR/MDBuilder.h"
+#include "llvm/IR/ValueSymbolTable.h"
+#include "APP.hpp"
+#include "AST.hpp"
 using namespace llvm;
 
 
@@ -41,6 +42,7 @@ class CodeGen{
 		~CodeGen();
 		bool doCodeGen(TranslationUnitAST &tunit, std::string name, std::string link_file, bool with_jit);
 		Module &getModule();
+		LLVMContext GlobalContext;
 
 
 	private:

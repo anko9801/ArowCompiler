@@ -30,7 +30,7 @@ FRONT_OBJ = $(MAIN_OBJ) $(LEXER_OBJ) $(AST_OBJ) $(PARSER_OBJ) $(CODEGEN_OBJ)
 
 TOOL = $(BIN_DIR)/dcc
 CONFIG = llvm-config
-LLVM_FLAGS = --cxxflags --ldflags --libs
+LLVM_FLAGS = --cxxflags --ldflags --libs --system-libs
 INC_FLAGS = -I$(INC_DIR)
 
 

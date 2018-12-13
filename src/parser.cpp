@@ -378,10 +378,8 @@ BaseAST *Parser::visitStatement(Types func_type = Types::all){
 		return new NullExprAST();
 	// 変数代入か式
 	}else if(stmt = visitAssignmentExpression(Types::all)){
-		if(Tokens->getCurString() == ";"){
-			Tokens->getNextToken();
-			return stmt;
-		}
+		return stmt;
+
 	// 変数宣言
 	}else if (stmt = visitVariableDeclaration()){
 		VariableDeclAST* var_decl = (VariableDeclAST*)stmt;
@@ -617,7 +615,7 @@ BaseAST *Parser::visitWhileExpression(){
 
 	std::vector<BaseAST*> LoopStmt;
 	BaseAST *stmt, *CondStmt;
-
+    if (Debbug) fprintf(stderr, "%d: %s\n", __LINE__, Tokens->getCurString().c_str());
 	if (Tokens->getCurType() != TOK_WHILE) {
 		Tokens->applyTokenIndex(bkup);
 		return NULL;
@@ -703,6 +701,7 @@ BaseAST *Parser::visitAssignmentExpression(Types Type = Types::all){
 						for (int j = 0;j < VariableTable[i]->getType().size();j++) {
 							if (rhs = visitAdditiveExpression(NULL, VariableTable[i]->getType()[j])) {
 								Tokens->getNextToken();
+								if (Debbug) fprintf(stderr, "%d: assign %s\n", __LINE__, Tokens->getCurString().c_str());
 								return new BinaryExprAST("=", lhs, rhs, Type);
 							}
 						}

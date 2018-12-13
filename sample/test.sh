@@ -1,7 +1,8 @@
 #!/bin/bash
 
 for f in *.arow ; do
-	echo ${f}
-	bash compiler.sh ${f}
+	FILE="${f%.*}"
+	echo "${FILE}.arow"
+	bash compiler.sh ${FILE}.arow
 	echo "--------------------------------------------------------------------------------------------------------------------"
 done

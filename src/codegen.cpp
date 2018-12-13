@@ -1,12 +1,12 @@
 #include "codegen.hpp"
 
-bool llvmDebbug = false;
+bool llvmDebbug = true;
 
 /**
   * コンストラクタ
   */
 CodeGen::CodeGen(){
-	Builder = new IRBuilder<>(getGlobalContext());
+	Builder = new IRBuilder<>(GlobalContext);
 	Mod = NULL;
 }
 
@@ -25,8 +25,7 @@ CodeGen::~CodeGen(){
   * @param  TranslationUnitAST　Module名(入力ファイル名)
   * @return 成功時：true　失敗時:false
   */
-bool CodeGen::doCodeGen(TranslationUnitAST &tunit, std::string name, 
-		std::string link_file, bool with_jit=false){
+bool CodeGen::doCodeGen(TranslationUnitAST &tunit, std::string name, std::string link_file, bool with_jit=false){
 	if(!generateTranslationUnit(tunit, name)){
 		return false;
 	}
@@ -37,8 +36,8 @@ bool CodeGen::doCodeGen(TranslationUnitAST &tunit, std::string name,
 
 	//JITのフラグが立っていたらJIT
 	if(with_jit){
-		ExecutionEngine *EE = EngineBuilder(Mod).create();
-		EngineBuilder(Mod).create();
+		ExecutionEngine *EE = EngineBuilder(/*Mod*/).create();
+		EngineBuilder(/*Mod*/).create();
 			Function *F;
 		if(!(F=Mod->getFunction("main")))
 			return false;
@@ -58,7 +57,7 @@ Module &CodeGen::getModule(){
 	if(Mod)
 		return *Mod;
 	else
-		return *(new Module("null", getGlobalContext()));
+		return *(new Module("null", GlobalContext));
 }
 
 
@@ -68,7 +67,7 @@ Module &CodeGen::getModule(){
   * @return 成功時：true　失敗時：false　
   */
 bool CodeGen::generateTranslationUnit(TranslationUnitAST &tunit, std::string name){
-	Mod = new Module(name, getGlobalContext());
+	Mod = new Module(name, GlobalContext);
 	//funtion declaration
 	for(int i=0; ; i++){
 		PrototypeAST *proto=tunit.getPrototype(i);
@@ -106,7 +105,7 @@ Function *CodeGen::generateFunctionDefinition(FunctionAST *func_ast,
 		return NULL;
 	if (llvmDebbug) fprintf(stderr, "%d: %s\n", __LINE__, __func__);
 	CurFunc = func;
-	CurBB = BasicBlock::Create(getGlobalContext(), "entry", func);
+	CurBB = BasicBlock::Create(GlobalContext, "entry", func);
 	Builder->SetInsertPoint(CurBB);
 	generateFunctionStatement(func_ast->getBody());
 
@@ -135,11 +134,11 @@ Function *CodeGen::generatePrototype(PrototypeAST *proto, Module *mod){
 
 	//create arg_types
 	std::vector<Type*> int_types(proto->getParamNum(),
-								Type::getInt32Ty(getGlobalContext()));
+								Type::getInt32Ty(GlobalContext));
 
 	//create func type
 	FunctionType *func_type = FunctionType::get(
-							Type::getInt32Ty(getGlobalContext()),
+							Type::getInt32Ty(GlobalContext),
 							int_types,
 							false);
 	//create function
@@ -225,27 +224,28 @@ Value *CodeGen::generateVariableDeclaration(VariableDeclAST *vdecl){
 	AllocaInst *alloca;
 	Type* type;
 	if (vdecl->getType()[0] == Types::i1 || vdecl->getType()[0] == Types::$i1) {
-		type = Type::getInt1Ty(getGlobalContext());
+		type = Type::getInt1Ty(GlobalContext);
 	}else if (vdecl->getType()[0] == Types::i2) {
-		//type = Type::getInt2Ty(getGlobalContext());
+		//type = Type::getInt2Ty(GlobalContext);
 	}else if (vdecl->getType()[0] == Types::i4) {
-		//type = Type::getInt4Ty(getGlobalContext());
+		//type = Type::getInt4Ty(GlobalContext);
 	}else if (vdecl->getType()[0] == Types::i8) {
-		type = Type::getInt8Ty(getGlobalContext());
+		type = Type::getInt8Ty(GlobalContext);
 	}else if (vdecl->getType()[0] == Types::i16) {
-		type = Type::getInt16Ty(getGlobalContext());
+		type = Type::getInt16Ty(GlobalContext);
 	}else if (vdecl->getType()[0] == Types::i32 || vdecl->getType()[0] == Types::$i32) {
-		type = Type::getInt32Ty(getGlobalContext());
+		type = Type::getInt32Ty(GlobalContext);
 	}
 
 	if (vdecl->getSize()) {
 		fprintf(stderr, "%d: array\n", __LINE__);
 		alloca = new AllocaInst(
 				ArrayType::get(type, vdecl->getSize()),
+				1000,
 				vdecl->getName(),
 				CurBB);
-		//auto zero = ConstantInt::get(getGlobalContext(), APInt(64, 0, true));
-		//auto index = ConstantInt::get(getGlobalContext(), APInt(32, vdecl->getSize(), true));
+		//auto zero = ConstantInt::get(GlobalContext, APInt(64, 0, true));
+		//auto index = ConstantInt::get(GlobalContext, APInt(32, vdecl->getSize(), true));
 		//auto ptr = GetElementPtrInst::Create(alloca, {zero, index}, "", bblock);
 		//auto store = new StoreInst(index, ptr, false, bblock);
 	}else{
@@ -255,8 +255,7 @@ Value *CodeGen::generateVariableDeclaration(VariableDeclAST *vdecl){
 	//if args alloca
 	if(vdecl->getDeclType() == VariableDeclAST::param){
 		//store args
-		ValueSymbolTable &vs_table = CurFunc->getValueSymbolTable();
-		Builder->CreateStore(vs_table.lookup(vdecl->getName().append("_arg")), alloca);
+		Builder->CreateStore(CurFunc->getValueSymbolTable()->lookup(vdecl->getName().append("_arg")), alloca);
 	}
 	//ValueMap[vdecl->getName()]=alloca;
 	return alloca;
@@ -306,9 +305,9 @@ Value *CodeGen::generateIfExpr(IfExprAST *if_expr) {
 
 	Function *function = Builder->GetInsertBlock()->getParent();
 
-	BasicBlock *ThenBB = BasicBlock::Create(getGlobalContext(), "then", function);
-	BasicBlock *ElseBB = BasicBlock::Create(getGlobalContext(), "else");
-	BasicBlock *MergeBB = BasicBlock::Create(getGlobalContext(), "ifcont");
+	BasicBlock *ThenBB = BasicBlock::Create(GlobalContext, "then", function);
+	BasicBlock *ElseBB = BasicBlock::Create(GlobalContext, "else");
+	BasicBlock *MergeBB = BasicBlock::Create(GlobalContext, "ifcont");
 
 	Builder->CreateCondBr(CondV, ThenBB, ElseBB);
 
@@ -375,12 +374,12 @@ Value *CodeGen::generateWhileExpr(WhileExprAST *while_expr) {
 	Function *function = Builder->GetInsertBlock()->getParent();
 
 	BasicBlock *PreheaderBB = Builder->GetInsertBlock();
-	BasicBlock *LoopBB = BasicBlock::Create(getGlobalContext(), "loop", function);
-	BasicBlock *AfterBB = BasicBlock::Create(getGlobalContext(), "afterloop");
+	BasicBlock *LoopBB = BasicBlock::Create(GlobalContext, "loop", function);
+	BasicBlock *AfterBB = BasicBlock::Create(GlobalContext, "afterloop");
 
 	Builder->CreateBr(LoopBB);
 	Builder->SetInsertPoint(LoopBB);
-	//PHINode *Variable = Builder->CreatePHI(Type::getDoubleTy(getGlobalContext()), 2, "safd");
+	//PHINode *Variable = Builder->CreatePHI(Type::getDoubleTy(GlobalContext), 2, "safd");
 	//Variable->addIncoming(StartVal, PreheaderBB);
 
 	LoopBB = Builder->GetInsertBlock();
@@ -571,8 +570,8 @@ Value *CodeGen::generateBinaryExpression(BinaryExprAST *bin_expr){
 	if(bin_expr->getOp()=="="){
 		//lhs is variable
 		VariableAST *lhs_var = dyn_cast<VariableAST>(lhs);
-		ValueSymbolTable &vs_table = CurFunc->getValueSymbolTable();
-		lhs_v = vs_table.lookup(lhs_var->getName());
+		lhs_v = CurFunc->getValueSymbolTable()->lookup(lhs_var->getName());
+		fprintf(stderr, "vs_table \n");
 		if (!lhs_v) fprintf(stderr, "null\n");
 	}else{
 		lhs_v = generateExpression(lhs);
@@ -611,7 +610,6 @@ Value *CodeGen::generateCallExpression(CallExprAST *call_expr){
 	std::vector<Value*> arg_vec;
 	BaseAST *arg;
 	Value *arg_v;
-	ValueSymbolTable &vs_table = CurFunc->getValueSymbolTable();
 	for(int i=0; ; i++){
 		if(!(arg=call_expr->getArgs(i)))
 			break;
@@ -626,7 +624,7 @@ Value *CodeGen::generateCallExpression(CallExprAST *call_expr){
 			//代入の時はLoad命令を追加
 			if(bin_expr->getOp() == "="){
 				VariableAST *var = dyn_cast<VariableAST>(bin_expr->getLHS());
-				arg_v = Builder->CreateLoad(vs_table.lookup(var->getName()), "arg_val");
+				arg_v = Builder->CreateLoad(CurFunc->getValueSymbolTable()->lookup(var->getName()), "arg_val");
 			}
 		}else{
 			arg_v = generateExpression(arg);
@@ -664,8 +662,7 @@ Value *CodeGen::generateVariable(VariableAST *var){
 	if (var->getSize()){
 		var->getIndex();
 	}else{
-		ValueSymbolTable &vs_table = CurFunc->getValueSymbolTable();
-		return Builder->CreateLoad(vs_table.lookup(var->getName()), "var_tmp");
+		return Builder->CreateLoad(CurFunc->getValueSymbolTable()->lookup(var->getName()), "var_tmp");
 	}
 }
 
@@ -675,7 +672,7 @@ Value *CodeGen::generateVariable(VariableAST *var){
 Value *CodeGen::generateNumber(int value){
 	if (llvmDebbug) fprintf(stderr, "%d: %s\n", __LINE__, __func__);
 	return ConstantInt::get(
-			Type::getInt32Ty(getGlobalContext()),
+			Type::getInt32Ty(GlobalContext),
 			value);
 }
 
@@ -685,7 +682,7 @@ Value *CodeGen::generateNumber(int value){
 Value *CodeGen::generateBoolean(bool value) {
 	if (llvmDebbug) fprintf(stderr, "%d: %s\n", __LINE__, __func__);
 	return ConstantInt::get(
-			Type::getInt1Ty(getGlobalContext()),
+			Type::getInt1Ty(GlobalContext),
 			value);
 }
 
@@ -696,11 +693,11 @@ Value *CodeGen::generateNone(NoneAST *expr) {
 	if (llvmDebbug) fprintf(stderr, "%d: %s\n", __LINE__, __func__);
 	if (expr->getType() == Types::i32) {
 		return ConstantInt::get(
-				Type::getInt32Ty(getGlobalContext()),
+				Type::getInt32Ty(GlobalContext),
 				0);
 	}else if (expr->getType() == Types::i1) {
 		return ConstantInt::get(
-				Type::getInt1Ty(getGlobalContext()),
+				Type::getInt1Ty(GlobalContext),
 				0);
 	}
 	fprintf(stderr, "asdf\n");
@@ -711,15 +708,12 @@ Value *CodeGen::generateNone(NoneAST *expr) {
 bool CodeGen::linkModule(Module *dest, std::string file_name){
 	if (llvmDebbug) fprintf(stderr, "%d: %s\n", __LINE__, __func__);
 	SMDiagnostic err;
-	Module *link_mod = ParseIRFile(file_name, err, getGlobalContext());
+	std::unique_ptr<Module> link_mod = llvm::parseIRFile(file_name, err, GlobalContext);
 	if(!link_mod)
 		return false;
 
-	std::string err_msg;
-	if(Linker::LinkModules(dest, link_mod, Linker::DestroySource, &err_msg))
+	if(Linker::linkModules(*dest, std::move(link_mod), 0))
 		return false;
-
-	SAFE_DELETE(link_mod);
 
 	return true;
 }
