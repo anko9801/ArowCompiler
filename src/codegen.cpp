@@ -1,6 +1,6 @@
 #include "codegen.hpp"
 
-bool llvmDebbug = true;
+bool llvmDebbug = false;
 
 /**
   * コンストラクタ
@@ -123,7 +123,7 @@ Function *CodeGen::generatePrototype(PrototypeAST *proto, Module *mod){
 	//already declared?
 	Function *func=mod->getFunction(proto->getName());
 	if(func){
-		if(func->arg_size()==proto->getParamNum() && 
+		if(func->arg_size() == proto->getParamNum() && 
 				func->empty()){
 			return func;
 		}else{
@@ -223,18 +223,16 @@ Value *CodeGen::generateVariableDeclaration(VariableDeclAST *vdecl){
 	//create alloca
 	AllocaInst *alloca;
 	Type* type;
-	if (vdecl->getType()[0] == Types::i1 || vdecl->getType()[0] == Types::$i1) {
+	if (vdecl->getType()[0].getPrimType() == prim_type::Type_int) {
+		if (vdecl->getType()[0].getBits() == 1) {
 		type = Type::getInt1Ty(GlobalContext);
-	}else if (vdecl->getType()[0] == Types::i2) {
-		//type = Type::getInt2Ty(GlobalContext);
-	}else if (vdecl->getType()[0] == Types::i4) {
-		//type = Type::getInt4Ty(GlobalContext);
-	}else if (vdecl->getType()[0] == Types::i8) {
-		type = Type::getInt8Ty(GlobalContext);
-	}else if (vdecl->getType()[0] == Types::i16) {
-		type = Type::getInt16Ty(GlobalContext);
-	}else if (vdecl->getType()[0] == Types::i32 || vdecl->getType()[0] == Types::$i32) {
-		type = Type::getInt32Ty(GlobalContext);
+		}else if (vdecl->getType()[0].getBits() == 8) {
+			type = Type::getInt8Ty(GlobalContext);
+		}else if (vdecl->getType()[0].getBits() == 16) {
+			type = Type::getInt16Ty(GlobalContext);
+		}else if (vdecl->getType()[0].getBits() == 32) {
+			type = Type::getInt32Ty(GlobalContext);
+		}
 	}
 
 	if (vdecl->getSize()) {
@@ -571,7 +569,6 @@ Value *CodeGen::generateBinaryExpression(BinaryExprAST *bin_expr){
 		//lhs is variable
 		VariableAST *lhs_var = dyn_cast<VariableAST>(lhs);
 		lhs_v = CurFunc->getValueSymbolTable()->lookup(lhs_var->getName());
-		fprintf(stderr, "vs_table \n");
 		if (!lhs_v) fprintf(stderr, "null\n");
 	}else{
 		lhs_v = generateExpression(lhs);
@@ -691,11 +688,11 @@ Value *CodeGen::generateBoolean(bool value) {
 // Null
 Value *CodeGen::generateNone(NoneAST *expr) {
 	if (llvmDebbug) fprintf(stderr, "%d: %s\n", __LINE__, __func__);
-	if (expr->getType() == Types::i32) {
+	if (expr->getType().getPrimType() == prim_type::Type_int) {
 		return ConstantInt::get(
 				Type::getInt32Ty(GlobalContext),
 				0);
-	}else if (expr->getType() == Types::i1) {
+	}else if (expr->getType().getPrimType() == prim_type::Type_bool) {
 		return ConstantInt::get(
 				Type::getInt1Ty(GlobalContext),
 				0);

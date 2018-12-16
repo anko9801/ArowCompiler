@@ -112,7 +112,7 @@ int main(int argc, char **argv) {
 		exit(1);
 
 	//check
-	if(opt.getInputFileName().length()==0){
+	if(opt.getInputFileName().length() == 0){
 		fprintf(stderr,"入力ファイル名が指定されていません\n");
 		exit(1);
 	}
@@ -121,7 +121,7 @@ int main(int argc, char **argv) {
 	right = left;
 
 	//lex and parse
-	Parser *parser=new Parser(opt.getInputFileName());
+	Parser *parser = new Parser(opt.getInputFileName());
 	if(!parser->doParse()){
 		fprintf(stderr, "err at parser or lexer\n");
 		SAFE_DELETE(parser);
@@ -133,7 +133,7 @@ int main(int argc, char **argv) {
 
 
 	//get AST
-	TranslationUnitAST &tunit=parser->getAST();
+	TranslationUnitAST &tunit = parser->getAST();
 	if(tunit.empty()){
 		fprintf(stderr,"TranslationUnit is empty\n");
 		SAFE_DELETE(parser);
@@ -141,7 +141,7 @@ int main(int argc, char **argv) {
 	}
 
 
-	CodeGen *codegen=new CodeGen();
+	CodeGen *codegen = new CodeGen();
 	if(!codegen->doCodeGen(tunit, opt.getInputFileName(), 
 				opt.getLinkFileName(), opt.getWithJit())){
 		fprintf(stderr, "err at codegen\n");

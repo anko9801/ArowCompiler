@@ -56,29 +56,39 @@ enum AstID{
 	WhileExprID,
 };
 
-enum Types{
-	i1,
-	i2,
-	i4,
-	i8,
-	i16,
-	i32,
-	i64,
-	f2,
-	f4,
-	f8,
-	f16,
-	f32,
-	f64,
-	character,
-	string,
-	$i1,
-	$i32,
-	all,
-	null,
+enum prim_type {
+	Type_bool,
+	Type_int,
+	Type_float,
+	Type_char,
+	Type_all,
+	Type_null,
 };
 
+struct Types {
+	prim_type Type;
+	int bits;
+	bool isArray = false;
+	int ArraySize = 0;
+	bool non_null = false;
 
+	Types() : Type(prim_type::Type_null), bits(0){}
+	Types(prim_type type, int bits=32, bool non_null=false)
+		: Type(type), bits(bits), non_null(non_null), isArray(false), ArraySize(0){}
+	Types(prim_type type, int size, int bits=32, bool non_null=false)
+		: Type(type), bits(bits), non_null(non_null), isArray(true), ArraySize(size){}
+	bool setArray(int size) {isArray = true;ArraySize = size;return true;}
+
+	int getBits() {return bits;}
+	prim_type getPrimType() {return Type;}
+	bool getNonNull() {return non_null;}
+
+	bool operator== (const Types &rhs) const {
+		if (Type == Type_all || rhs.Type == Type_all) return true;
+		if (Type == rhs.Type && non_null == rhs.non_null) return true;
+		else return false;
+	}
+};
 
 struct Seq {
 	Types Type;
@@ -86,22 +96,12 @@ struct Seq {
 
 	Seq(Types type, std::string name) : Type(type), Name(name){}
 	bool operator< (const Seq &rhs) const {
-		if (Name < rhs.Name) {
-			return true;
-		}
-		if (Name > rhs.Name) {
-			return false;
-		}
-		return false;
+		if (Name < rhs.Name) return true;
+		else return false;
 	}
 	bool operator== (const Seq &rhs) const {
-		if (Type == rhs.Type && Name == rhs.Name) {
-			return true;
-		}
-		if (Type != rhs.Type || Name != rhs.Name) {
-			return false;
-		}
-		return false;
+		if (Type == rhs.Type && Name == rhs.Name) return true;
+		else return false;
 	}
 };
 
@@ -120,14 +120,10 @@ struct Func {
 
 	bool operator== (const Func &rhs) const {
 		if (function_seq.Name == rhs.function_seq.Name && function_seq.Type == rhs.function_seq.Type) {
-			for(int i = 0;i < param.size();i++) {
-				if (param[i] == rhs.param[i]) {
-					return true;
-				}
-			}
-		}else{
+			for(int i = 0;i < param.size();i++)
+				if (param[i] == rhs.param[i]) return true;
+		}else
 			return false;
-		}
 		return false;
 	}
 };
@@ -193,7 +189,7 @@ class PrototypeAST{
 	std::string getName(){return Name;}
 	Types getType(){return Type;}
 	std::string getParamName(int i){if(i<Params.size())return Params.at(i).Name;return NULL;}
-	Types getParamType(int i){if(i<Params.size())return Params.at(i).Type;return Types::null;}
+	Types getParamType(int i){if(i<Params.size())return Params.at(i).Type;return Types(Type_null);}
 	int getParamNum(){return Params.size();}
 	std::vector<Seq> getParam(){return Params;}
 };
@@ -462,7 +458,7 @@ class NumberAST : public BaseAST {
 		return base->getValueID()==NumberID;
 	}
 
-	Types getType(){return Types::$i32;}
+	Types getType(){return Types(Type_int, 32, true);}
 	int getValue(){return Val;}
 };
 
@@ -481,7 +477,7 @@ class BooleanAST : public BaseAST {
 		return base->getValueID() == BooleanID;
 	}
 
-	Types getType(){return Types::$i1;}
+	Types getType(){return Types(Type_bool, 1, true);}
 	bool getValue(){return Val;}
 };
 
@@ -500,7 +496,7 @@ class NoneAST : public BaseAST {
 		return base->getValueID()==NoneID;
 	}
 
-	Types getType(){return Types::null;}
+	Types getType(){return Types(Type_null);}
 };
 
 

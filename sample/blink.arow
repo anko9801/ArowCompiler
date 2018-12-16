@@ -1,0 +1,6 @@
+i32 main() {
+	GPIOsetup();
+	BlinkLED(23);
+	GPIOclear();
+	return 0;
+}

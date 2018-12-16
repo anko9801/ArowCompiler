@@ -25,6 +25,7 @@ enum TokenType{
 	TOK_FOR,
 	TOK_MATCH,
 	TOK_RETURN,			//RETURN
+	TOK_CAST,
 	TOK_EOF				//EOF
 };
 
@@ -84,6 +85,7 @@ class TokenStream{
 	protected:
 
 	public:
+		bool printLex = false;
 		TokenStream():CurIndex(0){}
 		~TokenStream();
 

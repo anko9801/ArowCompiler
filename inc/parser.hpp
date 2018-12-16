@@ -35,6 +35,15 @@ typedef class Parser{
 		bool doParse();
 		TranslationUnitAST &getAST();
 
+		void addLib(TranslationUnitAST* TU,
+				Types ReturnType, std::string FuncName,
+				std::initializer_list<Types> param_type) {
+			std::vector<Seq> param_list;
+			for (Types i : param_type) param_list.push_back(Seq(i, "i"));
+			TU->addPrototype(new PrototypeAST(ReturnType, FuncName, param_list));
+			PrototypeTable.push_back(Func(ReturnType, FuncName, param_list));
+		}
+
 		int find(std::vector<Func> vec, Func func) {
 			auto itr = std::find(vec.begin(), vec.end(), func);
 			size_t index = std::distance(vec.begin(), itr);
@@ -65,12 +74,39 @@ typedef class Parser{
 			}
 		}
 
+		prim_type str2Type(std::string Type) {
+			if(Type == "int")
+				return Type_int;
+			else if(Type == "bool")
+				return Type_bool;
+			else if(Type == "float")
+				return Type_float;
+			else if(Type == "char")
+				return Type_char;
+			else
+				return Type_null;
+		}
+
+		std::string printType(Types type) {
+			if(type.Type == prim_type::Type_int)
+				return "int";
+			else if(type.Type == prim_type::Type_bool)
+				return "bool";
+			else if(type.Type == prim_type::Type_float)
+				return "float";
+			else if(type.Type == prim_type::Type_char)
+				return "char";
+			else if(type.Type == prim_type::Type_null)
+				return "null";
+		}
+
 	private:
 		/**
 		  各種構文解析メソッド
 		  */
 		bool visitTranslationUnit();
 		bool visitExternalDeclaration(TranslationUnitAST *tunit);
+		Types visitTypes();
 		PrototypeAST *visitFunctionDeclaration();
 		FunctionAST *visitFunctionDefinition();
 		PrototypeAST *visitPrototype();

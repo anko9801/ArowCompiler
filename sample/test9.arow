@@ -1,5 +1,5 @@
-i32 main() {
-	i32 cnt = 0;
+int32 main() {
+	int32 cnt = 0;
 	while cnt < 5 {
 		cnt = cnt + 1;
 	}

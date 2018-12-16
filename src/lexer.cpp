@@ -8,12 +8,13 @@
  * @return 切り出したトークンを格納したTokenStream
  */
 TokenStream *LexicalAnalysis(std::string input_filename){
-	TokenStream *tokens=new TokenStream();
+	bool printLex = true;
+	TokenStream *tokens = new TokenStream();
 	std::ifstream ifs;
 	std::string cur_line;
 	std::string token_str;
-	int line_num=0;
-	bool iscomment=false;
+	int line_num = 0;
+	bool iscomment = false;
 
 	ifs.open(input_filename.c_str(), std::ios::in);
 	if(!ifs)
@@ -22,8 +23,8 @@ TokenStream *LexicalAnalysis(std::string input_filename){
 		char next_char;
 		std::string line;
 		Token *next_token;
-		int index=0;
-		int length=cur_line.length();
+		int index = 0;
+		int length = cur_line.length();
 	
 		while(index < length){
 			next_char = cur_line.at(index++);
@@ -52,6 +53,9 @@ TokenStream *LexicalAnalysis(std::string input_filename){
 				token_str += next_char;
 				next_char = cur_line.at(index++);
 				while(isalnum(next_char)){
+					if (isnumber(next_char) && token_str == "int") {
+						break;
+					}
 					token_str += next_char;
 					next_char = cur_line.at(index++);
 					if(index == length)
@@ -61,7 +65,7 @@ TokenStream *LexicalAnalysis(std::string input_filename){
 
 				// switch使いてぇええ
 				// 予約語と識別子
-				if(token_str == "i2" || token_str == "i4" ||  token_str == "i8" || token_str == "i16" || token_str == "i32" || token_str == "int" || token_str == "bool"){
+				if(token_str == "int" || token_str == "bool"){
 					next_token = new Token(token_str, TOK_TYPE, line_num);
 
 				}else if(token_str == "if") {
@@ -84,6 +88,12 @@ TokenStream *LexicalAnalysis(std::string input_filename){
 
 				}else if (token_str == "false") {
 					next_token = new Token(token_str, TOK_FALSE, line_num);
+
+				}else if (token_str == "is") {
+					next_token = new Token(token_str, TOK_CAST, line_num);
+
+				}else if (token_str == "as") {
+					next_token = new Token(token_str, TOK_CAST, line_num);
 
 				}else{
 					next_token = new Token(token_str, TOK_IDENTIFIER, line_num);
@@ -324,7 +334,7 @@ TokenStream *LexicalAnalysis(std::string input_filename){
 						return NULL;
 				}
 			}
-			fprintf(stderr, "%s ", token_str.c_str());
+			if (printLex) fprintf(stderr, "%s ", token_str.c_str());
 			//Tokensに追加
 			tokens->pushToken(next_token);
 			token_str.clear();
@@ -342,7 +352,7 @@ TokenStream *LexicalAnalysis(std::string input_filename){
 				);
 	}
 
-	fprintf(stderr, "\n");
+	if (printLex) fprintf(stderr, "\n");
 
 	//クローズ
 	ifs.close();

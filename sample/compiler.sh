@@ -16,13 +16,13 @@ fi
 ~/ArowCompiler/bin/dcc -o $FILE.ll $FILE.arow
 
 if [ -e $FILE.ll ]; then
-	llvm-link $FILE.ll ../lib/lib.ll -S -o $FILE.ll
+	llvm-link ../lib/lib.ll $FILE.ll -S -o $FILE.ll
 	if [ -e $FILE.ll ]; then
-		if [ "$2" = "arm" ]; then
-			llc -o $FILE.s $FILE.ll -filetype=asm -mtriple=armv4t-unknown-linux-gnueabihf
-		else
+		if [ -z $2 ]; then
 			llc -o $FILE.s $FILE.ll -filetype=asm
 			clang -o $FILE $FILE.s
+		else
+			llc -o $FILE-diffarch.s $FILE.ll -filetype=asm -mtriple=$2 #armv4t-unknown-linux-gnueabihf
 		fi
 
 		#rm $FILE.s
