@@ -1,5 +1,5 @@
-i32 main() {
-	i32 k;
+int main() {
+	int k;
 	k = 23;
 	printnum(k?);
 	return 0;

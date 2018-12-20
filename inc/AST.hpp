@@ -26,11 +26,10 @@ class BinaryExprAST;
 class NullExprAST;
 class CallExprAST;
 class JumpStmtAST;
-class VariableAST;
 class IfExprAST;
 class WhileExprAST;
-class ArrayAST;
-class TupleAST;
+class VariableAST;
+class CastAST;
 class NumberAST;
 class BooleanAST;
 class NoneAST;
@@ -41,14 +40,14 @@ class NoneAST;
   */
 enum AstID{
 	BaseID,
+	FunctionStmtID,
 	VariableDeclID,
 	BinaryExprID,
 	NullExprID,
 	CallExprID,
 	JumpStmtID,
+	CastID,
 	VariableID,
-	ArrayID,
-	TupleID,
 	NumberID,
 	BooleanID,
 	NoneID,
@@ -63,6 +62,7 @@ enum prim_type {
 	Type_char,
 	Type_all,
 	Type_null,
+	Type_none,
 };
 
 struct Types {
@@ -74,9 +74,9 @@ struct Types {
 
 	Types() : Type(prim_type::Type_null), bits(0){}
 	Types(prim_type type, int bits=32, bool non_null=false)
-		: Type(type), bits(bits), non_null(non_null), isArray(false), ArraySize(0){}
+		: Type(type), bits(bits), non_null(non_null){}
 	Types(prim_type type, int size, int bits=32, bool non_null=false)
-		: Type(type), bits(bits), non_null(non_null), isArray(true), ArraySize(size){}
+		: Type(type), bits(bits), isArray(true), ArraySize(size), non_null(non_null){}
 	bool setArray(int size) {isArray = true;ArraySize = size;return true;}
 
 	int getBits() {return bits;}
@@ -85,9 +85,21 @@ struct Types {
 
 	bool operator== (const Types &rhs) const {
 		if (Type == Type_all || rhs.Type == Type_all) return true;
-		if (Type == rhs.Type && non_null == rhs.non_null) return true;
+		if (Type == rhs.Type/* && non_null == rhs.non_null*/) return true;
 		else return false;
 	}
+	bool operator!= (const Types &rhs) const {
+		if (Type == Type_all || rhs.Type == Type_all) return false;
+		if (Type == rhs.Type/* && non_null == rhs.non_null*/) return false;
+		else return true;
+	}
+};
+
+struct Variable {
+	Types Type;
+	std::string Name;
+	std::string Level;
+	Variable(Types Type, std::string Name, std::string Level) : Type(Type), Name(Name), Level(Level){}
 };
 
 struct Seq {
@@ -218,17 +230,23 @@ class FunctionAST{
 /**
   * 関数定義(本文)を表すAST
   */
-class FunctionStmtAST{
+class FunctionStmtAST : public BaseAST {
 	std::vector<BaseAST*> StmtLists;
 
 	public:
-	FunctionStmtAST(){}
+	FunctionStmtAST() : BaseAST(FunctionStmtID){}
 	~FunctionStmtAST();
+	static inline bool classof(FunctionStmtAST const*){return true;}
+	static inline bool classof(BaseAST const* base){
+		return base->getValueID()==FunctionStmtID;
+	}
 
 	bool addStatement(BaseAST *stmt){StmtLists.push_back(stmt);}
 
 	BaseAST *getStatement(int i){if(i<StmtLists.size())return StmtLists.at(i);else return NULL;}
+	std::vector<BaseAST*> getStatements(){return StmtLists;}
 };
+
 
 
 /**
@@ -242,15 +260,12 @@ class VariableDeclAST: public BaseAST {
 		}DeclType;
 
 	private:
-		std::vector<Types> Type;
+		Types Type;
 		std::string Name;
-		bool ImpType;
-		int Size;
 		DeclType Decltype;
 
 	public:
-		VariableDeclAST(const Types &type, const std::string &name, const int &size = 0) : BaseAST(VariableDeclID), Name(name), Size(size){std::vector<Types> a;a.push_back(type);Type = a;}
-		VariableDeclAST(const std::vector<Types> &type, const std::string &name, const bool &imptype = false, const int &size = 0) : BaseAST(VariableDeclID), Type(type), Name(name), ImpType(imptype), Size(size){}
+		VariableDeclAST(const Types &type, const std::string &name) : BaseAST(VariableDeclID), Type(type), Name(name){}
 		static inline bool classof(VariableDeclAST const*){return true;}
 		static inline bool classof(BaseAST const* base){
 			return base->getValueID()==VariableDeclID;
@@ -258,20 +273,19 @@ class VariableDeclAST: public BaseAST {
 		~VariableDeclAST(){}
 
 		bool setDeclType(DeclType type){Decltype=type;return true;};
-		bool setType(Types type){Type[0] = type;return true;}
+		bool setType(Types type){Type = type;return true;}
 
 		std::string getName(){return Name;}
-		std::vector<Types> getType(){return Type;}
-		bool getImp(){return ImpType;}
-		int getSize(){return Size;}
+		Types getType(){return Type;}
 		DeclType getDeclType(){return Decltype;}
 };
+
 
 
 /** 
   * 二項演算を表すAST
   */
-class  BinaryExprAST : public BaseAST{
+class BinaryExprAST : public BaseAST{
 	Types Type;
 	std::string Op;
 	BaseAST *LHS, *RHS;
@@ -306,6 +320,8 @@ class IfExprAST : public BaseAST {
 	public:
 	IfExprAST(BaseAST *Cond, std::vector<BaseAST*> Then, std::vector<BaseAST*> Else)
 		: BaseAST(IfExprID),Cond(Cond), ThenStmt(Then), ElseStmt(Else){}
+	IfExprAST(BaseAST *Cond)
+		: BaseAST(IfExprID), Cond(Cond){}
 	~IfExprAST(){}
 	static inline bool classof(IfExprAST const*){return true;}
 	static inline bool classof(BaseAST const* base){
@@ -314,7 +330,9 @@ class IfExprAST : public BaseAST {
 
 	BaseAST* getCond(){return Cond;}
 	std::vector<BaseAST*> getThen(){return ThenStmt;}
+	bool addThen(BaseAST *stmt){ThenStmt.push_back(stmt);return true;}
 	std::vector<BaseAST*> getElse(){return ElseStmt;}
+	bool addElse(BaseAST *stmt){ElseStmt.push_back(stmt);return true;}
 };
 
 
@@ -329,6 +347,8 @@ class WhileExprAST : public BaseAST {
 	public:
 	WhileExprAST(BaseAST *Cond, std::vector<BaseAST*> LoopStmt)
 		: BaseAST(WhileExprID), Cond(Cond), LoopStmt(LoopStmt){}
+	WhileExprAST(BaseAST *Cond)
+		: BaseAST(WhileExprID), Cond(Cond){}
 	~WhileExprAST(){}
 	static inline bool classof(WhileExprAST const*){return true;}
 	static inline bool classof(BaseAST const* base){
@@ -337,6 +357,7 @@ class WhileExprAST : public BaseAST {
 
 	BaseAST* getCond(){return Cond;}
 	std::vector<BaseAST*> getLoop(){return LoopStmt;}
+	bool addLoop(BaseAST *stmt){LoopStmt.push_back(stmt);return true;}
 };
 
 
@@ -348,8 +369,8 @@ class NullExprAST : public BaseAST{
 		NullExprAST() : BaseAST(NullExprID){}
 		static inline bool classof(NullExprAST const*){return true;}
 		static inline bool classof(BaseAST const* base){
-		return base->getValueID()==NullExprID;
-	}
+			return base->getValueID()==NullExprID;
+		}
 };
 
 
@@ -369,8 +390,10 @@ class CallExprAST : public BaseAST{
 	static inline bool classof(BaseAST const* base){
 		return base->getValueID()==CallExprID;
 	}
+
 	std::string getCallee(){return Callee;}
 	BaseAST *getArgs(int i){if(i<Args.size())return Args.at(i);else return NULL;}
+	Types getType(){return Type;}
 };
 
 
@@ -379,14 +402,17 @@ class CallExprAST : public BaseAST{
   */
 class JumpStmtAST : public BaseAST{
 	BaseAST *Expr;
+
 	public:
-		JumpStmtAST(BaseAST *expr) : BaseAST(JumpStmtID), Expr(expr){}
-		~JumpStmtAST(){SAFE_DELETE(Expr);}
-		static inline bool classof(JumpStmtAST const*){return true;}
-		static inline bool classof(BaseAST const* base){
-			return base->getValueID()==JumpStmtID;
-		}
-		BaseAST *getExpr(){return Expr;}
+	JumpStmtAST(BaseAST *expr) : BaseAST(JumpStmtID), Expr(expr){}
+	~JumpStmtAST(){SAFE_DELETE(Expr);}
+	static inline bool classof(JumpStmtAST const*){return true;}
+	static inline bool classof(BaseAST const* base){
+		return base->getValueID()==JumpStmtID;
+	}
+
+	BaseAST *getExpr(){return Expr;}
+	Types getType(){return Expr->getType();}
 };
 
 
@@ -406,42 +432,29 @@ class VariableAST : public BaseAST{
 		return base->getValueID()==VariableID;
 	}
 
-	std::vector<Types> getType(){return Var->getType();}
+	Types getType(){return Var->getType();}
 	std::string getName(){return Var->getName();}
-	int getSize(){return Var->getSize();}
 	int getIndex(){return Index;}
 };
 
 
-
-/**
- * タプルを表すAST
- */
-class TupleAST : public BaseAST {
-};
-
-
-/**
-  * 配列を表すAST
-  */
-class ArrayAST : public BaseAST {
-	Types Type;
-	int Size;
-	std::vector<BaseAST*> Elements;
+class CastAST : public BaseAST {
+	VariableAST *var;
+	Types DestType;
 
 	public:
-	ArrayAST(Types type, int size, std::vector<BaseAST*> elements) : BaseAST(ArrayID), Type(type), Size(size), Elements(elements){}
-	~ArrayAST(){}
+	CastAST(VariableAST* var, Types DestType) : BaseAST(CastID), var(var), DestType(DestType){}
+	~CastAST(){}
 
-	static inline bool classof(ArrayAST const*){return true;}
+	static inline bool classof(CastAST const*){return true;}
 	static inline bool classof(BaseAST const* base){
-		return base->getValueID()==ArrayID;
+		return base->getValueID()==CastID;
 	}
 
-	Types getType(){return Type;}
-	int getSize(){return Size;}
-	BaseAST* getElement(int i){return Elements[i];}
+	VariableAST *getVariable(){return var;}
+	Types getType(){return DestType;}
 };
+
 
 
 /** 
@@ -486,17 +499,14 @@ class BooleanAST : public BaseAST {
   * Noneを表すAST
   */
 class NoneAST : public BaseAST {
-	Types Type;
-
 	public:
-	NoneAST(Types type) : BaseAST(NoneID), Type(type){};
+	NoneAST() : BaseAST(NoneID){};
 	~NoneAST(){}
 	static inline bool classof(NoneAST const*){return true;}
 	static inline bool classof(BaseAST const* base){
 		return base->getValueID()==NoneID;
 	}
-
-	Types getType(){return Types(Type_null);}
+	Types getType(){return Types(Type_all);}
 };
 
 

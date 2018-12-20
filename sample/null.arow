@@ -1,9 +1,9 @@
-i32 null(){
+int null(){
 	return None;
 }
 
-i32 main(){
-	i32 ab = null();
+int main(){
+	int ab = null();
 	if ab {
 		printnum(1);
 		return ab;

@@ -1,6 +1,6 @@
-i32 main() {
-	i32 i = 0;
-	i32 start = usclock();
+int main() {
+	int i = 0;
+	int start = usclock();
 	while i < 1000000 {
 		i = i + 1;
 		printnum(i?);

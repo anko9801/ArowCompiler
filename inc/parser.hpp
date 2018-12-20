@@ -21,8 +21,9 @@ typedef class Parser{
 	private:
 		TokenStream *Tokens;
 		TranslationUnitAST *TU;
+		BaseAST *InsertPoint;
 
-		//意味解析用各種識別子表
+		// 意味解析用各種識別子表
 		std::vector<VariableDeclAST*> VariableTable;
 		std::vector<Func> PrototypeTable;
 		std::vector<Func> FunctionTable;
@@ -44,6 +45,32 @@ typedef class Parser{
 			PrototypeTable.push_back(Func(ReturnType, FuncName, param_list));
 		}
 
+		bool SetInsertPoint(BaseAST* Block) {
+			InsertPoint = Block;
+			return true;
+		}
+
+		bool addStatement(BaseAST* stmt, int a = 0) {
+			if (llvm::isa<FunctionStmtAST>(InsertPoint)) {
+				llvm::dyn_cast<FunctionStmtAST>(InsertPoint)->addStatement(stmt);
+				return true;
+			}else if(llvm::isa<IfExprAST>(InsertPoint)) {
+				IfExprAST if_expr = llvm::dyn_cast<IfExprAST>(InsertPoint);
+				if (a == 0) {
+					if_expr.addThen(stmt);
+				}else{
+					if_expr.addElse(stmt);
+				}
+				return true;
+			}else if(llvm::isa<WhileExprAST>(InsertPoint)) {
+				llvm::dyn_cast<WhileExprAST>(InsertPoint)->addLoop(stmt);
+				return true;
+			}else{
+				fprintf(stderr, "error: unknown InsertPoint\n");
+			}
+			return false;
+		}
+
 		int find(std::vector<Func> vec, Func func) {
 			auto itr = std::find(vec.begin(), vec.end(), func);
 			size_t index = std::distance(vec.begin(), itr);
@@ -60,6 +87,7 @@ typedef class Parser{
 					return index;
 				}
 			}
+			return vec.size();
 		}
 
 		int find(std::vector<Func> vec, std::string name) {
@@ -72,6 +100,7 @@ typedef class Parser{
 					return index;
 				}
 			}
+			return vec.size();
 		}
 
 		prim_type str2Type(std::string Type) {
@@ -88,16 +117,18 @@ typedef class Parser{
 		}
 
 		std::string printType(Types type) {
-			if(type.Type == prim_type::Type_int)
+			if(type.Type == Type_int)
 				return "int";
-			else if(type.Type == prim_type::Type_bool)
+			else if(type.Type == Type_bool)
 				return "bool";
-			else if(type.Type == prim_type::Type_float)
+			else if(type.Type == Type_float)
 				return "float";
-			else if(type.Type == prim_type::Type_char)
+			else if(type.Type == Type_char)
 				return "char";
-			else if(type.Type == prim_type::Type_null)
+			else if(type.Type == Type_null)
 				return "null";
+			else
+				return "yannaiyo";
 		}
 
 	private:
@@ -114,14 +145,15 @@ typedef class Parser{
 		VariableDeclAST *visitVariableDeclaration();
 		BaseAST *visitArrayExpression(Types Type, int Size);
 		BaseAST *visitStatement(Types func_type);
-		BaseAST *visitJumpStatement(Types Type);
+		BaseAST *visitJumpStatement();
 		BaseAST *visitIfExpression();
 		BaseAST *visitWhileExpression();
-		BaseAST *visitAssignmentExpression(Types Type);
-		BaseAST *visitAdditiveExpression(BaseAST *lhs, Types Type);
-		BaseAST *visitMultiplicativeExpression(BaseAST *lhs, Types Type);
-		BaseAST *visitPostfixExpression(Types Type);
-		BaseAST *visitPrimaryExpression(Types Type);
+		BaseAST *visitAssignmentExpression();
+		BaseAST *visitExpression(BaseAST *lhs);
+		BaseAST *visitAdditiveExpression(BaseAST *lhs);
+		BaseAST *visitMultiplicativeExpression(BaseAST *lhs);
+		BaseAST *visitPostfixExpression();
+		BaseAST *visitPrimaryExpression();
 
 
 	protected:

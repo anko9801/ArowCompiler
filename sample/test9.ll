@@ -12,6 +12,21 @@ target triple = "x86_64-apple-macosx10.14.0"
 @.str.3 = private unnamed_addr constant [5 x i8] c"mmap\00", align 1
 @str = private unnamed_addr constant [21 x i8] c"Failed to blink LED.\00"
 
+define i32 @main() {
+entry:
+  %ifcond = icmp slt i32 0, 5
+  br label %loop
+
+loop:                                             ; preds = %loop, %entry
+  %cnt.0 = phi i32 [ 0, %entry ], [ %add_tmp, %loop ]
+  %add_tmp = add i32 %cnt.0, 1
+  br i1 %ifcond, label %loop, label %afterloop
+
+afterloop:                                        ; preds = %loop
+  %call_tmp = call i32 @printnum(i32 %add_tmp)
+  ret i32 %add_tmp
+}
+
 ; Function Attrs: nounwind ssp uwtable
 define i32 @msleep(i32) local_unnamed_addr #0 {
   %2 = tail call i32 @usleep(i32 10) #3
@@ -30,7 +45,7 @@ define i32 @printnum(i32) #0 {
 declare i32 @printf(i8* nocapture readonly, ...) local_unnamed_addr #2
 
 ; Function Attrs: nounwind ssp uwtable
-define i32 @usclock() #0 {
+define i32 @usclock() local_unnamed_addr #0 {
   %1 = tail call i64 @clock() #3
   %2 = uitofp i64 %1 to double
   %3 = fmul double %2, 1.000000e+06
@@ -80,7 +95,7 @@ declare void @perror(i8* nocapture readonly) local_unnamed_addr #2
 declare i8* @mmap(i8*, i64, i32, i32, i32, i64) local_unnamed_addr #1
 
 ; Function Attrs: nounwind ssp uwtable
-define void @GPIOclear() #0 {
+define void @GPIOclear() local_unnamed_addr #0 {
   %1 = load i8*, i8** getelementptr inbounds (%struct.rpi_gpio, %struct.rpi_gpio* @gpio, i64 0, i32 2), align 8, !tbaa !11
   %2 = tail call i32 @munmap(i8* %1, i64 4096) #3
   %3 = load i32, i32* getelementptr inbounds (%struct.rpi_gpio, %struct.rpi_gpio* @gpio, i64 0, i32 1), align 8, !tbaa !3
@@ -93,7 +108,7 @@ declare i32 @munmap(i8*, i64) local_unnamed_addr #1
 declare i32 @close(i32) local_unnamed_addr #1
 
 ; Function Attrs: nounwind ssp uwtable
-define void @BlinkLED(i32) #0 {
+define void @BlinkLED(i32) local_unnamed_addr #0 {
   %2 = srem i32 %0, 10
   %3 = mul nsw i32 %2, 3
   %4 = shl i32 1, %3
@@ -141,7 +156,7 @@ define void @BlinkLED(i32) #0 {
 }
 
 ; Function Attrs: nounwind ssp uwtable
-define i32 @GPIOsetup() #0 {
+define i32 @GPIOsetup() local_unnamed_addr #0 {
   %1 = tail call i32 (i8*, i32, ...) @open(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @.str.1, i64 0, i64 0), i32 130) #3
   store i32 %1, i32* getelementptr inbounds (%struct.rpi_gpio, %struct.rpi_gpio* @gpio, i64 0, i32 1), align 8, !tbaa !3
   %2 = icmp slt i32 %1, 0
@@ -177,22 +192,6 @@ define i32 @GPIOsetup() #0 {
 
 ; Function Attrs: nounwind
 declare i32 @puts(i8* nocapture readonly) local_unnamed_addr #3
-
-define i32 @main() {
-entry:
-  %ifcond = icmp slt i32 0, 5
-  br label %loop
-
-loop:                                             ; preds = %loop, %entry
-  %cnt.0 = phi i32 [ 0, %entry ], [ %add_tmp, %loop ]
-  %add_tmp = add i32 %cnt.0, 1
-  %ifcond3 = icmp slt i32 %add_tmp, 5
-  br i1 %ifcond3, label %loop, label %afterloop
-
-afterloop:                                        ; preds = %loop
-  %call_tmp = call i32 @printnum(i32 %add_tmp)
-  ret i32 %add_tmp
-}
 
 attributes #0 = { nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="true" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="penryn" "target-features"="+cx16,+fxsr,+mmx,+sahf,+sse,+sse2,+sse3,+sse4.1,+ssse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }
 attributes #1 = { "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="true" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="penryn" "target-features"="+cx16,+fxsr,+mmx,+sahf,+sse,+sse2,+sse3,+sse4.1,+ssse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }

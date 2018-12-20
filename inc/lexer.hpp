@@ -26,6 +26,7 @@ enum TokenType{
 	TOK_MATCH,
 	TOK_RETURN,			//RETURN
 	TOK_CAST,
+	TOK_NL,
 	TOK_EOF				//EOF
 };
 
@@ -85,7 +86,6 @@ class TokenStream{
 	protected:
 
 	public:
-		bool printLex = false;
 		TokenStream():CurIndex(0){}
 		~TokenStream();
 
@@ -104,6 +104,7 @@ class TokenStream{
 		bool getCurBoolVal() {return Tokens[CurIndex]->getBoolValue();}
 		bool printTokens();
 		int getCurIndex(){return CurIndex;}
+		int getLine(){return Tokens[CurIndex]->getLine()+1;}
 		bool applyTokenIndex(int index){CurIndex=index;return true;}
 
 	private:

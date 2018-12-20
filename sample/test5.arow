@@ -1,6 +1,6 @@
-i32 main() {
+int main() {
 	bool k = true;
-	i32 a = 32;
+	int a = 32;
 	if true {
 		printnum(a?);
 	}

@@ -95,10 +95,55 @@ bool OptionParser::parseOption(){
 }
 
 
+void printAST(std::vector<BaseAST*> stmt_list, int nest){
+	for(int j=0; j < stmt_list.size(); j++) {
+		BaseAST *stmt = stmt_list[j];
+		for(int i=0; i < nest; i++) fprintf(stderr, "	");
+		if(!stmt) {
+			fprintf(stderr, "break\n");
+			break;
+		}
+		else if(isa<VariableDeclAST>(stmt))
+			fprintf(stderr, "VariableDeclaration\n");
+		else if(isa<BinaryExprAST>(stmt))
+			fprintf(stderr, "BinaryExpression\n");
+		else if(isa<NullExprAST>(stmt))
+			fprintf(stderr, "NullExpression\n");
+		else if(isa<CallExprAST>(stmt))
+			fprintf(stderr, "CallExpression\n");
+		else if(isa<JumpStmtAST>(stmt))
+			fprintf(stderr, "JumpStatement\n");
+		else if(isa<VariableAST>(stmt))
+			fprintf(stderr, "Variable\n");
+		else if(isa<IfExprAST>(stmt)){
+			fprintf(stderr, "IfExpression\n");
+			std::vector<BaseAST*> arg_list;arg_list.push_back(dyn_cast<IfExprAST>(stmt)->getCond());
+			printAST(arg_list, nest);
+			printAST(dyn_cast<IfExprAST>(stmt)->getThen(), nest+1);
+			printAST(dyn_cast<IfExprAST>(stmt)->getElse(), nest+1);
+		}
+		else if(isa<WhileExprAST>(stmt)) {
+			fprintf(stderr, "WhileExpression\n");
+			std::vector<BaseAST*> arg_list;arg_list.push_back(dyn_cast<WhileExprAST>(stmt)->getCond());
+			printAST(arg_list, nest);
+			printAST(dyn_cast<WhileExprAST>(stmt)->getLoop(), nest+1);
+		}
+		else if(isa<NumberAST>(stmt))
+			fprintf(stderr, "Number\n");
+		else if(isa<BooleanAST>(stmt))
+			fprintf(stderr, "Boolean\n");
+		else if(isa<NoneAST>(stmt))
+			fprintf(stderr, "None\n");
+		else
+			fprintf(stderr, "unknown\n");
+	}
+}
+
 /**
  * main関数
  */
 int main(int argc, char **argv) {
+	bool printStruct = true;
 	clock_t start = clock();
 	clock_t left, right = clock();
 	llvm::InitializeNativeTarget();
@@ -117,23 +162,34 @@ int main(int argc, char **argv) {
 		exit(1);
 	}
 	left = clock();
-	fprintf(stderr, "%.3f ms : file read\n", (double)(left - right) * 1000 / CLOCKS_PER_SEC);
+	fprintf(stderr, "%.3f ms : File Read\n", (double)(left - right) * 1000 / CLOCKS_PER_SEC);
 	right = left;
 
 	//lex and parse
 	Parser *parser = new Parser(opt.getInputFileName());
 	if(!parser->doParse()){
-		fprintf(stderr, "err at parser or lexer\n");
+		fprintf(stderr, "err at Parser or Lexer\n");
 		SAFE_DELETE(parser);
 		exit(1);
 	}
 	left = clock();
-	fprintf(stderr, "%.3f ms : lex and parse\n", (double)(left - right) * 1000 / CLOCKS_PER_SEC);
+	fprintf(stderr, "%.3f ms : Lex and Parse\n", (double)(left - right) * 1000 / CLOCKS_PER_SEC);
 	right = left;
 
 
 	//get AST
 	TranslationUnitAST &tunit = parser->getAST();
+	// print AST
+	if (printStruct) {
+		for(int i=0; ; i++) {
+			FunctionAST *func = tunit.getFunction(i);
+			if(!func)
+				break;
+			fprintf(stderr, "%s\n", func->getName().c_str());
+			FunctionStmtAST *func_stmt = func->getBody();
+			printAST(func_stmt->getStatements(), 1);
+		}
+	}
 	if(tunit.empty()){
 		fprintf(stderr,"TranslationUnit is empty\n");
 		SAFE_DELETE(parser);
@@ -150,7 +206,7 @@ int main(int argc, char **argv) {
 		exit(1);
 	}
 	left = clock();
-	fprintf(stderr, "%.3f ms : llvm ir generate\n", (double)(left - right) * 1000 / CLOCKS_PER_SEC);
+	fprintf(stderr, "%.3f ms : generate the LLVM IR\n", (double)(left - right) * 1000 / CLOCKS_PER_SEC);
 	right = left;
 
 
@@ -181,8 +237,7 @@ int main(int argc, char **argv) {
 	SAFE_DELETE(parser);
 	SAFE_DELETE(codegen);
 	left = clock();
-	fprintf(stderr, "%.3f ms : llvm file write\n", (double)(left - right) * 1000 / CLOCKS_PER_SEC);
+	fprintf(stderr, "%.3f ms : write the LLVM file\n", (double)(left - right) * 1000 / CLOCKS_PER_SEC);
 	fprintf(stderr, "compile has been completed! total compile time is %.3f ms\n", (double)(left - start) * 1000 / CLOCKS_PER_SEC);
-  
 	return 0;
 }

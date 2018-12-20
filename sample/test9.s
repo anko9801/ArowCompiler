@@ -1,5 +1,29 @@
 	.section	__TEXT,__text,regular,pure_instructions
 	.macosx_version_min 10, 14
+	.globl	_main                   ## -- Begin function main
+	.p2align	4, 0x90
+_main:                                  ## @main
+	.cfi_startproc
+## %bb.0:                               ## %entry
+	pushq	%rbx
+	.cfi_def_cfa_offset 16
+	.cfi_offset %rbx, -16
+	xorl	%ebx, %ebx
+	movb	$1, %al
+	.p2align	4, 0x90
+LBB0_1:                                 ## %loop
+                                        ## =>This Inner Loop Header: Depth=1
+	incl	%ebx
+	testb	%al, %al
+	jne	LBB0_1
+## %bb.2:                               ## %afterloop
+	movl	%ebx, %edi
+	callq	_printnum
+	movl	%ebx, %eax
+	popq	%rbx
+	retq
+	.cfi_endproc
+                                        ## -- End function
 	.globl	_msleep                 ## -- Begin function msleep
 	.p2align	4, 0x90
 _msleep:                                ## @msleep
@@ -36,17 +60,17 @@ _printnum:                              ## @printnum
                                         ## -- End function
 	.section	__TEXT,__literal16,16byte_literals
 	.p2align	4               ## -- Begin function usclock
-LCPI2_0:
+LCPI3_0:
 	.long	1127219200              ## 0x43300000
 	.long	1160773632              ## 0x45300000
 	.long	0                       ## 0x0
 	.long	0                       ## 0x0
-LCPI2_1:
+LCPI3_1:
 	.quad	4841369599423283200     ## double 4503599627370496
 	.quad	4985484787499139072     ## double 1.9342813113834067E+25
 	.section	__TEXT,__literal8,8byte_literals
 	.p2align	3
-LCPI2_2:
+LCPI3_2:
 	.quad	4696837146684686336     ## double 1.0E+6
 	.section	__TEXT,__text,regular,pure_instructions
 	.globl	_usclock
@@ -61,10 +85,10 @@ _usclock:                               ## @usclock
 	.cfi_def_cfa_register %rbp
 	callq	_clock
 	movq	%rax, %xmm0
-	punpckldq	LCPI2_0(%rip), %xmm0 ## xmm0 = xmm0[0],mem[0],xmm0[1],mem[1]
-	subpd	LCPI2_1(%rip), %xmm0
+	punpckldq	LCPI3_0(%rip), %xmm0 ## xmm0 = xmm0[0],mem[0],xmm0[1],mem[1]
+	subpd	LCPI3_1(%rip), %xmm0
 	haddpd	%xmm0, %xmm0
-	movsd	LCPI2_2(%rip), %xmm1    ## xmm1 = mem[0],zero
+	movsd	LCPI3_2(%rip), %xmm1    ## xmm1 = mem[0],zero
 	mulsd	%xmm1, %xmm0
 	divsd	%xmm1, %xmm0
 	cvttsd2si	%xmm0, %eax
@@ -91,7 +115,7 @@ _MapGPIO:                               ## @MapGPIO
 	callq	_open
 	movl	%eax, _gpio+8(%rip)
 	testl	%eax, %eax
-	js	LBB3_1
+	js	LBB4_1
 ## %bb.2:
 	movq	_gpio(%rip), %r9
 	movl	$1, %ebx
@@ -103,25 +127,25 @@ _MapGPIO:                               ## @MapGPIO
 	callq	_mmap
 	movq	%rax, _gpio+16(%rip)
 	cmpq	$-1, %rax
-	je	LBB3_3
+	je	LBB4_3
 ## %bb.4:
 	movq	%rax, _gpio+24(%rip)
 	xorl	%ebx, %ebx
-LBB3_5:
+LBB4_5:
 	movl	%ebx, %eax
 	addq	$8, %rsp
 	popq	%rbx
 	popq	%rbp
 	retq
-LBB3_1:
+LBB4_1:
 	leaq	L_.str.2(%rip), %rdi
 	callq	_perror
 	movl	$1, %ebx
-	jmp	LBB3_5
-LBB3_3:
+	jmp	LBB4_5
+LBB4_3:
 	leaq	L_.str.3(%rip), %rdi
 	callq	_perror
-	jmp	LBB3_5
+	jmp	LBB4_5
 	.cfi_endproc
                                         ## -- End function
 	.globl	_GPIOclear              ## -- Begin function GPIOclear
@@ -234,7 +258,7 @@ _GPIOsetup:                             ## @GPIOsetup
 	callq	_open
 	movl	%eax, _gpio+8(%rip)
 	testl	%eax, %eax
-	js	LBB6_1
+	js	LBB7_1
 ## %bb.2:
 	movq	_gpio(%rip), %r9
 	xorl	%ebx, %ebx
@@ -246,49 +270,26 @@ _GPIOsetup:                             ## @GPIOsetup
 	callq	_mmap
 	movq	%rax, _gpio+16(%rip)
 	cmpq	$-1, %rax
-	je	LBB6_3
+	je	LBB7_3
 ## %bb.6:
 	movq	%rax, _gpio+24(%rip)
-LBB6_5:
+LBB7_5:
 	movl	%ebx, %eax
 	addq	$8, %rsp
 	popq	%rbx
 	popq	%rbp
 	retq
-LBB6_1:
+LBB7_1:
 	leaq	L_.str.2(%rip), %rdi
-	jmp	LBB6_4
-LBB6_3:
+	jmp	LBB7_4
+LBB7_3:
 	leaq	L_.str.3(%rip), %rdi
-LBB6_4:
+LBB7_4:
 	callq	_perror
 	leaq	L_str(%rip), %rdi
 	callq	_puts
 	movl	$1, %ebx
-	jmp	LBB6_5
-	.cfi_endproc
-                                        ## -- End function
-	.globl	_main                   ## -- Begin function main
-	.p2align	4, 0x90
-_main:                                  ## @main
-	.cfi_startproc
-## %bb.0:                               ## %entry
-	pushq	%rbx
-	.cfi_def_cfa_offset 16
-	.cfi_offset %rbx, -16
-	xorl	%ebx, %ebx
-	.p2align	4, 0x90
-LBB7_1:                                 ## %loop
-                                        ## =>This Inner Loop Header: Depth=1
-	incl	%ebx
-	cmpl	$5, %ebx
-	jl	LBB7_1
-## %bb.2:                               ## %afterloop
-	movl	%ebx, %edi
-	callq	_printnum
-	movl	%ebx, %eax
-	popq	%rbx
-	retq
+	jmp	LBB7_5
 	.cfi_endproc
                                         ## -- End function
 	.section	__DATA,__data

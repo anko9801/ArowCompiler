@@ -78,14 +78,22 @@ CallExprAST::~CallExprAST(){
 
 
 Types BaseAST::getType() {
+	if (!this) {
+		fprintf(stderr, "error: Type is nothing\n");
+		return Types(Type_null);
+	}
 	if (llvm::isa<VariableDeclAST>(this)) {
-		return llvm::dyn_cast<VariableDeclAST>(this)->getType()[0];
+		return llvm::dyn_cast<VariableDeclAST>(this)->getType();
+	}else if (llvm::isa<JumpStmtAST>(this)) {
+		return llvm::dyn_cast<JumpStmtAST>(this)->getType();
 	}else if (llvm::isa<BinaryExprAST>(this)) {
 		return llvm::dyn_cast<BinaryExprAST>(this)->getType();
 	}else if (llvm::isa<CallExprAST>(this)) {
 		return llvm::dyn_cast<CallExprAST>(this)->getType();
 	}else if (llvm::isa<VariableAST>(this)) {
-		return llvm::dyn_cast<VariableAST>(this)->getType()[0];
+		return llvm::dyn_cast<VariableAST>(this)->getType();
+	}else if (llvm::isa<CastAST>(this)) {
+		return llvm::dyn_cast<CastAST>(this)->getType();
 	}else if (llvm::isa<NumberAST>(this)) {
 		return llvm::dyn_cast<NumberAST>(this)->getType();
 	}else if (llvm::isa<BooleanAST>(this)) {
@@ -93,9 +101,5 @@ Types BaseAST::getType() {
 	}else if (llvm::isa<NoneAST>(this)) {
 		return llvm::dyn_cast<NoneAST>(this)->getType();
 	}
-
-	/*switch (this->getValueID()) {
-	  case VariableDeclID:
-	  (VariableDeclAST)this
-	  }*/
+	return Types(Type_null);
 }

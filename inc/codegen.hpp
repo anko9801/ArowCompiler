@@ -36,6 +36,7 @@ class CodeGen{
 		Module *Mod;				//生成したModule を格納
 		IRBuilder<> *Builder;	//LLVM-IRを生成するIRBuilder クラス
 		BasicBlock *CurBB;
+		std::map<std::string/*Variable*/, Value*> VariableTable;
 
 	public:
 		CodeGen();
@@ -46,6 +47,7 @@ class CodeGen{
 
 
 	private:
+		Type *generateType(Types type);
 		bool generateTranslationUnit(TranslationUnitAST &tunit, std::string name);
 		Function *generateFunctionDefinition(FunctionAST *func, Module *mod);
 		Function *generatePrototype(PrototypeAST *proto, Module *mod);
@@ -54,6 +56,7 @@ class CodeGen{
 		Value *generateStatement(BaseAST *stmt);
 		Value *generateIfExpr(IfExprAST *if_expr);
 		Value *generateWhileExpr(WhileExprAST *while_expr);
+		Value *generateCondition(BaseAST *Cond);
 		Value *generateExpression(BaseAST *expr);
 		Value *generateBinaryExpression(BinaryExprAST *bin_expr);
 		Value *generateCallExpression(CallExprAST *call_expr);

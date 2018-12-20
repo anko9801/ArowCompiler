@@ -1,12 +1,12 @@
-i32 main() {
-	i32 a = 4;
-	i32 b = 5;
+int main() {
+	int a = 4;
+	int b = 5;
 	if true {
 		printnum(a? + b?);
 		printnum(a? - b?);
 	}else{
-		$i32 ak = a?;
-		$i32 bk = b?;
+		int? ak = a?;
+		int? bk = b?;
 		printnum(ak * bk);
 		printnum(ak / bk);
 	}

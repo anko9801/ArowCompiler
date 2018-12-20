@@ -1,7 +1,5 @@
 #include "lexer.hpp"
 
-
-
 /**
  * トークン切り出し関数
  * @param 字句解析対象ファイル名
@@ -339,6 +337,7 @@ TokenStream *LexicalAnalysis(std::string input_filename){
 			tokens->pushToken(next_token);
 			token_str.clear();
 		}
+		//tokens->pushToken(new Token("\n", TOK_NL, line_num));
 
 		token_str.clear();
 		line_num++;

@@ -1,5 +1,5 @@
-i32 main() {
-	$i32 test = 0;
+int main() {
+	int? test = 0;
 	printnum(test);
 	return 0;
 }

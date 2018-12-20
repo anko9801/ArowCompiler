@@ -1,5 +1,5 @@
-i32 main() {
-	i32 a;
+int main() {
+	int a;
 	bool b;
 	b = true;
 	return 0;
