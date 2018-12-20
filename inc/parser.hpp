@@ -4,13 +4,11 @@
 #include<algorithm>
 #include<cstdio>
 #include<cstdlib>
-//#include<map>
 #include<string>
 #include<vector>
 #include"APP.hpp"
 #include"AST.hpp"
 #include"lexer.hpp"
-//using namespace llvm;
 
 /**
   * 構文解析・意味解析クラス
@@ -22,6 +20,10 @@ typedef class Parser{
 		TokenStream *Tokens;
 		TranslationUnitAST *TU;
 		BaseAST *InsertPoint;
+		bool warning = false;
+		Types CurFuncType;
+		bool setFuncType(Types type){CurFuncType = type;return true;}
+		Types getFuncType(){return CurFuncType;}
 
 		// 意味解析用各種識別子表
 		std::vector<VariableDeclAST*> VariableTable;
@@ -50,13 +52,13 @@ typedef class Parser{
 			return true;
 		}
 
-		bool addStatement(BaseAST* stmt, int a = 0) {
+		bool addStatement(BaseAST* stmt, int branch = 0) {
 			if (llvm::isa<FunctionStmtAST>(InsertPoint)) {
 				llvm::dyn_cast<FunctionStmtAST>(InsertPoint)->addStatement(stmt);
 				return true;
 			}else if(llvm::isa<IfExprAST>(InsertPoint)) {
 				IfExprAST if_expr = llvm::dyn_cast<IfExprAST>(InsertPoint);
-				if (a == 0) {
+				if (branch == 0) {
 					if_expr.addThen(stmt);
 				}else{
 					if_expr.addElse(stmt);
@@ -176,7 +178,8 @@ typedef class Parser{
 		FunctionStmtAST *visitFunctionStatement(PrototypeAST *proto);
 		VariableDeclAST *visitVariableDeclaration();
 		BaseAST *visitArrayExpression(Types Type, int Size);
-		BaseAST *visitStatement(Types func_type);
+		std::vector<BaseAST*> visitStatements(BaseAST *InsertPoint, int branch);
+		BaseAST *visitStatement();
 		BaseAST *visitJumpStatement();
 		BaseAST *visitIfExpression();
 		BaseAST *visitWhileExpression();
