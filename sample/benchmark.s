@@ -7,28 +7,33 @@ _main:                                  ## @main
 ## %bb.0:                               ## %entry
 	pushq	%rbp
 	.cfi_def_cfa_offset 16
-	pushq	%rbx
+	pushq	%r14
 	.cfi_def_cfa_offset 24
-	pushq	%rax
+	pushq	%rbx
 	.cfi_def_cfa_offset 32
-	.cfi_offset %rbx, -24
+	.cfi_offset %rbx, -32
+	.cfi_offset %r14, -24
 	.cfi_offset %rbp, -16
 	xorl	%ebx, %ebx
-	movb	$1, %bpl
+	callq	_usclock
+	movl	%eax, %ebp
+	movb	$1, %r14b
 	.p2align	4, 0x90
 LBB0_1:                                 ## %loop
                                         ## =>This Inner Loop Header: Depth=1
 	incl	%ebx
 	movl	%ebx, %edi
 	callq	_printnum
-	testb	%bpl, %bpl
+	testb	%r14b, %r14b
 	jne	LBB0_1
 ## %bb.2:                               ## %afterloop
 	callq	_usclock
+	subl	%ebp, %eax
+	movl	%eax, %edi
 	callq	_printnum
 	movl	%ebx, %eax
-	addq	$8, %rsp
 	popq	%rbx
+	popq	%r14
 	popq	%rbp
 	retq
 	.cfi_endproc

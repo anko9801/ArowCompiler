@@ -72,17 +72,16 @@ bool Parser::visitTranslationUnit(){
   */
 bool Parser::visitExternalDeclaration(
 		TranslationUnitAST *tunit) {
-	//FunctionDeclaration
-	PrototypeAST *proto=visitFunctionDeclaration();
-	if(proto){
-		tunit->addPrototype(proto);
-		return true;
-	}
-
 	//FunctionDefinition
 	FunctionAST *func_def = visitFunctionDefinition();
 	if(func_def){
 		tunit->addFunction(func_def);
+		return true;
+	}
+	//FunctionDeclaration
+	PrototypeAST *proto=visitFunctionDeclaration();
+	if(proto){
+		tunit->addPrototype(proto);
 		return true;
 	}
 
@@ -151,13 +150,12 @@ PrototypeAST *Parser::visitFunctionDeclaration(){
 
 	//prototype;
 	if(Tokens->getCurString() == ";"){
-		int index;
-		if(index = find(PrototypeTable, Seq(proto->getType(), proto->getName())) != PrototypeTable.size() || find(FunctionTable, Func(proto->getType(), proto->getName(), proto->getParam())) != FunctionTable.size()) {
+		int index = find(PrototypeTable, Seq(proto->getType(), proto->getName()));
+		if(index != PrototypeTable.size() || find(FunctionTable, Func(proto->getType(), proto->getName(), proto->getParam())) != FunctionTable.size()) {
 			fprintf(stderr, "Function：%s is redefined\n", proto->getName().c_str());
 			SAFE_DELETE(proto);
 			return NULL;
 		}
-		//PrototypeTable[index].setParamNum(proto->getParamNum());
 		Tokens->getNextToken();
 		return proto;
 	}else{
@@ -185,12 +183,10 @@ FunctionAST *Parser::visitFunctionDefinition(){
 		return NULL;
 	}
 
-	int index = find(FunctionTable, Func(proto->getType(), proto->getName(), proto->getParam()));
 	VariableTable.clear();
 	FunctionStmtAST *func_stmt = visitFunctionStatement(proto);
 	if(func_stmt){
 		if (Debbug) fprintf(stderr, "%d:%d: %s %s\n", Tokens->getLine(), __LINE__, __func__, Tokens->getCurString().c_str());
-		//FunctionTable[index].setParamNum(proto->getParamNum());
 		return new FunctionAST(proto, func_stmt);
 	}else{
 		SAFE_DELETE(proto);
@@ -244,8 +240,7 @@ PrototypeAST *Parser::visitPrototype(){
 	bool is_first_param = true;
 	while(true){
 		if(Tokens->getCurString() == ")"){
-			Tokens->getNextToken();
-			return new PrototypeAST(func_type, func_name, param_list);
+			break;
 		}
 		//','
 		if(!is_first_param && Tokens->getCurType() == TOK_SYMBOL && Tokens->getCurString() ==","){
@@ -278,6 +273,7 @@ PrototypeAST *Parser::visitPrototype(){
 	//')'
 	if(Tokens->getCurString() == ")"){
 		Tokens->getNextToken();
+		PrototypeTable.push_back(Func(func_type, func_name, param_list));
 		return new PrototypeAST(func_type, func_name, param_list);
 	}else{
 		Tokens->applyTokenIndex(bkup);
@@ -690,8 +686,6 @@ BaseAST *Parser::visitExpression(BaseAST *lhs) {
 	if (!lhs)
 		return NULL;
 
-	if (Debbug) fprintf(stderr, "%d:%d: %s\n", Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
-
 	if (lhs && lhs->getType() == Types(Type_int)) {
 		if (Tokens->getCurString() == "<" ||
 			Tokens->getCurString() == ">" ||
@@ -842,8 +836,7 @@ BaseAST *Parser::visitPostfixExpression(){
 	Tokens->getNextToken();
 
 	//LEFT PALEN
-	if(Tokens->getCurType() != TOK_SYMBOL ||
-			Tokens->getCurString() != "("){
+	if(Tokens->getCurString() != "("){
 		Tokens->applyTokenIndex(bkup);
 		fprintf(stderr, "%d:%d: error: LEFT PALEN is nothing\n", Tokens->getLine(), __LINE__);
 		return NULL;
@@ -856,8 +849,7 @@ BaseAST *Parser::visitPostfixExpression(){
 	BaseAST *assign_expr = visitAssignmentExpression();
 	if(assign_expr){
 		args.push_back(assign_expr);
-		while(Tokens->getCurType() == TOK_SYMBOL &&
-				Tokens->getCurString() == ","){
+		while(Tokens->getCurString() == ","){
 			Tokens->getNextToken();
 
 			//IDENTIFIER
@@ -869,49 +861,21 @@ BaseAST *Parser::visitPostfixExpression(){
 			}
 		}
 	}
-	if (Debbug) fprintf(stderr, "%d:%d: %s\n", Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
 
+	for (int i = 0;i < PrototypeTable.size();i++) fprintf(stderr, "%s\n", PrototypeTable[i].getName().c_str());
 	//関数の名前と引数の型の確認
-	int index = find(PrototypeTable, Tokens->getCurString());
-	if(index != PrototypeTable.size()){
-		Func func = PrototypeTable[index];
-		for(int i=0;i<args.size();i++) {
-			if (args[i]->getType() == func.param[i].Type) {}else{
-				SAFE_DELETE(args[i]);
-				fprintf(stderr, "%d:%d: error: no match for function param '%s'\n", Tokens->getLine(), __LINE__, Callee.c_str());
-				Tokens->applyTokenIndex(bkup);
-				return NULL;
-			}
-		}
-	}
-	index = find(FunctionTable, Tokens->getCurString());
-	if(index != FunctionTable.size()){
-		Func func = FunctionTable[index];
-		for(int i=0;i<args.size();i++) {
-			if (args[i]->getType() == func.param[i].Type) {}else{
-				SAFE_DELETE(args[i]);
-				fprintf(stderr, "%d:%d: error: no match for function param '%s'\n", Tokens->getLine(), __LINE__, Callee.c_str());
-				Tokens->applyTokenIndex(bkup);
-				return NULL;
-			}
-		}
-	}/*else{
-		fprintf(stderr, "%d:%d: error: undefined function\n", Tokens->getLine(), __LINE__);
+	Types func_type = confirm(Callee, args).getType();
+	if(func_type == Type_null) {
 		Tokens->applyTokenIndex(bkup);
 		return NULL;
-	}*/
+	}
+
 	if (Debbug) fprintf(stderr, "%d:%d: %s\n", Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
 
 	//RIGHT PALEN
 	if(Tokens->getCurString() == ")"){
 		Tokens->getNextToken();
-		/*if (Tokens->getCurString() != ";") {
-			fprintf(stderr, "%d:%d: error: expected ';' but %s\n", Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
-			Tokens->applyTokenIndex(bkup);
-			return NULL;
-		}
-		Tokens->getNextToken();*/
-		return new CallExprAST(Types(Type_bool), Callee, args);
+		return new CallExprAST(func_type, Callee, args);
 	}else{
 		for(int i=0;i<args.size();i++)
 			SAFE_DELETE(args[i]);

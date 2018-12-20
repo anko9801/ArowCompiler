@@ -124,6 +124,7 @@ struct Func {
 	Func(Types Type, std::string Name, std::vector<Seq> param) : function_seq(Seq(Type, Name)), param(param){}
 
 	Func(Seq function, std::vector<Seq> param) : function_seq(function), param(param){}
+	Func() : function_seq(Seq(Types(), "")), param(){}
 
 	Types getType(){return this->function_seq.Type;}
 	std::string getName(){return this->function_seq.Name;}
