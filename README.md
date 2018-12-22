@@ -25,9 +25,13 @@ int
 \<>
 `
   
-\<Type> := (int | float | bool) \<Number>? '?'?  
+### 本体
   
 \<Function> := \<Type> \<FunctionName> '(' (\<Type> \<Variable>)?(, \<Type> \<Variable>)+ ')' (\<Stmts> | (;|<改行>))  
+  
+\<Type> := (int | float | bool) \<Number>? '?'?  
+  
+\<FunctionName> := (String)  
   
 \<Stmts> := (\<Stmt> | { (\<Stmt>)+ })  
   
