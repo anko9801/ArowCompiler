@@ -1,7 +1,7 @@
 int main() {
 	int a = 4;
 	int b = 5;
-	if a == 4 {
+	if (a == 4) {
 		printnum(a + b);
 		printnum(a - b);
 	}else{

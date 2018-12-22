@@ -4,7 +4,7 @@ int null(){
 
 int main(){
 	int ab = null();
-	if ab {
+	if (ab) {
 		printnum(1);
 		return ab;
 	}else{

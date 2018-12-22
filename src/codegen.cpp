@@ -1,6 +1,6 @@
 #include "codegen.hpp"
 
-bool llvmDebbug = false;
+bool llvmDebbug = true;
 
 /**
   * コンストラクタ

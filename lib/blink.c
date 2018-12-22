@@ -7,6 +7,7 @@
 #define PERIPHERAL_BASE 0x3F000000
 #define GPIO_BASE       PERIPHERAL_BASE + 0x00200000
 
+// メモリの配置
 typedef struct {
 	unsigned long         gpio_base;
 	int                   memory_fd;
@@ -14,6 +15,7 @@ typedef struct {
 	volatile unsigned int *addr;
 } rpi_gpio;
 
+// 初期化の仕方
 rpi_gpio gpio = {GPIO_BASE};
 
 int MapGPIO() {
@@ -23,6 +25,10 @@ int MapGPIO() {
 		perror("Failed to open /dev/mem, try change permission.");
 		return 1;
 	}
+	printf("void:%x\n", sizeof(void*));
+	printf("rpi:%x\n", sizeof(rpi_gpio));
+	printf("base:%x\n", gpio.gpio_base);
+	printf("memory:%x\n", gpio.memory_fd);
 
 	gpio.map = mmap(
 			NULL,

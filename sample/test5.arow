@@ -1,7 +1,7 @@
 int main() {
 	bool k = true;
 	int a = 32;
-	if true {
+	if (true) {
 		printnum(a?);
 	}
 	return 0;

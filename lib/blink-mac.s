@@ -1,10 +1,16 @@
 	.text
 	.syntax unified
 	.eabi_attribute	67, "2.09"	@ Tag_conformance
-	.eabi_attribute	6, 2	@ Tag_CPU_arch
+	.eabi_attribute	6, 14	@ Tag_CPU_arch
+	.eabi_attribute	7, 65	@ Tag_CPU_arch_profile
 	.eabi_attribute	8, 1	@ Tag_ARM_ISA_use
-	.eabi_attribute	9, 1	@ Tag_THUMB_ISA_use
+	.eabi_attribute	9, 2	@ Tag_THUMB_ISA_use
+	.fpu	crypto-neon-fp-armv8
+	.eabi_attribute	12, 3	@ Tag_Advanced_SIMD_arch
+	.eabi_attribute	36, 1	@ Tag_FP_HP_extension
+	.eabi_attribute	42, 1	@ Tag_MPextension_use
 	.eabi_attribute	34, 1	@ Tag_CPU_unaligned_access
+	.eabi_attribute	68, 3	@ Tag_Virtualization_use
 	.eabi_attribute	17, 1	@ Tag_ABI_PCS_GOT_use
 	.eabi_attribute	20, 1	@ Tag_ABI_FP_denormal
 	.eabi_attribute	21, 1	@ Tag_ABI_FP_exceptions
@@ -31,23 +37,35 @@ MapGPIO:
 	sub	sp, sp, #24
 	ldr	r0, .LCPI0_0
 	mov	r1, #130
-	bl	open
+	bl	_open
 	ldr	r5, .LCPI0_1
 	cmn	r0, #1
 	str	r0, [r5, #8]
 	ble	.LBB0_4
 @ %bb.1:
 	ldm	r5, {r1, r2}
-	str	r2, [sp, #20]
+	str	r0, [sp, #16]
+	ldr	r0, .LCPI0_2
+	mov	r3, #0
+	mov	r4, #32
+	str	r2, [sp, #12]
+	str	r3, [sp, #4]
+	mov	r2, #8
+	mov	r3, #0
+	str	r4, [sp]
+	str	r1, [sp, #8]
+	bl	printf
+	ldm	r5, {r0, r1, r2}
+	str	r1, [sp, #20]
 	mov	r4, #1
 	mov	r3, #0
-	mov	r2, #4096
-	str	r1, [sp, #16]
-	mov	r1, #3
-	stm	sp, {r1, r4}
-	str	r0, [sp, #8]
+	str	r0, [sp, #16]
+	mov	r0, #3
+	stm	sp, {r0, r4}
+	str	r2, [sp, #8]
 	mov	r0, #0
-	bl	mmap
+	mov	r2, #4096
+	bl	_mmap
 	cmn	r0, #1
 	str	r0, [r5, #12]
 	beq	.LBB0_5
@@ -60,12 +78,12 @@ MapGPIO:
 	pop	{r4, r5, r11, lr}
 	mov	pc, lr
 .LBB0_4:
-	ldr	r0, .LCPI0_3
+	ldr	r0, .LCPI0_4
 	bl	perror
 	mov	r4, #1
 	b	.LBB0_3
 .LBB0_5:
-	ldr	r0, .LCPI0_2
+	ldr	r0, .LCPI0_3
 	bl	perror
 	b	.LBB0_3
 	.p2align	2
@@ -77,6 +95,8 @@ MapGPIO:
 .LCPI0_2:
 	.long	.L.str.2
 .LCPI0_3:
+	.long	.L.str.3
+.LCPI0_4:
 	.long	.L.str.1
 .Lfunc_end0:
 	.size	MapGPIO, .Lfunc_end0-MapGPIO
@@ -97,10 +117,10 @@ GPIOclear:
 	mov	r2, #4096
 	mov	r3, #0
 	ldr	r0, [r4, #12]
-	bl	munmap
+	bl	_munmap
 	ldr	r0, [r4, #8]
 	pop	{r4, r10, r11, lr}
-	b	close
+	b	_close
 	.p2align	2
 @ %bb.1:
 .LCPI1_0:
@@ -137,35 +157,35 @@ BlinkLED:
 	lsl	r1, r2, r1
 	str	r1, [r3, r5, lsl #2]
 	str	r7, [r3, #28]
-	bl	usleep
+	bl	_usleep
 	ldr	r0, [r6, #16]
 	str	r7, [r0, #40]
 	mov	r0, r4
-	bl	usleep
+	bl	_usleep
 	ldr	r0, [r6, #16]
 	str	r7, [r0, #28]
 	mov	r0, r4
-	bl	usleep
+	bl	_usleep
 	ldr	r0, [r6, #16]
 	str	r7, [r0, #40]
 	mov	r0, r4
-	bl	usleep
+	bl	_usleep
 	ldr	r0, [r6, #16]
 	str	r7, [r0, #28]
 	mov	r0, r4
-	bl	usleep
+	bl	_usleep
 	ldr	r0, [r6, #16]
 	str	r7, [r0, #40]
 	mov	r0, r4
-	bl	usleep
+	bl	_usleep
 	ldr	r0, [r6, #16]
 	str	r7, [r0, #28]
 	mov	r0, r4
-	bl	usleep
+	bl	_usleep
 	ldr	r0, [r6, #16]
 	str	r7, [r0, #40]
 	mov	r0, r4
-	bl	usleep
+	bl	_usleep
 	ldr	r0, [r6, #16]
 	mov	r1, #0
 	str	r1, [r0, r5, lsl #2]
@@ -188,65 +208,24 @@ BlinkLED:
 GPIOsetup:
 	.fnstart
 @ %bb.0:
-	.save	{r4, r5, r11, lr}
-	push	{r4, r5, r11, lr}
+	.save	{r4, r10, r11, lr}
+	push	{r4, r10, r11, lr}
 	.setfp	r11, sp, #8
 	add	r11, sp, #8
-	.pad	#24
-	sub	sp, sp, #24
-	ldr	r0, .LCPI3_0
-	mov	r1, #130
-	bl	open
-	ldr	r5, .LCPI3_1
-	cmn	r0, #1
-	str	r0, [r5, #8]
-	ble	.LBB3_4
+	bl	MapGPIO
+	mov	r4, r0
+	cmp	r0, #0
+	beq	.LBB3_2
 @ %bb.1:
-	ldm	r5, {r1, r2}
-	str	r2, [sp, #20]
-	str	r0, [sp, #8]
-	mov	r0, #0
-	mov	r3, #0
-	mov	r4, #0
-	mov	r2, #3
-	str	r2, [sp]
-	mov	r2, #4096
-	str	r1, [sp, #16]
-	mov	r1, #1
-	str	r1, [sp, #4]
-	bl	mmap
-	cmn	r0, #1
-	str	r0, [r5, #12]
-	beq	.LBB3_5
-@ %bb.2:
-	str	r0, [r5, #16]
-.LBB3_3:
-	mov	r0, r4
-	sub	sp, r11, #8
-	pop	{r4, r5, r11, lr}
-	mov	pc, lr
-.LBB3_4:
-	ldr	r0, .LCPI3_3
-	b	.LBB3_6
-.LBB3_5:
-	ldr	r0, .LCPI3_2
-.LBB3_6:
-	bl	perror
-	ldr	r0, .LCPI3_4
+	ldr	r0, .LCPI3_0
 	bl	puts
-	mov	r4, #1
-	b	.LBB3_3
+.LBB3_2:
+	mov	r0, r4
+	pop	{r4, r10, r11, lr}
+	mov	pc, lr
 	.p2align	2
-@ %bb.7:
+@ %bb.3:
 .LCPI3_0:
-	.long	.L.str
-.LCPI3_1:
-	.long	gpio
-.LCPI3_2:
-	.long	.L.str.2
-.LCPI3_3:
-	.long	.L.str.1
-.LCPI3_4:
 	.long	.Lstr
 .Lfunc_end3:
 	.size	GPIOsetup, .Lfunc_end3-GPIOsetup
@@ -263,68 +242,31 @@ main:
 	push	{r4, r10, r11, lr}
 	.setfp	r11, sp, #8
 	add	r11, sp, #8
-	.pad	#24
-	sub	sp, sp, #24
-	ldr	r0, .LCPI4_0
-	mov	r1, #130
-	bl	open
-	ldr	r4, .LCPI4_1
-	cmn	r0, #1
-	str	r0, [r4, #8]
-	ble	.LBB4_4
+	bl	MapGPIO
+	cmp	r0, #0
+	beq	.LBB4_2
 @ %bb.1:
-	ldm	r4, {r1, r2}
-	str	r2, [sp, #20]
-	str	r0, [sp, #8]
-	mov	r0, #0
-	mov	r3, #0
-	mov	r2, #3
-	str	r2, [sp]
-	mov	r2, #4096
-	str	r1, [sp, #16]
-	mov	r1, #1
-	str	r1, [sp, #4]
-	bl	mmap
-	cmn	r0, #1
-	str	r0, [r4, #12]
-	beq	.LBB4_5
-@ %bb.2:
-	str	r0, [r4, #16]
-.LBB4_3:
+	ldr	r0, .LCPI4_0
+	bl	puts
+.LBB4_2:
 	mov	r0, #23
 	bl	BlinkLED
-	ldr	r0, [r4, #12]
+	ldr	r4, .LCPI4_1
 	mov	r2, #4096
 	mov	r3, #0
-	bl	munmap
+	ldr	r0, [r4, #12]
+	bl	_munmap
 	ldr	r0, [r4, #8]
-	bl	close
+	bl	_close
 	mov	r0, #0
-	sub	sp, r11, #8
 	pop	{r4, r10, r11, lr}
 	mov	pc, lr
-.LBB4_4:
-	ldr	r0, .LCPI4_3
-	b	.LBB4_6
-.LBB4_5:
-	ldr	r0, .LCPI4_2
-.LBB4_6:
-	bl	perror
-	ldr	r0, .LCPI4_4
-	bl	puts
-	b	.LBB4_3
 	.p2align	2
-@ %bb.7:
+@ %bb.3:
 .LCPI4_0:
-	.long	.L.str
+	.long	.Lstr
 .LCPI4_1:
 	.long	gpio
-.LCPI4_2:
-	.long	.L.str.2
-.LCPI4_3:
-	.long	.L.str.1
-.LCPI4_4:
-	.long	.Lstr
 .Lfunc_end4:
 	.size	main, .Lfunc_end4-main
 	.fnend
@@ -355,8 +297,13 @@ gpio:
 
 	.type	.L.str.2,%object        @ @.str.2
 .L.str.2:
+	.asciz	"%d %d %x %x\n"
+	.size	.L.str.2, 13
+
+	.type	.L.str.3,%object        @ @.str.3
+.L.str.3:
 	.asciz	"mmap"
-	.size	.L.str.2, 5
+	.size	.L.str.3, 5
 
 	.type	.Lstr,%object           @ @str
 	.section	.rodata.str1.16,"aMS",%progbits,1

@@ -1,6 +1,6 @@
 int32 main() {
 	int32 cnt = 0;
-	while cnt < 5 {
+	while (cnt < 5) {
 		cnt = cnt + 1;
 	}
 	printnum(cnt?);

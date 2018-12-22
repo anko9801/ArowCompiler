@@ -20,7 +20,8 @@ if [ -e $FILE.ll ]; then
 	if [ -e $FILE.ll ]; then
 		if [ -z $2 ]; then
 			llc -o $FILE.s $FILE.ll -filetype=asm
-			clang -o $FILE $FILE.s
+			clang -o $FILE.o -c $FILE.s
+			gcc -o $FILE $FILE.o ../lib/blink.o
 		else
 			llc -o $FILE-diffarch.s $FILE.ll -filetype=asm -mtriple=$2 #armv4t-unknown-linux-gnueabihf
 		fi
