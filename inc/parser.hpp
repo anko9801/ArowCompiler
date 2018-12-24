@@ -26,9 +26,9 @@ typedef class Parser{
 		Types getFuncType(){return CurFuncType;}
 
 		// 意味解析用各種識別子表
+		std::vector<VariableDeclAST*> VariableTable;
 		std::vector<Func> PrototypeTable;
 		std::vector<Func> FunctionTable;
-		std::vector<VariableDeclAST*> VariableTable;
 
 	protected:
 
@@ -57,18 +57,14 @@ typedef class Parser{
 				llvm::dyn_cast<FunctionStmtAST>(InsertPoint)->addStatement(stmt);
 				return true;
 			}else if(llvm::isa<IfExprAST>(InsertPoint)) {
-				IfExprAST if_expr = llvm::dyn_cast<IfExprAST>(InsertPoint);
 				if (branch == 0) {
-					if_expr.addThen(stmt);
+					llvm::dyn_cast<IfExprAST>(InsertPoint)->addThen(stmt);
 				}else{
-					if_expr.addElse(stmt);
+					llvm::dyn_cast<IfExprAST>(InsertPoint)->addElse(stmt);
 				}
 				return true;
 			}else if(llvm::isa<WhileExprAST>(InsertPoint)) {
 				llvm::dyn_cast<WhileExprAST>(InsertPoint)->addLoop(stmt);
-				return true;
-			}else if(llvm::isa<ForExprAST>(InsertPoint)) {
-				llvm::dyn_cast<ForExprAST>(InsertPoint)->addLoop(stmt);
 				return true;
 			}else{
 				fprintf(stderr, "error: unknown InsertPoint\n");
@@ -112,6 +108,7 @@ typedef class Parser{
 			int index;
 			if(find(PrototypeTable, Callee) != PrototypeTable.size()){
 				index = find(PrototypeTable, Callee);
+				fprintf(stderr, "%d %d\n", index, PrototypeTable.size());
 				Func func = PrototypeTable[index];
 				for(int i=0;i<args.size();i++) {
 					if (!(args[i]->getType() == func.param[i].Type)) {
@@ -123,6 +120,7 @@ typedef class Parser{
 				return func;
 			}else if(find(FunctionTable, Callee) != FunctionTable.size()){
 				index = find(FunctionTable, Callee);
+				fprintf(stderr, "%d %d\n", index, FunctionTable.size());
 				Func func = FunctionTable[index];
 				for(int i=0;i<args.size();i++) {
 					if (args[i]->getType() == func.param[i].Type) {}else{
@@ -184,12 +182,10 @@ typedef class Parser{
 		BaseAST *visitJumpStatement();
 		BaseAST *visitIfExpression();
 		BaseAST *visitWhileExpression();
-		BaseAST *visitForExpression();
 		BaseAST *visitAssignmentExpression();
 		BaseAST *visitExpression(BaseAST *lhs);
 		BaseAST *visitAdditiveExpression(BaseAST *lhs);
 		BaseAST *visitMultiplicativeExpression(BaseAST *lhs);
-		BaseAST *visitCastExpression(BaseAST *lhs);
 		BaseAST *visitPostfixExpression();
 		BaseAST *visitPrimaryExpression();
 

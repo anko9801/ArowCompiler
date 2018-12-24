@@ -5,12 +5,22 @@
 _main:                                  ## @main
 	.cfi_startproc
 ## %bb.0:                               ## %entry
-	pushq	%rax
+	pushq	%rbx
 	.cfi_def_cfa_offset 16
-	xorl	%edi, %edi
+	.cfi_offset %rbx, -16
+	xorl	%ebx, %ebx
+	movb	$1, %al
+	.p2align	4, 0x90
+LBB0_1:                                 ## %loop
+                                        ## =>This Inner Loop Header: Depth=1
+	incl	%ebx
+	testb	%al, %al
+	jne	LBB0_1
+## %bb.2:                               ## %afterloop
+	movl	%ebx, %edi
 	callq	_printnum
-	xorl	%eax, %eax
-	popq	%rcx
+	movl	%ebx, %eax
+	popq	%rbx
 	retq
 	.cfi_endproc
                                         ## -- End function

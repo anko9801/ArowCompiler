@@ -5,17 +5,36 @@
 _main:                                  ## @main
 	.cfi_startproc
 ## %bb.0:                               ## %entry
-	pushq	%rbx
+	pushq	%rbp
 	.cfi_def_cfa_offset 16
-	.cfi_offset %rbx, -16
+	pushq	%r14
+	.cfi_def_cfa_offset 24
+	pushq	%rbx
+	.cfi_def_cfa_offset 32
+	.cfi_offset %rbx, -32
+	.cfi_offset %r14, -24
+	.cfi_offset %rbp, -16
+	xorl	%ebx, %ebx
 	callq	_usclock
-	movl	%eax, %ebx
+	movl	%eax, %ebp
+	movb	$1, %r14b
+	.p2align	4, 0x90
+LBB0_1:                                 ## %loop
+                                        ## =>This Inner Loop Header: Depth=1
+	incl	%ebx
+	movl	%ebx, %edi
+	callq	_printnum
+	testb	%r14b, %r14b
+	jne	LBB0_1
+## %bb.2:                               ## %afterloop
 	callq	_usclock
-	subl	%ebx, %eax
+	subl	%ebp, %eax
 	movl	%eax, %edi
 	callq	_printnum
-	xorl	%eax, %eax
+	movl	%ebx, %eax
 	popq	%rbx
+	popq	%r14
+	popq	%rbp
 	retq
 	.cfi_endproc
                                         ## -- End function

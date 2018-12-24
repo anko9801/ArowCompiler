@@ -95,12 +95,10 @@ bool OptionParser::parseOption(){
 }
 
 
-void printAST(BaseAST* stmt, int nest);
-void printASTs(std::vector<BaseAST*> stmt_list, int nest){
+void printAST(std::vector<BaseAST*> stmt_list, int nest){
 	for(int j=0; j < stmt_list.size(); j++) {
 		BaseAST *stmt = stmt_list[j];
 		for(int i=0; i < nest; i++) fprintf(stderr, "	");
-		fprintf(stderr, "syori:");
 		if(!stmt) {
 			fprintf(stderr, "break\n");
 			break;
@@ -115,26 +113,20 @@ void printASTs(std::vector<BaseAST*> stmt_list, int nest){
 			fprintf(stderr, "CallExpression\n");
 		else if(isa<JumpStmtAST>(stmt))
 			fprintf(stderr, "JumpStatement\n");
-		else if(isa<CastAST>(stmt)) {
-			fprintf(stderr, "Cast\n");
-			printAST(dyn_cast<CastAST>(stmt)->getSource(), nest+1);
-		}
 		else if(isa<VariableAST>(stmt))
 			fprintf(stderr, "Variable\n");
 		else if(isa<IfExprAST>(stmt)){
 			fprintf(stderr, "IfExpression\n");
-			printAST(dyn_cast<IfExprAST>(stmt)->getCond(), nest);
-			printASTs(dyn_cast<IfExprAST>(stmt)->getThen(), nest+1);
-			printASTs(dyn_cast<IfExprAST>(stmt)->getElse(), nest+1);
+			std::vector<BaseAST*> arg_list;arg_list.push_back(dyn_cast<IfExprAST>(stmt)->getCond());
+			printAST(arg_list, nest);
+			printAST(dyn_cast<IfExprAST>(stmt)->getThen(), nest+1);
+			printAST(dyn_cast<IfExprAST>(stmt)->getElse(), nest+1);
 		}
 		else if(isa<WhileExprAST>(stmt)) {
 			fprintf(stderr, "WhileExpression\n");
-			printAST(dyn_cast<WhileExprAST>(stmt)->getCond(), nest);
-			printASTs(dyn_cast<WhileExprAST>(stmt)->getLoop(), nest+1);
-		}
-		else if(isa<ForExprAST>(stmt)) {
-			fprintf(stderr, "WhileExpression\n");
-			printASTs(dyn_cast<ForExprAST>(stmt)->getLoop(), nest+1);
+			std::vector<BaseAST*> arg_list;arg_list.push_back(dyn_cast<WhileExprAST>(stmt)->getCond());
+			printAST(arg_list, nest);
+			printAST(dyn_cast<WhileExprAST>(stmt)->getLoop(), nest+1);
 		}
 		else if(isa<NumberAST>(stmt))
 			fprintf(stderr, "Number\n");
@@ -145,10 +137,6 @@ void printASTs(std::vector<BaseAST*> stmt_list, int nest){
 		else
 			fprintf(stderr, "unknown\n");
 	}
-}
-void printAST(BaseAST *stmt, int nest){
-	std::vector<BaseAST*> list;list.push_back(stmt);
-	printASTs(list, nest);
 }
 
 /**
@@ -199,10 +187,9 @@ int main(int argc, char **argv) {
 				break;
 			fprintf(stderr, "%s\n", func->getName().c_str());
 			FunctionStmtAST *func_stmt = func->getBody();
-			printASTs(func_stmt->getStatements(), 1);
+			printAST(func_stmt->getStatements(), 1);
 		}
 	}
-	fprintf(stderr, "asdfasdasdsf\n");
 	if(tunit.empty()){
 		fprintf(stderr,"TranslationUnit is empty\n");
 		SAFE_DELETE(parser);

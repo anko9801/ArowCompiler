@@ -1,10 +1,13 @@
 #ifndef AST_HPP 
 #define AST_HPP
 
+
 #include<string>
+//#include<map>
 #include<vector>
 #include<llvm/Support/Casting.h>
 #include"APP.hpp"
+//using namespace llvm;
 
 /************************************************
 AST
@@ -17,7 +20,6 @@ class BaseAST;
 class TranslationUnitAST;
 class FunctionAST;
 class PrototypeAST;
-class StatementsAST;
 class FunctionStmtAST;
 class VariableDeclAST;
 class BinaryExprAST;
@@ -26,7 +28,6 @@ class CallExprAST;
 class JumpStmtAST;
 class IfExprAST;
 class WhileExprAST;
-class ForExprAST;
 class VariableAST;
 class CastAST;
 class NumberAST;
@@ -39,7 +40,6 @@ class NoneAST;
   */
 enum AstID{
 	BaseID,
-	StatementsID,
 	FunctionStmtID,
 	VariableDeclID,
 	BinaryExprID,
@@ -53,7 +53,6 @@ enum AstID{
 	NoneID,
 	IfExprID,
 	WhileExprID,
-	ForExprID,
 };
 
 enum prim_type {
@@ -83,7 +82,6 @@ struct Types {
 	int getBits() {return bits;}
 	prim_type getPrimType() {return Type;}
 	bool getNonNull() {return non_null;}
-	bool setNonNull(bool NonNull) {non_null = NonNull;return true;}
 
 	bool operator== (const Types &rhs) const {
 		if (Type == Type_all || rhs.Type == Type_all) return true;
@@ -229,31 +227,12 @@ class FunctionAST{
 };
 
 
-class StatementsAST : public BaseAST {
-	std::vector<VariableDeclAST*> VariableTable;
-	std::vector<BaseAST*> Stmts;
-
-	public:
-	StatementsAST() : BaseAST(StatementsID){}
-	~StatementsAST();
-	static inline bool classof(StatementsAST const*){return true;}
-	static inline bool classof(BaseAST const* base){
-		return base->getValueID()==StatementsID;
-	}
-
-	bool addVariable(VariableDeclAST *var) {VariableTable.push_back(var);return true;}
-	bool addStatement(BaseAST *stmt) {Stmts.push_back(stmt);return true;}
-	std::vector<VariableDeclAST*> getVariableTable() {return VariableTable;}
-	std::vector<BaseAST*> getStatements() {return Stmts;}
-	BaseAST *getStatement(int i){if(i<getStatements().size())return getStatements().at(i);else return NULL;}
-};
-
 
 /**
   * 関数定義(本文)を表すAST
   */
 class FunctionStmtAST : public BaseAST {
-	StatementsAST *stmts;
+	std::vector<BaseAST*> StmtLists;
 
 	public:
 	FunctionStmtAST() : BaseAST(FunctionStmtID){}
@@ -263,9 +242,10 @@ class FunctionStmtAST : public BaseAST {
 		return base->getValueID()==FunctionStmtID;
 	}
 
-	bool addStatement(BaseAST *stmt) {stmts->addStatement(stmt);return true;}
-	BaseAST *getStatement(int i){if(i<stmts->getStatements().size())return stmts->getStatement(i);else return NULL;}
-	std::vector<BaseAST*> getStatements(){return stmts->getStatements();}
+	bool addStatement(BaseAST *stmt){StmtLists.push_back(stmt);}
+
+	BaseAST *getStatement(int i){if(i<StmtLists.size())return StmtLists.at(i);else return NULL;}
+	std::vector<BaseAST*> getStatements(){return StmtLists;}
 };
 
 
@@ -382,26 +362,6 @@ class WhileExprAST : public BaseAST {
 };
 
 
-/**
- * For文を表すAST
- */
-class ForExprAST : public BaseAST {
-	std::vector<BaseAST*> LoopStmt;
-	std::vector<VariableDeclAST*> VariableTable;
-
-	public:
-	ForExprAST() : BaseAST(ForExprID){}
-	~ForExprAST(){}
-	static inline bool classof(ForExprAST const*){return true;}
-	static inline bool classof(BaseAST const* base){
-		return base->getValueID() == ForExprID;
-	}
-
-	std::vector<BaseAST*> getLoop(){return LoopStmt;}
-	bool addLoop(BaseAST *stmt){LoopStmt.push_back(stmt);return true;}
-};
-
-
 /** 
   * ";"を表すAST
   */
@@ -480,11 +440,11 @@ class VariableAST : public BaseAST{
 
 
 class CastAST : public BaseAST {
-	BaseAST *Source;
+	VariableAST *var;
 	Types DestType;
 
 	public:
-	CastAST(BaseAST* source, Types DestType) : BaseAST(CastID), Source(source), DestType(DestType){}
+	CastAST(VariableAST* var, Types DestType) : BaseAST(CastID), var(var), DestType(DestType){}
 	~CastAST(){}
 
 	static inline bool classof(CastAST const*){return true;}
@@ -492,7 +452,7 @@ class CastAST : public BaseAST {
 		return base->getValueID()==CastID;
 	}
 
-	BaseAST *getSource(){return Source;}
+	VariableAST *getVariable(){return var;}
 	Types getType(){return DestType;}
 };
 

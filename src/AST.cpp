@@ -60,10 +60,10 @@ FunctionAST::~FunctionAST(){
   */
 FunctionStmtAST::~FunctionStmtAST(){
 	//delete statements
-	for(int i=0; i < stmts->getStatements().size(); i++){
-		SAFE_DELETE(stmts->getStatements().at(i));
+	for(int i=0; i<StmtLists.size(); i++){
+		SAFE_DELETE(StmtLists[i]);
 	}
-	stmts->getStatements().clear();
+	StmtLists.clear();
 }
 
 

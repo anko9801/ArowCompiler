@@ -14,6 +14,31 @@ target triple = "x86_64-apple-macosx10.14.0"
 
 define i32 @main() {
 entry:
+  br i1 true, label %then, label %else
+
+then:                                             ; preds = %entry
+  %add_tmp = add i32 4, 5
+  %call_tmp = call i32 @printnum(i32 %add_tmp)
+  %sub_tmp = sub i32 4, 5
+  %call_tmp4 = call i32 @printnum(i32 %sub_tmp)
+  br label %ifcont
+
+else:                                             ; preds = %entry
+  %ak = alloca i32
+  store i32 4, i32* %ak
+  %bk = alloca i32
+  store i32 5, i32* %bk
+  %var_tmp7 = load i32, i32* %ak
+  %var_tmp8 = load i32, i32* %bk
+  %mul_tmp = mul i32 %var_tmp7, %var_tmp8
+  %call_tmp9 = call i32 @printnum(i32 %mul_tmp)
+  %var_tmp10 = load i32, i32* %ak
+  %var_tmp11 = load i32, i32* %bk
+  %div_tmp = sdiv i32 %var_tmp10, %var_tmp11
+  %call_tmp12 = call i32 @printnum(i32 %div_tmp)
+  br label %ifcont
+
+ifcont:                                           ; preds = %else, %then
   ret i32 0
 }
 
@@ -26,7 +51,7 @@ define i32 @msleep(i32) local_unnamed_addr #0 {
 declare i32 @usleep(i32) local_unnamed_addr #1
 
 ; Function Attrs: nounwind ssp uwtable
-define i32 @printnum(i32) local_unnamed_addr #0 {
+define i32 @printnum(i32) #0 {
   %2 = tail call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([4 x i8], [4 x i8]* @.str, i64 0, i64 0), i32 %0)
   ret i32 %2
 }

@@ -276,11 +276,6 @@ TokenStream *LexicalAnalysis(std::string input_filename){
 						next_token = new Token(token_str, TOK_SYMBOL, line_num);
 						break;
 
-					case ':':
-						token_str += next_char;
-						next_token = new Token(token_str, TOK_SYMBOL, line_num);
-						break;
-
 					case ',':
 						token_str += next_char;
 						next_token = new Token(token_str, TOK_SYMBOL, line_num);
@@ -323,14 +318,7 @@ TokenStream *LexicalAnalysis(std::string input_filename){
 
 					case '?':
 						token_str += next_char;
-						next_char = cur_line.at(index++);
-						if (next_char == '?') {
-							token_str += next_char;
-							next_token = new Token(token_str, TOK_SYMBOL, line_num);
-						}else{
-							index--;
-							next_token = new Token(token_str, TOK_SYMBOL, line_num);
-						}
+						next_token = new Token(token_str, TOK_SYMBOL, line_num);
 						break;
 
 					case '.':

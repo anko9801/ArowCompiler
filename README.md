@@ -25,10 +25,7 @@ int
 ```
 (int)
 ```
-型を表す
-
-```
-```
+型を表す  
 
 ### 本体
 
@@ -76,11 +73,11 @@ int
 	<Cast(bool)> && <Cast(bool)>
 )
 
-<Cast> := <Postfix> (as <Type> | is <Type> | ! | ?)?
+<Cast> := <Postfix> (as <Type> | is <Type> | '!' | '?')?
 
 <Postfix> := (
 	<PrimaryExpr> |
-	<FunctionName>'('(<Assign>)*')'
+	<FunctionName>'('(<Assign>)? (, <Assign>)*')'
 )
 
 <PrimaryExpr> := (
