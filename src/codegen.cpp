@@ -195,8 +195,7 @@ Value *CodeGen::generateFunctionStatement(FunctionStmtAST *func_stmt){
 		stmt=func_stmt->getStatement(i);
 		if(!stmt)
 			break;
-		else if(!isa<NullExprAST>(stmt))
-			v = generateStatement(stmt);
+		v = generateStatement(stmt);
 	}
 	if (llvmDebbug) fprintf(stderr, "finish\n");
 

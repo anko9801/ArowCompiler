@@ -20,10 +20,10 @@ class BaseAST;
 class TranslationUnitAST;
 class FunctionAST;
 class PrototypeAST;
+class StatementsAST;
 class FunctionStmtAST;
 class VariableDeclAST;
 class BinaryExprAST;
-class NullExprAST;
 class CallExprAST;
 class JumpStmtAST;
 class IfExprAST;
@@ -41,11 +41,11 @@ class NoneAST;
 enum AstID{
 	BaseID,
 	FunctionStmtID,
+	StatementsID,
 	VariableDeclID,
 	BinaryExprID,
 	IfExprID,
 	WhileExprID,
-	NullExprID,
 	CallExprID,
 	JumpStmtID,
 	CastID,
@@ -93,13 +93,6 @@ struct Types {
 		if (Type == rhs.Type/* && non_null == rhs.non_null*/) return false;
 		else return true;
 	}
-};
-
-struct Variable {
-	Types Type;
-	std::string Name;
-	std::string Level;
-	Variable(Types Type, std::string Name, std::string Level) : Type(Type), Name(Name), Level(Level){}
 };
 
 struct Seq {
@@ -162,7 +155,6 @@ class TranslationUnitAST{
 };
 
 
-
 /** 
   * 関数宣言を表すAST
   */
@@ -184,7 +176,6 @@ class PrototypeAST{
 };
 
 
-
 /**
   * 関数定義を表すAST
   */
@@ -203,6 +194,25 @@ class FunctionAST{
 	FunctionStmtAST *getBody(){return Body;}
 };
 
+
+class StatementsAST {
+	std::vector<BaseAST*> Statements;
+	std::vector<VariableDeclAST*> VarDecls;
+
+	public:
+	StatementsAST(){}
+	~StatementsAST();
+
+	bool addStatement(BaseAST *stmt){
+		Statements.push_back(stmt);
+		if(llvm::isa<VariableDeclAST>(stmt)) {
+			VarDecls.push_back(llvm::dyn_cast<VariableDeclAST>(stmt));
+		}
+		return true;
+	}
+	BaseAST *getStatement(int i){if(i<Statements.size())return Statements.at(i);else return NULL;}
+	VariableDeclAST *getVarDecl(int i){if(i<VarDecls.size())return VarDecls.at(i);else return NULL;}
+};
 
 
 /**
@@ -336,19 +346,6 @@ class WhileExprAST : public BaseAST {
 	BaseAST* getCond(){return Cond;}
 	std::vector<BaseAST*> getLoop(){return LoopStmt;}
 	bool addLoop(BaseAST *stmt){LoopStmt.push_back(stmt);return true;}
-};
-
-
-/** 
-  * ";"を表すAST
-  */
-class NullExprAST : public BaseAST{
-	public:
-		NullExprAST() : BaseAST(NullExprID){}
-		static inline bool classof(NullExprAST const*){return true;}
-		static inline bool classof(BaseAST const* base){
-			return base->getValueID()==NullExprID;
-		}
 };
 
 

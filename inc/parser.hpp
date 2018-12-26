@@ -55,7 +55,11 @@ typedef class Parser{
 
 		bool addStatement(BaseAST* stmt, int branch = 0) {
 			if (llvm::isa<FunctionStmtAST>(InsertPoint)) {
-				llvm::dyn_cast<FunctionStmtAST>(InsertPoint)->addStatement(stmt);
+				if (llvm::isa<VariableDeclAST>(stmt)) {
+					llvm::dyn_cast<FunctionStmtAST>(InsertPoint)->addStatement(llvm::dyn_cast<VariableDeclAST>(stmt));
+				}else{
+					llvm::dyn_cast<FunctionStmtAST>(InsertPoint)->addStatement(stmt);
+				}
 				return true;
 			}else if(llvm::isa<IfExprAST>(InsertPoint)) {
 				if (branch == 0) {
@@ -104,36 +108,7 @@ typedef class Parser{
 					return Types(Type_null);
 				}
 			}
-
 			return proto->getType();
-			/*if(find(PrototypeTable, Callee) != PrototypeTable.size()){
-				index = find(PrototypeTable, Callee);
-				fprintf(stderr, "%d %d\n", index, PrototypeTable.size());
-				PrototypeAST *func = PrototypeTable[index];
-				for(int i=0;i<args.size();i++) {
-					if (!(args[i]->getType() == func.param[i].Type)) {
-						SAFE_DELETE(args[i]);
-						fprintf(stderr, "%d:%d: error: no match for function param '%s'\n", Tokens->getLine(), __LINE__, Callee.c_str());
-						return Func();
-					}
-				}
-				return func;
-			}else if(find(FunctionTable, Callee) != FunctionTable.size()){
-				index = find(FunctionTable, Callee);
-				fprintf(stderr, "%d %d\n", index, FunctionTable.size());
-				Func func = FunctionTable[index];
-				for(int i=0;i<args.size();i++) {
-					if (args[i]->getType() == func.param[i].Type) {}else{
-						SAFE_DELETE(args[i]);
-						fprintf(stderr, "%d:%d: error: no match for function param '%s'\n", Tokens->getLine(), __LINE__, Callee.c_str());
-						return Func();
-					}
-				}
-				return func;
-			}else{
-				fprintf(stderr, "%d:%d: error: undefined function %s\n", Tokens->getLine(), __LINE__, Callee.c_str());
-				return Func();
-			}*/
 		}
 
 		prim_type str2Type(std::string Type) {

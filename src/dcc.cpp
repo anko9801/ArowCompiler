@@ -107,8 +107,6 @@ void printAST(std::vector<BaseAST*> stmt_list, int nest){
 			fprintf(stderr, "VariableDeclaration\n");
 		else if(isa<BinaryExprAST>(stmt))
 			fprintf(stderr, "BinaryExpression\n");
-		else if(isa<NullExprAST>(stmt))
-			fprintf(stderr, "NullExpression\n");
 		else if(isa<CallExprAST>(stmt))
 			fprintf(stderr, "CallExpression\n");
 		else if(isa<JumpStmtAST>(stmt))

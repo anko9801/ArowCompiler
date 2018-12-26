@@ -91,7 +91,7 @@ int
 ```
 
 ## コンパイル
-/bin/dcc [file] [option], ...
+../bin/dcc [file] [option], ...
 
 option
 -o : filename

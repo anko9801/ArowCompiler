@@ -293,8 +293,9 @@ PrototypeAST *Parser::visitPrototype(){
 	}
 	Tokens->getNextToken();
 
-	PrototypeTable.push_back(new PrototypeAST(func_type, func_name, param_list));
-	return new PrototypeAST(func_type, func_name, param_list);
+	PrototypeAST *proto = new PrototypeAST(func_type, func_name, param_list);
+	PrototypeTable.push_back(proto);
+	return proto;
 }
 
 
