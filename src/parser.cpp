@@ -152,11 +152,22 @@ PrototypeAST *Parser::visitFunctionDeclaration(){
 
 	//prototype;
 	if(Tokens->getCurString() == ";"){
-		int index = find(PrototypeTable, Seq(proto->getType(), proto->getName()));
-		if(index != PrototypeTable.size() || find(FunctionTable, Func(proto->getType(), proto->getName(), proto->getParam())) != FunctionTable.size()) {
-			fprintf(stderr, "Function：%s is redefined\n", proto->getName().c_str());
-			SAFE_DELETE(proto);
-			return NULL;
+		for (int i = 0;i < PrototypeTable.size();i++) {
+			if (!PrototypeTable[i]) break;
+			if (PrototypeTable[i] == proto) {
+				fprintf(stderr, "Function：%s is redefined\n", proto->getName().c_str());
+				SAFE_DELETE(proto);
+				return NULL;
+			}
+		}
+		FunctionAST *func = new FunctionAST(proto);
+		for (int i = 0;i < FunctionTable.size();i++) {
+			if (!FunctionTable[i]) break;
+			if (FunctionTable[i] == func) {
+				fprintf(stderr, "Function：%s is redefined\n", proto->getName().c_str());
+				SAFE_DELETE(proto);
+				return NULL;
+			}
 		}
 		Tokens->getNextToken();
 		return proto;
@@ -177,12 +188,17 @@ FunctionAST *Parser::visitFunctionDefinition(){
 
 	if(Debbug) fprintf(stderr, "%s\n", __func__);
 	PrototypeAST *proto = visitPrototype();
-	if(!proto){
+	if(!proto) {
 		return NULL;
-	}else if(find(FunctionTable, Func(proto->getType(), proto->getName(), proto->getParam())) != FunctionTable.size()) {
-		fprintf(stderr, "%d:%d: Function：%s is redefined\n", Tokens->getLine(), __LINE__, proto->getName().c_str()); 
-		SAFE_DELETE(proto);
-		return NULL;
+	}
+	FunctionAST *func = new FunctionAST(proto);
+	for (int i = 0;i < FunctionTable.size();i++) {
+		if (!FunctionTable[i]) break;
+		if (FunctionTable[i] == func) {
+			fprintf(stderr, "Function：%s is redefined\n", proto->getName().c_str());
+			SAFE_DELETE(proto);
+			return NULL;
+		}
 	}
 
 	VariableTable.clear();
@@ -277,7 +293,7 @@ PrototypeAST *Parser::visitPrototype(){
 	}
 	Tokens->getNextToken();
 
-	PrototypeTable.push_back(Func(func_type, func_name, param_list));
+	PrototypeTable.push_back(new PrototypeAST(func_type, func_name, param_list));
 	return new PrototypeAST(func_type, func_name, param_list);
 }
 
@@ -348,6 +364,10 @@ std::vector<BaseAST*> Parser::visitStatements(BaseAST* InsertPoint, int branch =
 			break;
 		}else if (stmt = visitStatement()) {
 			if (Debbug) fprintf(stderr, "%d:%d: %s %s\n", Tokens->getLine(), __LINE__, __func__, Tokens->getCurString().c_str());
+
+			if(Tokens->getCurString() == ";"){
+				Tokens->getNextToken();
+			}
 			SetInsertPoint(InsertPoint);
 			addStatement(stmt, branch);
 			stmts.push_back(stmt);
@@ -405,10 +425,6 @@ BaseAST *Parser::visitStatement(){
 		return stmt;
 	}else if(Tokens->getCurString() == "{"){
 		return NULL;
-	//NULL Expression
-	}else if(Tokens->getCurString() == ";"){
-		Tokens->getNextToken();
-		return stmt = new NullExprAST(); 
 	}
 	fprintf(stderr, "%d:%d: not find statement %s\n", Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
 	return NULL;
@@ -519,14 +535,14 @@ BaseAST *Parser::visitJumpStatement(){
 BaseAST *Parser::visitIfExpression(){
 	int bkup = Tokens->getCurIndex();
 
-	BaseAST *stmt;
+	BaseAST *CondStmt;
 
 	if (Tokens->getCurType() != TOK_IF) {
 		Tokens->applyTokenIndex(bkup);
 		return NULL;
 	}
 	Tokens->getNextToken();
-	if (Debbug) fprintf(stderr, "%d:%d: %s\n", Tokens->getLine(), __LINE__, __func__);
+	
 	if (Tokens->getCurString() != "(") {
 		fprintf(stderr, "%d:%d: expected '(' but %s\n", Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
 		Tokens->applyTokenIndex(bkup);
@@ -534,11 +550,12 @@ BaseAST *Parser::visitIfExpression(){
 	}
 	Tokens->getNextToken();
 
-	stmt = visitExpression(NULL);
-	if (!stmt || stmt->getType() != Types(Type_bool, 1, true)){
+	CondStmt = visitExpression(NULL);
+	if (!CondStmt || CondStmt->getType() != Types(Type_bool, 1, true)){
 		Tokens->applyTokenIndex(bkup);
 		return NULL;
 	}
+	BaseAST *if_expr = new IfExprAST(CondStmt);
 
 	if (Tokens->getCurString() != ")") {
 		fprintf(stderr, "%d:%d: expected ')' but %s\n", Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
@@ -546,9 +563,6 @@ BaseAST *Parser::visitIfExpression(){
 		return NULL;
 	}
 	Tokens->getNextToken();
-
-	BaseAST *CondStmt = stmt;
-	BaseAST *if_expr = new IfExprAST(CondStmt);
 
 	visitStatements(if_expr, 0);
 
@@ -570,7 +584,7 @@ BaseAST *Parser::visitIfExpression(){
 BaseAST *Parser::visitWhileExpression(){
 	int bkup = Tokens->getCurIndex();
 
-	BaseAST *stmt, *CondStmt;
+	BaseAST *CondStmt;
 	if (Debbug) fprintf(stderr, "%d:%d: %s\n", Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
 	if (Tokens->getCurType() != TOK_WHILE) {
 		Tokens->applyTokenIndex(bkup);
@@ -585,12 +599,13 @@ BaseAST *Parser::visitWhileExpression(){
 	}
 	Tokens->getNextToken();
 
-	stmt = visitExpression(NULL);
+	CondStmt = visitExpression(NULL);
 	if (Debbug) fprintf(stderr, "%d:%d: %s\n", Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
-	if (!stmt || stmt->getType() != Types(Type_bool)){
+	if (!CondStmt || CondStmt->getType() != Types(Type_bool)){
 		Tokens->applyTokenIndex(bkup);
 		return NULL;
 	}
+	BaseAST *while_expr = new WhileExprAST(CondStmt);
 
 	if (Tokens->getCurString() != ")") {
 		fprintf(stderr, "%d:%d: expected ')' but %s\n", Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
@@ -598,9 +613,6 @@ BaseAST *Parser::visitWhileExpression(){
 		return NULL;
 	}
 	Tokens->getNextToken();
-
-	CondStmt = stmt;
-	BaseAST *while_expr = new WhileExprAST(CondStmt);
 
 	visitStatements(while_expr);
 	if (Debbug) fprintf(stderr, "%d:%d: %s\n", Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
@@ -628,8 +640,7 @@ BaseAST *Parser::visitAssignmentExpression() {
 				int Index = 0;
 				lhs = new VariableAST(VariableTable[i], Index);
 				BaseAST *rhs;
-				if(Tokens->getCurType() == TOK_SYMBOL &&
-						Tokens->getCurString() == "="){
+				if(Tokens->getCurString() == "="){
 					Tokens->getNextToken();
 
 					rhs = visitAdditiveExpression(NULL);
@@ -706,8 +717,7 @@ BaseAST *Parser::visitAdditiveExpression(BaseAST *lhs){
 	BaseAST *rhs;
 
 	//+
-	if(Tokens->getCurType() == TOK_SYMBOL &&
-			Tokens->getCurString() == "+"){
+	if(Tokens->getCurString() == "+"){
 		Tokens->getNextToken();
 		rhs = visitMultiplicativeExpression(NULL);
 		if(rhs && rhs->getType() == Types(Type_int)){
@@ -722,8 +732,7 @@ BaseAST *Parser::visitAdditiveExpression(BaseAST *lhs){
 			return NULL;
 		}
 	//-
-	}else if(Tokens->getCurType() == TOK_SYMBOL &&
-			Tokens->getCurString() == "-"){
+	}else if(Tokens->getCurString() == "-"){
 		Tokens->getNextToken();
 		rhs = visitMultiplicativeExpression(NULL);
 		if(rhs && rhs->getType() == Types(Type_int)){
@@ -758,8 +767,7 @@ BaseAST *Parser::visitMultiplicativeExpression(BaseAST *lhs){
 	BaseAST *rhs;
 
 	// *
-	if(Tokens->getCurType() == TOK_SYMBOL &&
-			Tokens->getCurString() == "*"){
+	if(Tokens->getCurString() == "*"){
 		Tokens->getNextToken();
 		rhs = visitPostfixExpression();
 		if(rhs && rhs->getType() == Types(Type_int)){
@@ -773,8 +781,7 @@ BaseAST *Parser::visitMultiplicativeExpression(BaseAST *lhs){
 		}
 			
 	// /
-	}else if(Tokens->getCurType() == TOK_SYMBOL &&
-				Tokens->getCurString() == "/"){
+	}else if(Tokens->getCurString() == "/"){
 		Tokens->getNextToken();
 		rhs=visitPostfixExpression();
 		if(rhs && rhs->getType() == Types(Type_int)){
@@ -790,6 +797,50 @@ BaseAST *Parser::visitMultiplicativeExpression(BaseAST *lhs){
 	return lhs;
 }
 
+BaseAST *Parser::visitCastExpression(BaseAST *lhs){
+	//bkup index
+	int bkup=Tokens->getCurIndex();
+
+	if(!lhs)
+		lhs = visitPostfixExpression();
+	if(!lhs)
+		return NULL;
+
+	BaseAST *rhs;
+	if(Tokens->getCurString() == "as") {
+		if (Debbug) fprintf(stderr, "%d:%d: cast %s\n", Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
+		Tokens->getNextToken();
+		Types DestType = visitTypes();
+		if (DestType.getPrimType() == Type_null){
+			Tokens->applyTokenIndex(bkup);
+			return NULL;
+		}
+		return new CastAST(lhs, DestType);
+
+	}else if(Tokens->getCurString() == "is") {
+		if (Debbug) fprintf(stderr, "%d:%d: cast %s\n", Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
+		Tokens->getNextToken();
+		Types DestType = visitTypes();
+		if (DestType.getPrimType() == Type_null){
+			Tokens->applyTokenIndex(bkup);
+			return NULL;
+		}
+		/*if (lhs->getType() != DestType) {
+			lhs->setType(DestType);
+		}*/
+		return new CastAST(lhs, DestType);
+
+	}else if(Tokens->getCurString() == "?") {
+		if (Debbug) fprintf(stderr, "%d:%d: non-null\n", Tokens->getLine(), __LINE__);
+		Types DestType = lhs->getType();
+		if (DestType.getNonNull() == false) {
+			DestType = Types(Type_int, 32, true);
+		}
+		Tokens->getNextToken();
+		return new CastAST(lhs, DestType);
+	}
+	return lhs;
+}
 
 /**
   * PostfixExpression用構文解析メソッド
@@ -840,9 +891,8 @@ BaseAST *Parser::visitPostfixExpression(){
 		}
 	}
 
-	for (int i = 0;i < PrototypeTable.size();i++) fprintf(stderr, "%s\n", PrototypeTable[i].getName().c_str());
 	//関数の名前と引数の型の確認
-	Types func_type = confirm(Callee, args).getType();
+	Types func_type = confirm(Callee, args);
 	if(func_type == Type_null) {
 		Tokens->applyTokenIndex(bkup);
 		return NULL;
@@ -878,8 +928,7 @@ BaseAST *Parser::visitPrimaryExpression(){
 		Tokens->getNextToken();
 		return new NumberAST(val);
 	//integer(-)
-	}else if(Tokens->getCurType() == TOK_SYMBOL &&
-			Tokens->getCurString() == "-"){
+	}else if(Tokens->getCurString() == "-"){
 		Tokens->getNextToken();
 		if(Tokens->getCurType() == TOK_DIGIT){
 			int val = Tokens->getCurNumVal();
@@ -904,39 +953,6 @@ BaseAST *Parser::visitPrimaryExpression(){
 		for (int i = 0;i < VariableTable.size();i++) {
 			if (VariableTable[i]->getName() == Tokens->getCurString()) {
 				Tokens->getNextToken();
-				if(Tokens->getCurString() == "as") {
-					if (Debbug) fprintf(stderr, "%d:%d: cast %s\n", Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
-					Tokens->getNextToken();
-					if (Tokens->getCurType() != TOK_TYPE) {
-						Tokens->applyTokenIndex(bkup);
-						return NULL;
-					}
-					Types DestType = visitTypes();
-					return new CastAST(new VariableAST(VariableTable[i]), DestType);
-					if (VariableTable[i]->getType() != DestType) {
-						VariableTable[i]->setType(DestType);
-					}
-
-				}else if(Tokens->getCurString() == "is") {
-					if (Debbug) fprintf(stderr, "%d:%d: cast %s\n", Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
-					Tokens->getNextToken();
-					if (Tokens->getCurType() != TOK_TYPE) {
-						Tokens->applyTokenIndex(bkup);
-						return NULL;
-					}
-					Types DestType = visitTypes();
-					if (VariableTable[i]->getType() != DestType) {
-						VariableTable[i]->setType(DestType);
-					}
-					return new CastAST(new VariableAST(VariableTable[i]), DestType);
-
-				}else if(Tokens->getCurString() == "?") {
-					fprintf(stderr, "%d:%d: non-null\n", Tokens->getLine(), __LINE__);
-					if (VariableTable[i]->getType() == Types(Type_int, 32, false)) {
-						VariableTable[i]->setType(Types(Type_int, 32, true));
-					}
-					Tokens->getNextToken();
-				}
 				return new VariableAST(VariableTable[i]);
 			}
 		}

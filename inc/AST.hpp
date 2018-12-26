@@ -43,6 +43,8 @@ enum AstID{
 	FunctionStmtID,
 	VariableDeclID,
 	BinaryExprID,
+	IfExprID,
+	WhileExprID,
 	NullExprID,
 	CallExprID,
 	JumpStmtID,
@@ -51,8 +53,6 @@ enum AstID{
 	NumberID,
 	BooleanID,
 	NoneID,
-	IfExprID,
-	WhileExprID,
 };
 
 enum prim_type {
@@ -114,30 +114,6 @@ struct Seq {
 	bool operator== (const Seq &rhs) const {
 		if (Type == rhs.Type && Name == rhs.Name) return true;
 		else return false;
-	}
-};
-
-
-struct Func {
-	Seq function_seq;
-	std::vector<Seq> param;
-	Func(Types Type, std::string Name, std::vector<Seq> param) : function_seq(Seq(Type, Name)), param(param){}
-
-	Func(Seq function, std::vector<Seq> param) : function_seq(function), param(param){}
-	Func() : function_seq(Seq(Types(), "")), param(){}
-
-	Types getType(){return this->function_seq.Type;}
-	std::string getName(){return this->function_seq.Name;}
-	int getParamNum(){return this->param.size();}
-	Seq getParam(int index){return this->param[index];}
-
-	bool operator== (const Func &rhs) const {
-		if (function_seq.Name == rhs.function_seq.Name && function_seq.Type == rhs.function_seq.Type) {
-			for(int i = 0;i < param.size();i++)
-				if (param[i] == rhs.param[i]) return true;
-		}else
-			return false;
-		return false;
 	}
 };
 
@@ -218,6 +194,7 @@ class FunctionAST{
 
 	public:
 	FunctionAST(PrototypeAST *proto, FunctionStmtAST *body) : Proto(proto), Body(body){}
+	FunctionAST(PrototypeAST *proto) : Proto(proto){}
 	~FunctionAST();
 
 	Types getType(){return Proto->getType();}
@@ -440,11 +417,11 @@ class VariableAST : public BaseAST{
 
 
 class CastAST : public BaseAST {
-	VariableAST *var;
+	BaseAST *var;
 	Types DestType;
 
 	public:
-	CastAST(VariableAST* var, Types DestType) : BaseAST(CastID), var(var), DestType(DestType){}
+	CastAST(BaseAST* var, Types DestType) : BaseAST(CastID), var(var), DestType(DestType){}
 	~CastAST(){}
 
 	static inline bool classof(CastAST const*){return true;}
@@ -452,7 +429,7 @@ class CastAST : public BaseAST {
 		return base->getValueID()==CastID;
 	}
 
-	VariableAST *getVariable(){return var;}
+	BaseAST *getVariable(){return var;}
 	Types getType(){return DestType;}
 };
 

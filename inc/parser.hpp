@@ -27,8 +27,8 @@ typedef class Parser{
 
 		// 意味解析用各種識別子表
 		std::vector<VariableDeclAST*> VariableTable;
-		std::vector<Func> PrototypeTable;
-		std::vector<Func> FunctionTable;
+		std::vector<PrototypeAST*> PrototypeTable;
+		std::vector<FunctionAST*> FunctionTable;
 
 	protected:
 
@@ -43,8 +43,9 @@ typedef class Parser{
 				std::initializer_list<Types> param_type) {
 			std::vector<Seq> param_list;
 			for (Types i : param_type) param_list.push_back(Seq(i, "i"));
-			TU->addPrototype(new PrototypeAST(ReturnType, FuncName, param_list));
-			PrototypeTable.push_back(Func(ReturnType, FuncName, param_list));
+			PrototypeAST *proto = new PrototypeAST(ReturnType, FuncName, param_list);
+			TU->addPrototype(proto);
+			PrototypeTable.push_back(proto);
 		}
 
 		bool SetInsertPoint(BaseAST* Block) {
@@ -72,44 +73,43 @@ typedef class Parser{
 			return false;
 		}
 
-		int find(std::vector<Func> vec, Func func) {
-			auto itr = std::find(vec.begin(), vec.end(), func);
-			size_t index = std::distance(vec.begin(), itr);
-			return index;
-		}
-
-		int find(std::vector<Func> vec, Seq seq) {
-			auto first = vec.begin();
-			auto last = vec.end();
-			for (; first != last; ++first) {
-				if (first->function_seq == seq) {
-					auto itr = first;
-					size_t index = std::distance(vec.begin(), itr);
-					return index;
+		Types confirm(std::string Callee, std::vector<BaseAST*> args) {
+			PrototypeAST *proto;
+			for (int i = 0;i < PrototypeTable.size();i++) {
+				if (!PrototypeTable[i]) {
+					fprintf(stderr, "%d:%d: error: undefined function %s\n", Tokens->getLine(), __LINE__, Callee.c_str());
+					return Types(Type_null);
+				}
+				if (PrototypeTable[i]->getName() == Callee) {
+					proto = PrototypeTable[i];
+					break;
 				}
 			}
-			return vec.size();
-		}
 
-		int find(std::vector<Func> vec, std::string name) {
-			auto first = vec.begin();
-			auto last = vec.end();
-			for (; first != last; ++first) {
-				if (first->function_seq.Name == name) {
-					auto itr = first;
-					size_t index = std::distance(vec.begin(), itr);
-					return index;
+			for (int i = 0;i < FunctionTable.size();i++) {
+				if (!FunctionTable[i]) {
+					fprintf(stderr, "%d:%d: error: undefined function %s\n", Tokens->getLine(), __LINE__, Callee.c_str());
+					return Types(Type_null);
+				}
+				if (FunctionTable[i]->getName() == Callee) {
+					proto = FunctionTable[i]->getPrototype();
+					break;
 				}
 			}
-			return vec.size();
-		}
 
-		Func confirm(std::string Callee, std::vector<BaseAST*> args) {
-			int index;
-			if(find(PrototypeTable, Callee) != PrototypeTable.size()){
+			for(int i=0;i<args.size();i++) {
+				if (!(args[i]->getType() == proto->getParam()[i].Type)) {
+					SAFE_DELETE(args[i]);
+					fprintf(stderr, "%d:%d: error: no match for function param '%s'\n", Tokens->getLine(), __LINE__, Callee.c_str());
+					return Types(Type_null);
+				}
+			}
+
+			return proto->getType();
+			/*if(find(PrototypeTable, Callee) != PrototypeTable.size()){
 				index = find(PrototypeTable, Callee);
 				fprintf(stderr, "%d %d\n", index, PrototypeTable.size());
-				Func func = PrototypeTable[index];
+				PrototypeAST *func = PrototypeTable[index];
 				for(int i=0;i<args.size();i++) {
 					if (!(args[i]->getType() == func.param[i].Type)) {
 						SAFE_DELETE(args[i]);
@@ -133,7 +133,7 @@ typedef class Parser{
 			}else{
 				fprintf(stderr, "%d:%d: error: undefined function %s\n", Tokens->getLine(), __LINE__, Callee.c_str());
 				return Func();
-			}
+			}*/
 		}
 
 		prim_type str2Type(std::string Type) {
@@ -186,6 +186,7 @@ typedef class Parser{
 		BaseAST *visitExpression(BaseAST *lhs);
 		BaseAST *visitAdditiveExpression(BaseAST *lhs);
 		BaseAST *visitMultiplicativeExpression(BaseAST *lhs);
+		BaseAST *visitCastExpression(BaseAST *lhs);
 		BaseAST *visitPostfixExpression();
 		BaseAST *visitPrimaryExpression();
 
