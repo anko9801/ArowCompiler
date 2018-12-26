@@ -256,16 +256,18 @@ Value *CodeGen::generateIfExpr(IfExprAST *if_expr) {
 	//auto lastThenBB = Builder->GetInsertBlock();
 
 	ThenBB = Builder->GetInsertBlock();
-	for (int i = 0;i < if_expr->getThen().size();i++)
-		generateStatement(if_expr->getThen()[i]);
+	for (int i = 0;;i++)
+		if (if_expr->getThen(i)) break;
+		else generateStatement(if_expr->getThen(i));
 	Builder->CreateBr(MergeBB);
 
 	function->getBasicBlockList().push_back(ElseBB);
 	Builder->SetInsertPoint(ElseBB);
 
 	ElseBB = Builder->GetInsertBlock();
-	for (int i = 0;i < if_expr->getElse().size();i++)
-		generateStatement(if_expr->getElse()[i]);
+	for (int i = 0;;i++)
+		if (!if_expr->getElse(i)) break;
+		else generateStatement(if_expr->getElse(i));
 	Builder->CreateBr(MergeBB);
 
 	function->getBasicBlockList().push_back(MergeBB);
@@ -294,8 +296,9 @@ Value *CodeGen::generateWhileExpr(WhileExprAST *while_expr) {
 	Builder->SetInsertPoint(LoopBB);
 
 	LoopBB = Builder->GetInsertBlock();
-	for (int i = 0;i < while_expr->getLoop().size();i++)
-		generateStatement(while_expr->getLoop()[i]);
+	for (int i = 0;;i++)
+		if (!while_expr->getLoop(i)) break;
+		else generateStatement(while_expr->getLoop(i));
 
 	Builder->CreateCondBr(CondV, LoopBB, AfterBB);
 

@@ -117,14 +117,18 @@ void printAST(std::vector<BaseAST*> stmt_list, int nest){
 			fprintf(stderr, "IfExpression\n");
 			std::vector<BaseAST*> arg_list;arg_list.push_back(dyn_cast<IfExprAST>(stmt)->getCond());
 			printAST(arg_list, nest);
-			printAST(dyn_cast<IfExprAST>(stmt)->getThen(), nest+1);
-			printAST(dyn_cast<IfExprAST>(stmt)->getElse(), nest+1);
+			std::vector<BaseAST*> if_expr;
+			for (int i = 0;;i++)if (dyn_cast<IfExprAST>(stmt)->getThen(i))if_expr.push_back(dyn_cast<IfExprAST>(stmt)->getThen(i));else break;
+			for (int i = 0;;i++)if (dyn_cast<IfExprAST>(stmt)->getElse(i))if_expr.push_back(dyn_cast<IfExprAST>(stmt)->getElse(i));else break;
+			printAST(if_expr, nest+1);
 		}
 		else if(isa<WhileExprAST>(stmt)) {
 			fprintf(stderr, "WhileExpression\n");
 			std::vector<BaseAST*> arg_list;arg_list.push_back(dyn_cast<WhileExprAST>(stmt)->getCond());
 			printAST(arg_list, nest);
-			printAST(dyn_cast<WhileExprAST>(stmt)->getLoop(), nest+1);
+			std::vector<BaseAST*> while_expr;
+			for (int i = 0;;i++)if (dyn_cast<WhileExprAST>(stmt)->getLoop(i))while_expr.push_back(dyn_cast<WhileExprAST>(stmt)->getLoop(i));else break;
+			printAST(while_expr, nest+1);
 		}
 		else if(isa<NumberAST>(stmt))
 			fprintf(stderr, "Number\n");
@@ -185,7 +189,9 @@ int main(int argc, char **argv) {
 				break;
 			fprintf(stderr, "%s\n", func->getName().c_str());
 			FunctionStmtAST *func_stmt = func->getBody();
-			printAST(func_stmt->getStatements(), 1);
+			std::vector<BaseAST*> func_expr;
+			for (int i = 0;;i++)if (dyn_cast<FunctionStmtAST>(func_stmt->getStatement(i)))func_expr.push_back(dyn_cast<FunctionStmtAST>(func_stmt->getStatement(i)));else break;
+			printAST(func_expr, 1);
 		}
 	}
 	if(tunit.empty()){

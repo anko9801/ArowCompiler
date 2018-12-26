@@ -322,9 +322,9 @@ FunctionStmtAST *Parser::visitFunctionStatement(PrototypeAST *proto){
 
 	setFuncType(proto->getType());
 
-	std::vector<BaseAST*> stmts = visitStatements(func_stmt, 0);
+	StatementsAST *stmts = visitStatements(func_stmt, 0);
 	if (warning) return func_stmt;
-	BaseAST *last_stmt = stmts[stmts.size()-1];
+	BaseAST *last_stmt = stmts->getStatement(stmts->size()-1);
 
 	//check if last statement is jump_statement
 	if(!last_stmt) {
@@ -340,15 +340,15 @@ FunctionStmtAST *Parser::visitFunctionStatement(PrototypeAST *proto){
 }
 
 
-std::vector<BaseAST*> Parser::visitStatements(BaseAST* InsertPoint, int branch = 0) {
+StatementsAST *Parser::visitStatements(BaseAST* InsertPoint, int branch = 0) {
 	int bkup = Tokens->getCurIndex();
-	std::vector<BaseAST*> stmts;
+	StatementsAST *stmts = new StatementsAST();
 	BaseAST *stmt;
 
 	if (stmt = visitStatement()) {
 		SetInsertPoint(InsertPoint);
 		addStatement(stmt, branch);
-		stmts.push_back(stmt);
+		stmts->addStatement(stmt);
 		return stmts;
 	}
 
@@ -365,18 +365,17 @@ std::vector<BaseAST*> Parser::visitStatements(BaseAST* InsertPoint, int branch =
 			break;
 		}else if (stmt = visitStatement()) {
 			if (Debbug) fprintf(stderr, "%d:%d: %s %s\n", Tokens->getLine(), __LINE__, __func__, Tokens->getCurString().c_str());
-
 			if(Tokens->getCurString() == ";"){
 				Tokens->getNextToken();
 			}
 			SetInsertPoint(InsertPoint);
 			addStatement(stmt, branch);
-			stmts.push_back(stmt);
+			stmts->addStatement(stmt);
 			continue;
 		}else{
 			fprintf(stderr, "%d:%d: unknown %s\n", Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
 			Tokens->applyTokenIndex(bkup);
-			stmts.clear();
+			stmts->clear();
 			SAFE_DELETE(InsertPoint);
 			warning = true;
 			return stmts;

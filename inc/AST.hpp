@@ -210,6 +210,13 @@ class StatementsAST {
 		}
 		return true;
 	}
+	bool clear() {
+		Statements.clear();
+		VarDecls.clear();
+		return true;
+	}
+	int size() {return Statements.size();}
+	
 	BaseAST *getStatement(int i){if(i<Statements.size())return Statements.at(i);else return NULL;}
 	VariableDeclAST *getVarDecl(int i){if(i<VarDecls.size())return VarDecls.at(i);else return NULL;}
 };
@@ -232,7 +239,6 @@ class FunctionStmtAST : public BaseAST {
 	bool addStatement(BaseAST *stmt){StmtLists.push_back(stmt);}
 
 	BaseAST *getStatement(int i){if(i<StmtLists.size())return StmtLists.at(i);else return NULL;}
-	std::vector<BaseAST*> getStatements(){return StmtLists;}
 };
 
 
@@ -280,8 +286,7 @@ class BinaryExprAST : public BaseAST{
 
 	public:
 	BinaryExprAST(std::string op, BaseAST *lhs, BaseAST *rhs, Types type)
-		: BaseAST(BinaryExprID), Op(op), LHS(lhs), RHS(rhs), Type(type){
-		}
+		: BaseAST(BinaryExprID), Op(op), LHS(lhs), RHS(rhs), Type(type){}
 	~BinaryExprAST(){SAFE_DELETE(LHS);SAFE_DELETE(RHS);}
 	static inline bool classof(BinaryExprAST const*){return true;}
 	static inline bool classof(BaseAST const* base){
@@ -303,13 +308,11 @@ class BinaryExprAST : public BaseAST{
  */
 class IfExprAST : public BaseAST {
 	BaseAST *Cond;
-	std::vector<BaseAST*> ThenStmt, ElseStmt;
+	StatementsAST *ThenStmt = new StatementsAST();
+	StatementsAST *ElseStmt = new StatementsAST();
 
 	public:
-	IfExprAST(BaseAST *Cond, std::vector<BaseAST*> Then, std::vector<BaseAST*> Else)
-		: BaseAST(IfExprID),Cond(Cond), ThenStmt(Then), ElseStmt(Else){}
-	IfExprAST(BaseAST *Cond)
-		: BaseAST(IfExprID), Cond(Cond){}
+	IfExprAST(BaseAST *Cond) : BaseAST(IfExprID), Cond(Cond){}
 	~IfExprAST(){}
 	static inline bool classof(IfExprAST const*){return true;}
 	static inline bool classof(BaseAST const* base){
@@ -317,10 +320,10 @@ class IfExprAST : public BaseAST {
 	}
 
 	BaseAST* getCond(){return Cond;}
-	std::vector<BaseAST*> getThen(){return ThenStmt;}
-	bool addThen(BaseAST *stmt){ThenStmt.push_back(stmt);return true;}
-	std::vector<BaseAST*> getElse(){return ElseStmt;}
-	bool addElse(BaseAST *stmt){ElseStmt.push_back(stmt);return true;}
+	bool addThen(BaseAST *stmt){ThenStmt->addStatement(stmt);return true;}
+	BaseAST *getThen(int i){return ThenStmt->getStatement(i);}
+	bool addElse(BaseAST *stmt){ElseStmt->addStatement(stmt);return true;}
+	BaseAST *getElse(int i){return ElseStmt->getStatement(i);}
 };
 
 
@@ -330,22 +333,19 @@ class IfExprAST : public BaseAST {
  */
 class WhileExprAST : public BaseAST {
 	BaseAST *Cond;
-	std::vector<BaseAST*> LoopStmt;
+	StatementsAST *LoopStmt = new StatementsAST();
 
 	public:
-	WhileExprAST(BaseAST *Cond, std::vector<BaseAST*> LoopStmt)
-		: BaseAST(WhileExprID), Cond(Cond), LoopStmt(LoopStmt){}
-	WhileExprAST(BaseAST *Cond)
-		: BaseAST(WhileExprID), Cond(Cond){}
+	WhileExprAST(BaseAST *Cond) : BaseAST(WhileExprID), Cond(Cond){}
 	~WhileExprAST(){}
 	static inline bool classof(WhileExprAST const*){return true;}
 	static inline bool classof(BaseAST const* base){
 		return base->getValueID() == WhileExprID;
 	}
 
-	BaseAST* getCond(){return Cond;}
-	std::vector<BaseAST*> getLoop(){return LoopStmt;}
-	bool addLoop(BaseAST *stmt){LoopStmt.push_back(stmt);return true;}
+	BaseAST *getCond(){return Cond;}
+	bool addLoop(BaseAST *stmt){LoopStmt->addStatement(stmt);return true;}
+	BaseAST *getLoop(int i){return LoopStmt->getStatement(i);}
 };
 
 

@@ -55,11 +55,7 @@ typedef class Parser{
 
 		bool addStatement(BaseAST* stmt, int branch = 0) {
 			if (llvm::isa<FunctionStmtAST>(InsertPoint)) {
-				if (llvm::isa<VariableDeclAST>(stmt)) {
-					llvm::dyn_cast<FunctionStmtAST>(InsertPoint)->addStatement(llvm::dyn_cast<VariableDeclAST>(stmt));
-				}else{
-					llvm::dyn_cast<FunctionStmtAST>(InsertPoint)->addStatement(stmt);
-				}
+				llvm::dyn_cast<FunctionStmtAST>(InsertPoint)->addStatement(stmt);
 				return true;
 			}else if(llvm::isa<IfExprAST>(InsertPoint)) {
 				if (branch == 0) {
@@ -152,7 +148,7 @@ typedef class Parser{
 		FunctionStmtAST *visitFunctionStatement(PrototypeAST *proto);
 		VariableDeclAST *visitVariableDeclaration();
 		BaseAST *visitArrayExpression(Types Type, int Size);
-		std::vector<BaseAST*> visitStatements(BaseAST *InsertPoint, int branch);
+		StatementsAST *visitStatements(BaseAST *InsertPoint, int branch);
 		BaseAST *visitStatement();
 		BaseAST *visitJumpStatement();
 		BaseAST *visitIfExpression();
