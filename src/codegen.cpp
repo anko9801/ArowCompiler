@@ -1,6 +1,6 @@
 #include "codegen.hpp"
 
-bool llvmDebbug = false;
+bool llvmDebbug = true;
 
 /**
   * コンストラクタ
@@ -62,7 +62,9 @@ Module &CodeGen::getModule(){
 
 
 Type *CodeGen::generateType(Types type) {
-	if (type.getPrimType() == Type_int || type.getPrimType() == Type_float) {
+	if (type.getPrimType() == Type_void) {
+		return Type::getVoidTy(GlobalContext);
+	}else if (type.getPrimType() == Type_int) {
 		if (type.getBits() == 1) {
 			return Type::getInt1Ty(GlobalContext);
 		}else if (type.getBits() == 8) {
@@ -74,14 +76,32 @@ Type *CodeGen::generateType(Types type) {
 		}else if (type.getBits() == 64) {
 			return Type::getInt64Ty(GlobalContext);
 		}else{
+			fprintf(stderr, "Type is not found\n");
 			return Type::getInt32Ty(GlobalContext);
+		}
+	}else if (type.getPrimType() == Type_float) {
+		if (type.getBits() == 16) {
+			return Type::getHalfTy(GlobalContext);
+		}else if (type.getBits() == 32) {
+			return Type::getFloatTy(GlobalContext);
+		}else if (type.getBits() == 64) {
+			return Type::getDoubleTy(GlobalContext);
+		}else if (type.getBits() == 128) {
+			return Type::getFP128Ty(GlobalContext);
+		}else if (type.getBits() == 80) {
+			return Type::getX86_FP80Ty(GlobalContext);
+		}else{
+			fprintf(stderr, "Type is not found\n");
+			return Type::getFloatTy(GlobalContext);
 		}
 	}else if (type.getPrimType() == Type_bool) {
 		return Type::getInt1Ty(GlobalContext);
 	}else{
+		fprintf(stderr, "Type is not found\n");
 		return Type::getInt32Ty(GlobalContext);
 	}
 }
+
 
 /**
   * Module生成メソッド
@@ -141,7 +161,6 @@ Function *CodeGen::generateFunctionDefinition(FunctionAST *func_ast,
   * @return 生成したFunctionのポインタ
   */
 Function *CodeGen::generatePrototype(PrototypeAST *proto, Module *mod){
-	if (llvmDebbug) fprintf(stderr, "%d: %s\n", __LINE__, __func__);
 	//already declared?
 	Function *func = mod->getFunction(proto->getName());
 	if(func){
@@ -233,7 +252,6 @@ Value *CodeGen::generateVariableDeclaration(VariableDeclAST *vdecl){
 }
 
 
-
 /**
   * If文生成メソッド
   * @param IfExprAST
@@ -276,7 +294,6 @@ Value *CodeGen::generateIfExpr(IfExprAST *if_expr) {
 }
 
 
-
 /**
   * While文生成メソッド
   * @param WhileExprAST
@@ -309,7 +326,6 @@ Value *CodeGen::generateWhileExpr(WhileExprAST *while_expr) {
 }
 
 
-
 /**
   * 二項演算生成メソッド
   * @param  BinaryExprAST
@@ -337,22 +353,21 @@ Value *CodeGen::generateBinaryExpression(BinaryExprAST *bin_expr){
 	if(bin_expr->getOp() == "="){
 		//store
 		return Builder->CreateStore(rhs_v, lhs_v);
-	}else if(bin_expr->getOp()=="+"){
+	}else if(bin_expr->getOp() == "+"){
 		//add
 		return Builder->CreateAdd(lhs_v, rhs_v, "add_tmp");
-	}else if(bin_expr->getOp()=="-"){
+	}else if(bin_expr->getOp() == "-"){
 		//sub
 		return Builder->CreateSub(lhs_v, rhs_v, "sub_tmp");
-	}else if(bin_expr->getOp()=="*"){
+	}else if(bin_expr->getOp() == "*"){
 		//mul
 		return Builder->CreateMul(lhs_v, rhs_v, "mul_tmp");
-	}else if(bin_expr->getOp()=="/"){
+	}else if(bin_expr->getOp() == "/"){
 		//div
 		return Builder->CreateSDiv(lhs_v, rhs_v, "div_tmp");
 	}
 	return NULL;
 }
-
 
 
 /**
@@ -384,12 +399,10 @@ Value *CodeGen::generateCallExpression(CallExprAST *call_expr){
 		}else{
 			arg_v = generateExpression(arg);
 		}
-
 		arg_vec.push_back(arg_v);
 	}
 	return Builder->CreateCall(Mod->getFunction(call_expr->getCallee()), arg_vec, "call_tmp");
 }
-
 
 
 /**
@@ -406,7 +419,6 @@ Value *CodeGen::generateJumpStatement(JumpStmtAST *jump_stmt){
 }
 
 
-
 /**
   * ステートメント生成メソッド
   * @param  BaseAST
@@ -415,53 +427,38 @@ Value *CodeGen::generateJumpStatement(JumpStmtAST *jump_stmt){
 Value *CodeGen::generateStatement(BaseAST *stmt){
 	if(isa<VariableDeclAST>(stmt))
 		return generateVariableDeclaration(dyn_cast<VariableDeclAST>(stmt));
-
 	else if(isa<BinaryExprAST>(stmt))
 		return generateBinaryExpression(dyn_cast<BinaryExprAST>(stmt));
-
 	else if(isa<CallExprAST>(stmt))
 		return generateCallExpression(dyn_cast<CallExprAST>(stmt));
-
 	else if(isa<JumpStmtAST>(stmt))
 		return generateJumpStatement(dyn_cast<JumpStmtAST>(stmt));
-
 	else if(isa<WhileExprAST>(stmt))
 		return generateWhileExpr(dyn_cast<WhileExprAST>(stmt));
-
 	else if(isa<IfExprAST>(stmt))
 		return generateIfExpr(dyn_cast<IfExprAST>(stmt));
-
 	else
 		return NULL;
 }
 
 
-
 Value *CodeGen::generateExpression(BaseAST *expr) {
-	if(isa<BinaryExprAST>(expr)){
+	if(isa<BinaryExprAST>(expr))
 		return generateBinaryExpression(dyn_cast<BinaryExprAST>(expr));
-
-	}else if(isa<CallExprAST>(expr)){
+	else if(isa<CallExprAST>(expr))
 		return generateCallExpression(dyn_cast<CallExprAST>(expr));
-
-	}else if(isa<VariableAST>(expr)){
+	else if(isa<CastExprAST>(expr))
+		return generateCastExpression(dyn_cast<CastExprAST>(expr));
+	else if(isa<VariableAST>(expr))
 		return generateVariable(dyn_cast<VariableAST>(expr));
-
-	}else if(isa<NumberAST>(expr)){
-		NumberAST *num = dyn_cast<NumberAST>(expr);
-		return generateNumber(num->getValue());
-
-	}else if(isa<BooleanAST>(expr)){
-		BooleanAST *boolean = dyn_cast<BooleanAST>(expr);
-		return generateBoolean(boolean->getValue());
-
-	}else if(isa<NoneAST>(expr)){
+	else if(isa<NumberAST>(expr))
+		return generateNumber(dyn_cast<NumberAST>(expr)->getValue());
+	else if(isa<BooleanAST>(expr))
+		return generateBoolean(dyn_cast<BooleanAST>(expr)->getValue());
+	else if(isa<NoneAST>(expr))
 		return generateNone(dyn_cast<NoneAST>(expr));
-
-	}
 	return NULL;
 }
-
 
 
 Value *CodeGen::generateCondition(BaseAST* Cond) {
@@ -497,7 +494,55 @@ Value *CodeGen::generateCondition(BaseAST* Cond) {
 }
 
 
+Value *CodeGen::generateCastExpression(CastExprAST *cast) {
+	if (llvmDebbug) fprintf(stderr, "%d: %s\n", __LINE__, __func__);
 
+	Value *expr = generateExpression(cast->getSource());
+	Type *DestTy = generateType(cast->getDestType());
+	if (cast->getSource()->getType().getPrimType() == Type_int || cast->getSource()->getType().getPrimType() == Type_uint) {
+		if (cast->getDestType().getPrimType() == Type_int || cast->getDestType().getPrimType() == Type_uint) {
+			if (cast->getSource()->getType().getBits() >= cast->getDestType().getBits()) {
+				return Builder->CreateTrunc(expr, DestTy);
+			}else{
+				return Builder->CreateZExt(expr, DestTy);
+			}
+		}else if (cast->getDestType().getPrimType() == Type_float) {
+			return Builder->CreateSIToFP(expr, DestTy);
+		}
+	}else if (cast->getSource()->getType().getPrimType() == Type_float) {
+		if (cast->getDestType().getPrimType() == Type_int) {
+			return Builder->CreateFPToSI(expr, DestTy);
+		}else if (cast->getDestType().getPrimType() == Type_uint) {
+			return Builder->CreateFPToUI(expr, DestTy);
+		}else if (cast->getDestType().getPrimType() == Type_float) {
+			if (cast->getSource()->getType().getBits() >= cast->getDestType().getBits()) {
+				return Builder->CreateFPTrunc(expr, DestTy);
+			}else{
+				return Builder->CreateFPExt(expr, DestTy);
+			}
+		}
+	}
+	return expr;
+}
+/*
+Value * 	CreateTrunc (Value *V, Type *DestTy, const Twine &Name="")
+ビットを小さくする
+Value * 	CreateZExt (Value *V, Type *DestTy, const Twine &Name="")
+ビットを大きくする（普通に）
+Value * 	CreateSExt (Value *V, Type *DestTy, const Twine &Name="")
+ビットを大きくする（よくわからんけど、signにするみたい）
+Value * 	CreateZExtOrTrunc (Value *V, Type *DestTy, const Twine &Name="")
+Value * 	CreateSExtOrTrunc (Value *V, Type *DestTy, const Twine &Name="")
+どっちも出来る！
+Value * 	CreateFPToUI (Value *V, Type *DestTy, const Twine &Name="")
+Value * 	CreateFPToSI (Value *V, Type *DestTy, const Twine &Name="")
+Value * 	CreateUIToFP (Value *V, Type *DestTy, const Twine &Name="")
+Value * 	CreateSIToFP (Value *V, Type *DestTy, const Twine &Name="")
+Value * 	CreateFPTrunc (Value *V, Type *DestTy, const Twine &Name="")
+floatのtrunc
+Value * 	CreateFPExt (Value *V, Type *DestTy, const Twine &Name="")
+floatの大きくする
+*/
 
 /**
   * 変数参照(load命令)生成メソッド

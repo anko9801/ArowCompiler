@@ -10,6 +10,7 @@
 #include"AST.hpp"
 #include"lexer.hpp"
 
+
 /**
   * 構文解析・意味解析クラス
   */
@@ -135,6 +136,49 @@ typedef class Parser{
 				return "yannaiyo";
 		}
 
+		void printAST(BaseAST* stmt, int nest = 0){
+			for(int i=0; i < nest; i++) fprintf(stderr, "	");
+			if(!stmt) {
+				fprintf(stderr, "break\n");
+				return ;
+			}
+			else if(llvm::isa<FunctionStmtAST>(stmt)){
+				fprintf(stderr, "FunctionStatement\n");
+				for (int i = 0;;i++)if (llvm::dyn_cast<FunctionStmtAST>(stmt)->getStatement(i))printAST(llvm::dyn_cast<FunctionStmtAST>(stmt)->getStatement(i), nest+1);else break;
+			}else if(llvm::isa<VariableDeclAST>(stmt))
+				fprintf(stderr, "VariableDeclaration\n");
+			else if(llvm::isa<CastExprAST>(stmt))
+				fprintf(stderr, "CastExpression\n");
+			else if(llvm::isa<BinaryExprAST>(stmt))
+				fprintf(stderr, "BinaryExpression\n");
+			else if(llvm::isa<CallExprAST>(stmt))
+				fprintf(stderr, "CallExpression\n");
+			else if(llvm::isa<JumpStmtAST>(stmt))
+				fprintf(stderr, "JumpStatement\n");
+			else if(llvm::isa<VariableAST>(stmt))
+				fprintf(stderr, "Variable\n");
+			else if(llvm::isa<IfExprAST>(stmt)){
+				fprintf(stderr, "IfExpression\n");
+				printAST(llvm::dyn_cast<IfExprAST>(stmt)->getCond(), nest);
+				for (int i = 0;;i++)if (llvm::dyn_cast<IfExprAST>(stmt)->getThen(i))printAST(llvm::dyn_cast<IfExprAST>(stmt)->getThen(i), nest+1);else break;
+				for (int i = 0;;i++)if (llvm::dyn_cast<IfExprAST>(stmt)->getElse(i))printAST(llvm::dyn_cast<IfExprAST>(stmt)->getElse(i), nest+1);else break;
+			}
+			else if(llvm::isa<WhileExprAST>(stmt)) {
+				fprintf(stderr, "WhileExpression\n");
+				printAST(llvm::dyn_cast<WhileExprAST>(stmt)->getCond(), nest);
+				for (int i = 0;;i++)if (llvm::dyn_cast<WhileExprAST>(stmt)->getLoop(i))printAST(llvm::dyn_cast<WhileExprAST>(stmt)->getLoop(i), nest+1);else break;
+			}
+			else if(llvm::isa<NumberAST>(stmt))
+				fprintf(stderr, "Number\n");
+			else if(llvm::isa<BooleanAST>(stmt))
+				fprintf(stderr, "Boolean\n");
+			else if(llvm::isa<NoneAST>(stmt))
+				fprintf(stderr, "None\n");
+			else
+				fprintf(stderr, "unknown\n");
+		}
+		
+
 	private:
 		/**
 		  各種構文解析メソッド
@@ -157,7 +201,7 @@ typedef class Parser{
 		BaseAST *visitExpression(BaseAST *lhs);
 		BaseAST *visitAdditiveExpression(BaseAST *lhs);
 		BaseAST *visitMultiplicativeExpression(BaseAST *lhs);
-		BaseAST *visitCastExpression(BaseAST *lhs);
+		BaseAST *visitCastExpression();
 		BaseAST *visitPostfixExpression();
 		BaseAST *visitPrimaryExpression();
 

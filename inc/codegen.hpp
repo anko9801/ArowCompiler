@@ -61,6 +61,7 @@ class CodeGen{
 		Value *generateBinaryExpression(BinaryExprAST *bin_expr);
 		Value *generateCallExpression(CallExprAST *call_expr);
 		Value *generateJumpStatement(JumpStmtAST *jump_stmt);
+		Value *generateCastExpression(CastExprAST *cast);
 		Value *generateVariable(VariableAST *var);
 		Value *generateNumber(int value);
 		Value *generateBoolean(bool value);

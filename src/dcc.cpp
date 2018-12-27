@@ -93,52 +93,46 @@ bool OptionParser::parseOption(){
 
 	return true;
 }
-
-
-void printAST(std::vector<BaseAST*> stmt_list, int nest){
-	for(int j=0; j < stmt_list.size(); j++) {
-		BaseAST *stmt = stmt_list[j];
-		for(int i=0; i < nest; i++) fprintf(stderr, "	");
-		if(!stmt) {
-			fprintf(stderr, "break\n");
-			break;
-		}
-		else if(isa<VariableDeclAST>(stmt))
-			fprintf(stderr, "VariableDeclaration\n");
-		else if(isa<BinaryExprAST>(stmt))
-			fprintf(stderr, "BinaryExpression\n");
-		else if(isa<CallExprAST>(stmt))
-			fprintf(stderr, "CallExpression\n");
-		else if(isa<JumpStmtAST>(stmt))
-			fprintf(stderr, "JumpStatement\n");
-		else if(isa<VariableAST>(stmt))
-			fprintf(stderr, "Variable\n");
-		else if(isa<IfExprAST>(stmt)){
-			fprintf(stderr, "IfExpression\n");
-			std::vector<BaseAST*> arg_list;arg_list.push_back(dyn_cast<IfExprAST>(stmt)->getCond());
-			printAST(arg_list, nest);
-			std::vector<BaseAST*> if_expr;
-			for (int i = 0;;i++)if (dyn_cast<IfExprAST>(stmt)->getThen(i))if_expr.push_back(dyn_cast<IfExprAST>(stmt)->getThen(i));else break;
-			for (int i = 0;;i++)if (dyn_cast<IfExprAST>(stmt)->getElse(i))if_expr.push_back(dyn_cast<IfExprAST>(stmt)->getElse(i));else break;
-			printAST(if_expr, nest+1);
-		}
-		else if(isa<WhileExprAST>(stmt)) {
-			fprintf(stderr, "WhileExpression\n");
-			std::vector<BaseAST*> arg_list;arg_list.push_back(dyn_cast<WhileExprAST>(stmt)->getCond());
-			printAST(arg_list, nest);
-			std::vector<BaseAST*> while_expr;
-			for (int i = 0;;i++)if (dyn_cast<WhileExprAST>(stmt)->getLoop(i))while_expr.push_back(dyn_cast<WhileExprAST>(stmt)->getLoop(i));else break;
-			printAST(while_expr, nest+1);
-		}
-		else if(isa<NumberAST>(stmt))
-			fprintf(stderr, "Number\n");
-		else if(isa<BooleanAST>(stmt))
-			fprintf(stderr, "Boolean\n");
-		else if(isa<NoneAST>(stmt))
-			fprintf(stderr, "None\n");
-		else
-			fprintf(stderr, "unknown\n");
+void printAST(BaseAST* stmt, int nest){
+	for(int i=0; i < nest; i++) fprintf(stderr, "	");
+	if(!stmt) {
+		fprintf(stderr, "break\n");
+		return ;
 	}
+	else if(llvm::isa<FunctionStmtAST>(stmt)) {
+		fprintf(stderr, "FunctionStatement\n");
+		for (int i = 0;;i++)if (llvm::dyn_cast<FunctionStmtAST>(stmt)->getStatement(i))printAST(dyn_cast<FunctionStmtAST>(stmt)->getStatement(i), 1);else break;
+	}else if(llvm::isa<VariableDeclAST>(stmt))
+		fprintf(stderr, "VariableDeclaration\n");
+	else if(llvm::isa<CastExprAST>(stmt))
+		fprintf(stderr, "CastExpression\n");
+	else if(llvm::isa<BinaryExprAST>(stmt))
+		fprintf(stderr, "BinaryExpression\n");
+	else if(llvm::isa<CallExprAST>(stmt))
+		fprintf(stderr, "CallExpression\n");
+	else if(llvm::isa<JumpStmtAST>(stmt))
+		fprintf(stderr, "JumpStatement\n");
+	else if(llvm::isa<VariableAST>(stmt))
+		fprintf(stderr, "Variable\n");
+	else if(llvm::isa<IfExprAST>(stmt)){
+		fprintf(stderr, "IfExpression\n");
+		printAST(llvm::dyn_cast<IfExprAST>(stmt)->getCond(), nest);
+		for (int i = 0;;i++)if (llvm::dyn_cast<IfExprAST>(stmt)->getThen(i))printAST(llvm::dyn_cast<IfExprAST>(stmt)->getThen(i), nest+1);else break;
+		for (int i = 0;;i++)if (llvm::dyn_cast<IfExprAST>(stmt)->getElse(i))printAST(llvm::dyn_cast<IfExprAST>(stmt)->getElse(i), nest+1);else break;
+	}
+	else if(llvm::isa<WhileExprAST>(stmt)) {
+		fprintf(stderr, "WhileExpression\n");
+		printAST(llvm::dyn_cast<WhileExprAST>(stmt)->getCond(), nest);
+		for (int i = 0;;i++)if (llvm::dyn_cast<WhileExprAST>(stmt)->getLoop(i))printAST(llvm::dyn_cast<WhileExprAST>(stmt)->getLoop(i), nest+1);else break;
+	}
+	else if(llvm::isa<NumberAST>(stmt))
+		fprintf(stderr, "Number\n");
+	else if(llvm::isa<BooleanAST>(stmt))
+		fprintf(stderr, "Boolean\n");
+	else if(llvm::isa<NoneAST>(stmt))
+		fprintf(stderr, "None\n");
+	else
+		fprintf(stderr, "unknown\n");
 }
 
 /**
@@ -188,10 +182,7 @@ int main(int argc, char **argv) {
 			if(!func)
 				break;
 			fprintf(stderr, "%s\n", func->getName().c_str());
-			FunctionStmtAST *func_stmt = func->getBody();
-			std::vector<BaseAST*> func_expr;
-			for (int i = 0;;i++)if (dyn_cast<FunctionStmtAST>(func_stmt->getStatement(i)))func_expr.push_back(dyn_cast<FunctionStmtAST>(func_stmt->getStatement(i)));else break;
-			printAST(func_expr, 1);
+			printAST(func->getBody(), 0);
 		}
 	}
 	if(tunit.empty()){

@@ -1,6 +1,6 @@
 #include "parser.hpp"
 
-bool Debbug = true;
+bool Debbug = false;
 
 /**
   * コンストラクタ
@@ -431,7 +431,6 @@ BaseAST *Parser::visitStatement(){
 }
 
 
-
 /**
   * VariableDeclaration用構文解析メソッド
   * @return 解析成功：VariableDeclAST　解析失敗：NULL
@@ -497,7 +496,6 @@ VariableDeclAST *Parser::visitVariableDeclaration(){
 }
 
 
-
 /**
   * JumpStatement用構文解析メソッド
   * @return 解析成功：AST　解析失敗：NULL
@@ -527,6 +525,7 @@ BaseAST *Parser::visitJumpStatement(){
 	Tokens->getNextToken();
 	return new JumpStmtAST(expr);
 }
+
 
 /**
   * IfExpression用構文解析メソッド
@@ -574,7 +573,6 @@ BaseAST *Parser::visitIfExpression(){
 	visitStatements(if_expr, 1);
 	return if_expr;
 }
-
 
 
 /**
@@ -761,7 +759,7 @@ BaseAST *Parser::visitMultiplicativeExpression(BaseAST *lhs){
 	int bkup=Tokens->getCurIndex();
 
 	if(!lhs)
-		lhs = visitPostfixExpression();
+		lhs = visitCastExpression();
 	if(!lhs)
 		return NULL;
 	BaseAST *rhs;
@@ -769,7 +767,7 @@ BaseAST *Parser::visitMultiplicativeExpression(BaseAST *lhs){
 	// *
 	if(Tokens->getCurString() == "*"){
 		Tokens->getNextToken();
-		rhs = visitPostfixExpression();
+		rhs = visitCastExpression();
 		if(rhs && rhs->getType() == Types(Type_int)){
 			return visitMultiplicativeExpression(
 					new BinaryExprAST("*", lhs, rhs, Types(Type_int, 32, true)));
@@ -783,7 +781,7 @@ BaseAST *Parser::visitMultiplicativeExpression(BaseAST *lhs){
 	// /
 	}else if(Tokens->getCurString() == "/"){
 		Tokens->getNextToken();
-		rhs=visitPostfixExpression();
+		rhs=visitCastExpression();
 		if(rhs && rhs->getType() == Types(Type_int)){
 			return visitMultiplicativeExpression(
 					new BinaryExprAST("/", lhs, rhs, Types(Type_int, 32, true)));
@@ -797,16 +795,14 @@ BaseAST *Parser::visitMultiplicativeExpression(BaseAST *lhs){
 	return lhs;
 }
 
-BaseAST *Parser::visitCastExpression(BaseAST *lhs){
+
+BaseAST *Parser::visitCastExpression(){
 	//bkup index
 	int bkup=Tokens->getCurIndex();
-
-	if(!lhs)
-		lhs = visitPostfixExpression();
+	BaseAST *lhs = visitPostfixExpression();
 	if(!lhs)
 		return NULL;
 
-	BaseAST *rhs;
 	if(Tokens->getCurString() == "as") {
 		if (Debbug) fprintf(stderr, "%d:%d: cast %s\n", Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
 		Tokens->getNextToken();
@@ -815,7 +811,7 @@ BaseAST *Parser::visitCastExpression(BaseAST *lhs){
 			Tokens->applyTokenIndex(bkup);
 			return NULL;
 		}
-		return new CastAST(lhs, DestType);
+		return new CastExprAST(lhs, DestType, false);
 
 	}else if(Tokens->getCurString() == "is") {
 		if (Debbug) fprintf(stderr, "%d:%d: cast %s\n", Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
@@ -825,10 +821,7 @@ BaseAST *Parser::visitCastExpression(BaseAST *lhs){
 			Tokens->applyTokenIndex(bkup);
 			return NULL;
 		}
-		/*if (lhs->getType() != DestType) {
-			lhs->setType(DestType);
-		}*/
-		return new CastAST(lhs, DestType);
+		return new CastExprAST(lhs, DestType, true);
 
 	}else if(Tokens->getCurString() == "?") {
 		if (Debbug) fprintf(stderr, "%d:%d: non-null\n", Tokens->getLine(), __LINE__);
@@ -837,7 +830,8 @@ BaseAST *Parser::visitCastExpression(BaseAST *lhs){
 			DestType = Types(Type_int, 32, true);
 		}
 		Tokens->getNextToken();
-		return new CastAST(lhs, DestType);
+		if (Debbug) fprintf(stderr, "%d:%d:  %s\n", Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
+		return new CastExprAST(lhs, DestType, false);
 	}
 	return lhs;
 }
@@ -880,14 +874,10 @@ BaseAST *Parser::visitPostfixExpression(){
 		args.push_back(assign_expr);
 		while(Tokens->getCurString() == ","){
 			Tokens->getNextToken();
-
 			//IDENTIFIER
 			assign_expr=visitAssignmentExpression();
-			if(assign_expr){
-				args.push_back(assign_expr);
-			}else{
-				break;
-			}
+			if(assign_expr) args.push_back(assign_expr);
+			else break;
 		}
 	}
 
@@ -908,7 +898,7 @@ BaseAST *Parser::visitPostfixExpression(){
 		for(int i=0;i<args.size();i++)
 			SAFE_DELETE(args[i]);
 		Tokens->applyTokenIndex(bkup);
-		fprintf(stderr, "%d:%d: error: RIGHT PALEN is nothing\n", Tokens->getLine(), __LINE__);
+		fprintf(stderr, "%d:%d: error: excepted ')' but %s\n", Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
 		return NULL;
 	}
 }
@@ -953,6 +943,7 @@ BaseAST *Parser::visitPrimaryExpression(){
 		for (int i = 0;i < VariableTable.size();i++) {
 			if (VariableTable[i]->getName() == Tokens->getCurString()) {
 				Tokens->getNextToken();
+				if (Debbug) fprintf(stderr, "%d:%d: call variable %s\n", Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
 				return new VariableAST(VariableTable[i]);
 			}
 		}

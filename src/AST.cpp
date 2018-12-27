@@ -55,6 +55,17 @@ FunctionAST::~FunctionAST(){
 }
 
 
+StatementsAST::~StatementsAST(){
+	for(int i=0; i<Statements.size(); i++){
+		SAFE_DELETE(Statements[i]);
+	}
+	for(int i=0; i<VarDecls.size(); i++){
+		SAFE_DELETE(VarDecls[i]);
+	}
+	Statements.clear();
+	VarDecls.clear();
+}
+
 /**
   * デストラクタ
   */
@@ -92,8 +103,8 @@ Types BaseAST::getType() {
 		return llvm::dyn_cast<CallExprAST>(this)->getType();
 	}else if (llvm::isa<VariableAST>(this)) {
 		return llvm::dyn_cast<VariableAST>(this)->getType();
-	}else if (llvm::isa<CastAST>(this)) {
-		return llvm::dyn_cast<CastAST>(this)->getType();
+	}else if (llvm::isa<CastExprAST>(this)) {
+		return llvm::dyn_cast<CastExprAST>(this)->getType();
 	}else if (llvm::isa<NumberAST>(this)) {
 		return llvm::dyn_cast<NumberAST>(this)->getType();
 	}else if (llvm::isa<BooleanAST>(this)) {

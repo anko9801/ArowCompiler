@@ -48,7 +48,7 @@ enum AstID{
 	WhileExprID,
 	CallExprID,
 	JumpStmtID,
-	CastID,
+	CastExprID,
 	VariableID,
 	NumberID,
 	BooleanID,
@@ -56,8 +56,10 @@ enum AstID{
 };
 
 enum prim_type {
+	Type_void,
 	Type_bool,
 	Type_int,
+	Type_uint,
 	Type_float,
 	Type_char,
 	Type_all,
@@ -68,9 +70,9 @@ enum prim_type {
 struct Types {
 	prim_type Type;
 	int bits;
+	bool non_null = false;
 	bool isArray = false;
 	int ArraySize = 0;
-	bool non_null = false;
 
 	Types() : Type(prim_type::Type_null), bits(0){}
 	Types(prim_type type, int bits=32, bool non_null=false)
@@ -109,6 +111,7 @@ struct Seq {
 		else return false;
 	}
 };
+
 
 
 /**
@@ -275,7 +278,6 @@ class VariableDeclAST: public BaseAST {
 };
 
 
-
 /** 
   * 二項演算を表すAST
   */
@@ -302,7 +304,6 @@ class BinaryExprAST : public BaseAST{
 };
 
 
-
 /**
  * If文を表すAST
  */
@@ -325,7 +326,6 @@ class IfExprAST : public BaseAST {
 	bool addElse(BaseAST *stmt){ElseStmt->addStatement(stmt);return true;}
 	BaseAST *getElse(int i){return ElseStmt->getStatement(i);}
 };
-
 
 
 /**
@@ -413,21 +413,23 @@ class VariableAST : public BaseAST{
 };
 
 
-class CastAST : public BaseAST {
-	BaseAST *var;
+class CastExprAST : public BaseAST {
+	BaseAST *Source;
 	Types DestType;
+	bool Nestin;
 
 	public:
-	CastAST(BaseAST* var, Types DestType) : BaseAST(CastID), var(var), DestType(DestType){}
-	~CastAST(){}
+	CastExprAST(BaseAST* source, Types DestType, bool Nestin) : BaseAST(CastExprID), Source(source), DestType(DestType), Nestin(Nestin){}
+	~CastExprAST(){}
 
-	static inline bool classof(CastAST const*){return true;}
+	static inline bool classof(CastExprAST const*){return true;}
 	static inline bool classof(BaseAST const* base){
-		return base->getValueID()==CastID;
+		return base->getValueID() == CastExprID;
 	}
 
-	BaseAST *getVariable(){return var;}
-	Types getType(){return DestType;}
+	BaseAST *getSource(){return Source;}
+	Types getDestType(){return DestType;}
+	bool getNestin(){return Nestin;}
 };
 
 
