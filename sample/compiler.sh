@@ -20,10 +20,11 @@ if [ -e $FILE.ll ]; then
 	if [ -e $FILE.ll ]; then
 		if [ -z $2 ]; then
 			llc -o $FILE.s $FILE.ll -filetype=asm
-			clang -o $FILE -c $FILE.s
+			gcc -o $FILE $FILE.s
 		else
 			llc -o $FILE-diffarch.o $FILE.ll -filetype=obj -mtriple=$2 #armv4t-unknown-linux-gnueabihf
 			gcc -c -o $FILE.o $FILE.o ../lib/blink.o
+			gcc -o $FILE $FILE.o
 		fi
 
 		#rm $FILE.s

@@ -27,11 +27,11 @@ else:                                             ; preds = %entry
   %var_tmp2 = load i32, i32* %ak
   %var_tmp3 = load i32, i32* %bk
   %mul_tmp = mul i32 %var_tmp2, %var_tmp3
-  %call_tmp = call i32 @printnum(i32 %mul_tmp)
+  %call_tmp = call i1 bitcast (i32 (i32)* @printnum to i1 (i32)*)(i32 %mul_tmp)
   %var_tmp4 = load i32, i32* %ak
   %var_tmp5 = load i32, i32* %bk
   %div_tmp = sdiv i32 %var_tmp4, %var_tmp5
-  %call_tmp6 = call i32 @printnum(i32 %div_tmp)
+  %call_tmp6 = call i1 bitcast (i32 (i32)* @printnum to i1 (i32)*)(i32 %div_tmp)
   br label %ifcont
 
 ifcont:                                           ; preds = %else, %then

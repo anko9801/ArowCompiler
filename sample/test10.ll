@@ -19,16 +19,16 @@ entry:
 
 loop:                                             ; preds = %loop, %entry
   %cnt.0 = phi i32 [ 0, %entry ], [ %add_tmp, %loop ]
-  %call_tmp = call i32 @sleep(i32 2)
+  %call_tmp = call i1 @sleep(i32 2)
   %add_tmp = add i32 %cnt.0, 1
-  %call_tmp3 = call i32 @printnum(i32 %add_tmp)
+  %call_tmp3 = call i1 bitcast (i32 (i32)* @printnum to i1 (i32)*)(i32 %add_tmp)
   br i1 %ifcond, label %loop, label %afterloop
 
 afterloop:                                        ; preds = %loop
   ret i32 %add_tmp
 }
 
-declare i32 @sleep(i32)
+declare i1 @sleep(i32)
 
 ; Function Attrs: nounwind ssp uwtable
 define i32 @msleep(i32) local_unnamed_addr #0 {

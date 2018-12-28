@@ -30,6 +30,7 @@ class IfExprAST;
 class WhileExprAST;
 class VariableAST;
 class CastAST;
+class ValueAST;
 class NumberAST;
 class BooleanAST;
 class NoneAST;
@@ -50,6 +51,7 @@ enum AstID{
 	JumpStmtID,
 	CastExprID,
 	VariableID,
+	ValueID,
 	NumberID,
 	BooleanID,
 	NoneID,
@@ -125,6 +127,7 @@ class BaseAST{
 	virtual ~BaseAST(){}
 	AstID getValueID() const {return ID;}
 	Types getType();
+	bool setType(Types type);
 };
 
 
@@ -366,6 +369,8 @@ class CallExprAST : public BaseAST{
 		return base->getValueID()==CallExprID;
 	}
 
+	bool setType(Types type){Type = type;return true;}
+
 	std::string getCallee(){return Callee;}
 	BaseAST *getArgs(int i){if(i<Args.size())return Args.at(i);else return NULL;}
 	Types getType(){return Type;}
@@ -427,17 +432,39 @@ class CastExprAST : public BaseAST {
 		return base->getValueID() == CastExprID;
 	}
 
+	bool setDestType(Types type){DestType = type;return true;}
 	BaseAST *getSource(){return Source;}
 	Types getDestType(){return DestType;}
 	bool getNestin(){return Nestin;}
 };
 
 
+/** 
+  * 値を表すAST
+  */
+class ValueAST : public BaseAST {
+	Types Type;
+	int Val;
+
+	public:
+	ValueAST(int val, Types Type) : BaseAST(ValueID), Val(val), Type(Type){};
+	~ValueAST(){}
+	static inline bool classof(ValueAST const*){return true;}
+	static inline bool classof(BaseAST const* base){
+		return base->getValueID() == ValueID;
+	}
+
+	bool setType(Types type){Type = type;return true;}
+	Types getType(){return Type;}
+	int getValue(){return Val;}
+};
+
 
 /** 
   * 整数を表すAST
   */
 class NumberAST : public BaseAST {
+	Types Type = Types(Type_int, 32, true);
 	int Val;
 
 	public:
@@ -445,10 +472,12 @@ class NumberAST : public BaseAST {
 	~NumberAST(){}
 	static inline bool classof(NumberAST const*){return true;}
 	static inline bool classof(BaseAST const* base){
-		return base->getValueID()==NumberID;
+		return base->getValueID() == NumberID;
 	}
 
-	Types getType(){return Types(Type_int, 32, true);}
+	bool setType(Types type){Type = type;return true;}
+
+	Types getType(){return Type;}
 	int getValue(){return Val;}
 };
 
@@ -457,6 +486,7 @@ class NumberAST : public BaseAST {
   * 真偽値を表すAST
   */
 class BooleanAST : public BaseAST {
+	Types Type = Types(Type_bool, 1, true);
 	bool Val;
 
 	public:
@@ -467,7 +497,8 @@ class BooleanAST : public BaseAST {
 		return base->getValueID() == BooleanID;
 	}
 
-	Types getType(){return Types(Type_bool, 1, true);}
+	bool setType(Types type){Type = type;return true;}
+	Types getType(){return Type;}
 	bool getValue(){return Val;}
 };
 
@@ -476,6 +507,8 @@ class BooleanAST : public BaseAST {
   * Noneを表すAST
   */
 class NoneAST : public BaseAST {
+	Types Type;
+
 	public:
 	NoneAST() : BaseAST(NoneID){};
 	~NoneAST(){}
@@ -483,6 +516,8 @@ class NoneAST : public BaseAST {
 	static inline bool classof(BaseAST const* base){
 		return base->getValueID()==NoneID;
 	}
+
+	bool setType(Types type){Type = type;return true;}
 	Types getType(){return Types(Type_all);}
 };
 

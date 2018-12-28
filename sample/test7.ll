@@ -22,9 +22,9 @@ then:                                             ; preds = %entry
 
 else:                                             ; preds = %entry
   %mul_tmp = mul i32 4, 5
-  %call_tmp = call i32 @printnum(i32 %mul_tmp)
+  %call_tmp = call i1 bitcast (i32 (i32)* @printnum to i1 (i32)*)(i32 %mul_tmp)
   %div_tmp = sdiv i32 4, 5
-  %call_tmp5 = call i32 @printnum(i32 %div_tmp)
+  %call_tmp5 = call i1 bitcast (i32 (i32)* @printnum to i1 (i32)*)(i32 %div_tmp)
   br label %ifcont
 
 ifcont:                                           ; preds = %else, %then

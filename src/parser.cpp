@@ -394,10 +394,12 @@ BaseAST *Parser::visitStatement(){
 	BaseAST *stmt;
 
 	// if文
-	if(stmt = visitIfExpression()){
+	if(Tokens->getCurType() == TOK_IF){
+		stmt = visitIfExpression();
 		return stmt;
 	// while文
-	}else if(stmt = visitWhileExpression()) {
+	}else if(Tokens->getCurType() == TOK_WHILE) {
+		stmt = visitWhileExpression();
 		return stmt;
 	// return文
 	}else if(Tokens->getCurType() == TOK_RETURN){

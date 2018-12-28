@@ -14,7 +14,7 @@ target triple = "x86_64-apple-macosx10.14.0"
 
 define i32 @main() {
 entry:
-  %call_tmp = call i32 @printnum(i32 23)
+  %call_tmp = call i1 bitcast (i32 (i32)* @printnum to i1 (i32)*)(i32 23)
   ret i32 0
 }
 

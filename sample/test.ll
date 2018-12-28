@@ -21,7 +21,7 @@ entry:
 define i32 @main() {
 entry:
   %call_tmp = call i32 @test(i32 10)
-  %call_tmp1 = call i32 @printnum(i32 %call_tmp)
+  %call_tmp1 = call i1 bitcast (i32 (i32)* @printnum to i1 (i32)*)(i32 %call_tmp)
   ret i32 0
 }
 

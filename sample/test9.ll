@@ -23,7 +23,7 @@ loop:                                             ; preds = %loop, %entry
   br i1 %ifcond, label %loop, label %afterloop
 
 afterloop:                                        ; preds = %loop
-  %call_tmp = call i32 @printnum(i32 %add_tmp)
+  %call_tmp = call i1 bitcast (i32 (i32)* @printnum to i1 (i32)*)(i32 %add_tmp)
   ret i32 %add_tmp
 }
 

@@ -14,9 +14,9 @@ target triple = "x86_64-apple-macosx10.14.0"
 
 define i32 @main() {
 entry:
-  %call_tmp = call i32 @GPIOsetup()
-  %call_tmp1 = call i32 bitcast (void (i32)* @BlinkLED to i32 (i32)*)(i32 23)
-  %call_tmp2 = call i32 bitcast (void ()* @GPIOclear to i32 ()*)()
+  %call_tmp = call i1 bitcast (i32 ()* @GPIOsetup to i1 ()*)()
+  %call_tmp1 = call i1 bitcast (void (i32)* @BlinkLED to i1 (i32)*)(i32 23)
+  %call_tmp2 = call i1 bitcast (void ()* @GPIOclear to i1 ()*)()
   ret i32 0
 }
 

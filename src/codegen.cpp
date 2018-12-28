@@ -172,13 +172,15 @@ Function *CodeGen::generatePrototype(PrototypeAST *proto, Module *mod){
 	}
 
 	//create arg_types
-	std::vector<Type*> int_types(proto->getParamNum(),
-								Type::getInt32Ty(GlobalContext));
+	std::vector<Type*> arg_types;
+	for (int i = 0; ;i++)
+		if (proto->getParamType(i) != Types(Type_null)) arg_types.push_back(generateType(proto->getParamType(i)));
+		else break;
 
 	//create func type
 	FunctionType *func_type = FunctionType::get(
-							Type::getInt32Ty(GlobalContext),
-							int_types,
+							generateType(proto->getType()),
+							arg_types,
 							false);
 	//create function
 	func = Function::Create(func_type, 
@@ -332,12 +334,32 @@ Value *CodeGen::generateBinaryExpression(BinaryExprAST *bin_expr){
 	//assignment
 	if(bin_expr->getOp() == "="){
 		//lhs is variable
+		if (llvmDebbug) fprintf(stderr, "%d: lhs is variable\n", __LINE__);
 		VariableAST *lhs_var = dyn_cast<VariableAST>(lhs);
 		lhs_v = CurFunc->getValueSymbolTable()->lookup(lhs_var->getName());
 	}else{
 		lhs_v = generateExpression(lhs);
+		// bit数の暗黙の型変換
+		if (lhs->getType() != rhs->getType() || lhs->getType().getBits() != rhs->getType().getBits()) {
+			if (llvmDebbug) fprintf(stderr, "%d: 型変換\n", __LINE__);
+			if (lhs->getType().getBits() > rhs->getType().getBits()) {
+				if (llvmDebbug) fprintf(stderr, "%d: set lhs type\n", __LINE__);
+				rhs_v = generateCastExpression(rhs_v, rhs->getType(), lhs->getType());
+				rhs->setType(lhs->getType());
+			}else if (lhs->getType().getBits() < rhs->getType().getBits()) {
+				if (llvmDebbug) fprintf(stderr, "%d: set rhs type\n", __LINE__);
+				lhs_v = generateCastExpression(lhs_v, lhs->getType(), rhs->getType());
+				lhs->setType(rhs->getType());
+			}
+		}
 	}
-	rhs_v = generateExpression(rhs/*, lhs_v->getType()*/);
+	rhs_v = generateExpression(rhs);
+	// bit数の暗黙の型変換
+	if (lhs->getType() != rhs->getType() || lhs->getType().getBits() != rhs->getType().getBits()) {
+		if (llvmDebbug) fprintf(stderr, "%d: 型変換\n", __LINE__);
+		rhs_v = generateCastExpression(rhs_v, rhs->getType(), lhs->getType());
+	}
+
 	if (llvmDebbug) fprintf(stderr, "%d: lhs and rhs exist\n", __LINE__);
 
 	if(bin_expr->getOp() == "="){
@@ -438,7 +460,7 @@ Value *CodeGen::generateExpression(BaseAST *expr/*, Type *type = Type::getInt32T
 	else if(isa<CallExprAST>(expr))
 		return generateCallExpression(dyn_cast<CallExprAST>(expr));
 	else if(isa<CastExprAST>(expr))
-		return generateCastExpression(dyn_cast<CastExprAST>(expr));
+		return generateCastExpression(generateExpression(dyn_cast<CastExprAST>(expr)->getSource()), dyn_cast<CastExprAST>(expr)->getSource()->getType(), dyn_cast<CastExprAST>(expr)->getDestType());
 	else if(isa<VariableAST>(expr))
 		return generateVariable(dyn_cast<VariableAST>(expr));
 	else if(isa<NumberAST>(expr))
@@ -480,35 +502,42 @@ Value *CodeGen::generateCondition(BaseAST* Cond) {
 }
 
 
-Value *CodeGen::generateCastExpression(CastExprAST *cast) {
+Value *CodeGen::generateCastExpression(Value *src, Types SrcType, Types DestType) {
 	if (llvmDebbug) fprintf(stderr, "%d: %s\n", __LINE__, __func__);
 
-	Value *expr = generateExpression(cast->getSource());
-	Type *DestTy = generateType(cast->getDestType());
-	if (cast->getSource()->getType().getPrimType() == Type_int || cast->getSource()->getType().getPrimType() == Type_uint) {
-		if (cast->getDestType().getPrimType() == Type_int || cast->getDestType().getPrimType() == Type_uint) {
-			if (cast->getSource()->getType().getBits() >= cast->getDestType().getBits()) {
-				return Builder->CreateTrunc(expr, DestTy);
-			}else{
-				return Builder->CreateZExt(expr, DestTy);
+	Type *DestTy = generateType(DestType);
+
+	if (SrcType.getPrimType() == Type_int || SrcType.getPrimType() == Type_uint) {
+		if (DestType.getPrimType() == Type_int || DestType.getPrimType() == Type_uint) {
+			if (SrcType.getBits() > DestType.getBits()) {
+				if (llvmDebbug) fprintf(stderr, "Trunc\n");
+				return Builder->CreateTrunc(src, DestTy);
+			}else if (SrcType.getBits() < DestType.getBits()) {
+				if (llvmDebbug) fprintf(stderr, "ZExt\n");
+				return Builder->CreateZExt(src, DestTy);
 			}
-		}else if (cast->getDestType().getPrimType() == Type_float) {
-			return Builder->CreateSIToFP(expr, DestTy);
+		}else if (DestType.getPrimType() == Type_float) {
+			if (llvmDebbug) fprintf(stderr, "SIToFP\n");
+			return Builder->CreateSIToFP(src, DestTy);
 		}
-	}else if (cast->getSource()->getType().getPrimType() == Type_float) {
-		if (cast->getDestType().getPrimType() == Type_int) {
-			return Builder->CreateFPToSI(expr, DestTy);
-		}else if (cast->getDestType().getPrimType() == Type_uint) {
-			return Builder->CreateFPToUI(expr, DestTy);
-		}else if (cast->getDestType().getPrimType() == Type_float) {
-			if (cast->getSource()->getType().getBits() >= cast->getDestType().getBits()) {
-				return Builder->CreateFPTrunc(expr, DestTy);
-			}else{
-				return Builder->CreateFPExt(expr, DestTy);
+	}else if (SrcType.getPrimType() == Type_float) {
+		if (DestType.getPrimType() == Type_int) {
+			if (llvmDebbug) fprintf(stderr, "FPToSI\n");
+			return Builder->CreateFPToSI(src, DestTy);
+		}else if (DestType.getPrimType() == Type_uint) {
+			if (llvmDebbug) fprintf(stderr, "FPToUI\n");
+			return Builder->CreateFPToUI(src, DestTy);
+		}else if (DestType.getPrimType() == Type_float) {
+			if (SrcType.getBits() > DestType.getBits()) {
+				if (llvmDebbug) fprintf(stderr, "FPTrunc\n");
+				return Builder->CreateFPTrunc(src, DestTy);
+			}else if (SrcType.getBits() < DestType.getBits()){
+				return Builder->CreateFPExt(src, DestTy);
+				if (llvmDebbug) fprintf(stderr, "FPExt\n");
 			}
 		}
 	}
-	return expr;
+	return src;
 }
 /*
 Value * 	CreateTrunc (Value *V, Type *DestTy, const Twine &Name="")

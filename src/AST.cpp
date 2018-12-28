@@ -114,3 +114,30 @@ Types BaseAST::getType() {
 	}
 	return Types(Type_null);
 }
+
+bool BaseAST::setType(Types type) {
+	if (!this) {
+		fprintf(stderr, "error: Type is nothing\n");
+		return false;
+	}
+	if (llvm::isa<VariableDeclAST>(this)) {
+		return llvm::dyn_cast<VariableDeclAST>(this)->setType(type);
+	}else if (llvm::isa<JumpStmtAST>(this)) {
+		return llvm::dyn_cast<JumpStmtAST>(this)->setType(type);
+	}else if (llvm::isa<BinaryExprAST>(this)) {
+		return llvm::dyn_cast<BinaryExprAST>(this)->setType(type);
+	}else if (llvm::isa<CallExprAST>(this)) {
+		return llvm::dyn_cast<CallExprAST>(this)->setType(type);
+	}else if (llvm::isa<VariableAST>(this)) {
+		return llvm::dyn_cast<VariableAST>(this)->setType(type);
+	}else if (llvm::isa<CastExprAST>(this)) {
+		return llvm::dyn_cast<CastExprAST>(this)->setDestType(type);
+	}else if (llvm::isa<NumberAST>(this)) {
+		return llvm::dyn_cast<NumberAST>(this)->setType(type);
+	}else if (llvm::isa<BooleanAST>(this)) {
+		return llvm::dyn_cast<BooleanAST>(this)->setType(type);
+	}else if (llvm::isa<NoneAST>(this)) {
+		return llvm::dyn_cast<NoneAST>(this)->setType(type);
+	}
+	return false;
+}
