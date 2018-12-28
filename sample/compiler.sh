@@ -22,12 +22,11 @@ if [ -e $FILE.ll ]; then
 			llc -o $FILE.s $FILE.ll -filetype=asm
 			gcc -o $FILE $FILE.s
 		else
-			llc -o $FILE-diffarch.o $FILE.ll -filetype=obj -mtriple=$2 #armv4t-unknown-linux-gnueabihf
-			gcc -c -o $FILE.o $FILE.o ../lib/blink.o
-			gcc -o $FILE $FILE.o
+			llc -o $FILE-diffarch.o $FILE.ll -filetype=obj -mtriple=$2-unknown-linux-gnueabihf
+			gcc -c $FILE-diffarch.o ../lib/blink.o -o $FILE.o
 		fi
 
-		#rm $FILE.s
+		rm $FILE.s
 	fi
 fi
 

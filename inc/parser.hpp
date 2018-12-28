@@ -200,7 +200,31 @@ typedef class Parser{
 		BaseAST *visitPostfixExpression();
 		BaseAST *visitPrimaryExpression();
 
+		bool isExceptedToken(TokenType type) {
+			while (Tokens->getCurString() == "\n") {
+				Tokens->getNextToken();
+				if(Tokens->getCurType() == TOK_EOF)
+					break;
+			}
+			if (Tokens->getCurType() == type) {
+				return true;
+			}else{
+				return false;
+			}
+		}
 
+		bool isExceptedToken(std::string str) {
+			while (Tokens->getCurString() == "\n") {
+				Tokens->getNextToken();
+				if(Tokens->getCurType() == TOK_EOF)
+					break;
+			}
+			if (Tokens->getCurString() == str) {
+				return true;
+			}else{
+				return false;
+			}
+		}
 	protected:
 
 

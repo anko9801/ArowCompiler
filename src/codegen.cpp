@@ -10,7 +10,6 @@ CodeGen::CodeGen(){
 	Mod = NULL;
 }
 
-
 /**
   * デストラクタ
   */
@@ -18,7 +17,6 @@ CodeGen::~CodeGen(){
 	SAFE_DELETE(Builder);
 	SAFE_DELETE(Mod);
 }
-
 
 /**
   * コード生成実行
