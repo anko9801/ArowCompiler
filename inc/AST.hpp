@@ -383,7 +383,7 @@ class JumpStmtAST : public BaseAST{
 	~JumpStmtAST(){SAFE_DELETE(Expr);}
 	static inline bool classof(JumpStmtAST const*){return true;}
 	static inline bool classof(BaseAST const* base){
-		return base->getValueID()==JumpStmtID;
+		return base->getValueID() == JumpStmtID;
 	}
 
 	BaseAST *getExpr(){return Expr;}
@@ -404,7 +404,7 @@ class VariableAST : public BaseAST{
 
 	static inline bool classof(VariableAST const*){return true;}
 	static inline bool classof(BaseAST const* base){
-		return base->getValueID()==VariableID;
+		return base->getValueID() == VariableID;
 	}
 
 	Types getType(){return Var->getType();}

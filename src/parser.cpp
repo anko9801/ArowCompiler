@@ -1,6 +1,6 @@
 #include "parser.hpp"
 
-bool Debbug = false;
+bool Debbug = true;
 
 /**
   * コンストラクタ
@@ -842,7 +842,7 @@ BaseAST *Parser::visitCastExpression(){
   */
 BaseAST *Parser::visitPostfixExpression(){
 	int bkup=Tokens->getCurIndex();
-
+	if (Debbug) fprintf(stderr, "%d:%d: %s\n", Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
 	//primary_expression
 	BaseAST *prim_expr = visitPrimaryExpression();
 	if(prim_expr)
@@ -940,13 +940,12 @@ BaseAST *Parser::visitPrimaryExpression(){
 		return new NoneAST();
 	//VARIABLE_IDENTIFIER
 	}else if(Tokens->getCurType() == TOK_IDENTIFIER) {
-		for (int i = 0;i < VariableTable.size();i++) {
+		for (int i = 0;i < VariableTable.size();i++)
 			if (VariableTable[i]->getName() == Tokens->getCurString()) {
-				Tokens->getNextToken();
 				if (Debbug) fprintf(stderr, "%d:%d: call variable %s\n", Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
+				Tokens->getNextToken();
 				return new VariableAST(VariableTable[i]);
 			}
-		}
 	// '(' expression ')'
 	}else if(Tokens->getCurString() == "("){
 		Tokens->getNextToken();

@@ -76,8 +76,7 @@ Type *CodeGen::generateType(Types type) {
 		}else if (type.getBits() == 64) {
 			return Type::getInt64Ty(GlobalContext);
 		}else{
-			fprintf(stderr, "Type is not found\n");
-			return Type::getInt32Ty(GlobalContext);
+			return Type::getIntNTy(GlobalContext, type.getBits());
 		}
 	}else if (type.getPrimType() == Type_float) {
 		if (type.getBits() == 16) {
@@ -232,15 +231,6 @@ Value *CodeGen::generateVariableDeclaration(VariableDeclAST *vdecl){
 	//create alloca
 	Value *alloca;
 	Type* type = generateType(vdecl->getType());
-	/*alloca = new AllocaInst(
-	  ArrayType::get(type, vdecl->getSize()),
-	  1000,
-	  vdecl->getName(),
-	  CurBB);*/
-	//auto zero = ConstantInt::get(GlobalContext, APInt(64, 0, true));
-	//auto index = ConstantInt::get(GlobalContext, APInt(32, vdecl->getSize(), true));
-	//auto ptr = GetElementPtrInst::Create(alloca, {zero, index}, "", bblock);
-	//auto store = new StoreInst(index, ptr, false, bblock);
 	alloca = Builder->CreateAlloca(type, nullptr, vdecl->getName());
 
 	//if args alloca
@@ -347,23 +337,18 @@ Value *CodeGen::generateBinaryExpression(BinaryExprAST *bin_expr){
 	}else{
 		lhs_v = generateExpression(lhs);
 	}
-	rhs_v = generateExpression(rhs);
+	rhs_v = generateExpression(rhs/*, lhs_v->getType()*/);
 	if (llvmDebbug) fprintf(stderr, "%d: lhs and rhs exist\n", __LINE__);
 
 	if(bin_expr->getOp() == "="){
-		//store
 		return Builder->CreateStore(rhs_v, lhs_v);
 	}else if(bin_expr->getOp() == "+"){
-		//add
 		return Builder->CreateAdd(lhs_v, rhs_v, "add_tmp");
 	}else if(bin_expr->getOp() == "-"){
-		//sub
 		return Builder->CreateSub(lhs_v, rhs_v, "sub_tmp");
 	}else if(bin_expr->getOp() == "*"){
-		//mul
 		return Builder->CreateMul(lhs_v, rhs_v, "mul_tmp");
 	}else if(bin_expr->getOp() == "/"){
-		//div
 		return Builder->CreateSDiv(lhs_v, rhs_v, "div_tmp");
 	}
 	return NULL;
@@ -406,7 +391,7 @@ Value *CodeGen::generateCallExpression(CallExprAST *call_expr){
 
 
 /**
-  * ジャンプ(今回はreturn命令のみ)生成メソッド
+  * return命令生成メソッド
   * @param  JumpStmtAST
   * @return 生成したValueのポインタ
   */
@@ -442,7 +427,12 @@ Value *CodeGen::generateStatement(BaseAST *stmt){
 }
 
 
-Value *CodeGen::generateExpression(BaseAST *expr) {
+/**
+  * 式生成メソッド
+  * @param  BaseAST
+  * @return 生成したValueのポインタ
+  */
+Value *CodeGen::generateExpression(BaseAST *expr/*, Type *type = Type::getInt32Ty(GlobalContext)*/) {
 	if(isa<BinaryExprAST>(expr))
 		return generateBinaryExpression(dyn_cast<BinaryExprAST>(expr));
 	else if(isa<CallExprAST>(expr))
@@ -467,12 +457,8 @@ Value *CodeGen::generateCondition(BaseAST* Cond) {
 
 	}else if (isa<BinaryExprAST>(Cond)) {
 		auto CondBinary = dyn_cast<BinaryExprAST>(Cond);
-		BaseAST *lhs = CondBinary->getLHS();
-		BaseAST *rhs = CondBinary->getRHS();
-		Value *lhs_v, *rhs_v;
-
-		lhs_v = generateExpression(lhs);
-		rhs_v = generateExpression(rhs);
+		Value *lhs_v = generateExpression(CondBinary->getLHS());
+		Value *rhs_v = generateExpression(CondBinary->getRHS());
 
 		if (CondBinary->getOp() == "==")
 			return Builder->CreateICmpEQ(lhs_v, rhs_v, "ifcond");
@@ -544,6 +530,7 @@ Value * 	CreateFPExt (Value *V, Type *DestTy, const Twine &Name="")
 floatの大きくする
 */
 
+
 /**
   * 変数参照(load命令)生成メソッド
   * @param VariableAST
@@ -557,16 +544,13 @@ Value *CodeGen::generateVariable(VariableAST *var){
 }
 
 
-
 // Number
 Value *CodeGen::generateNumber(int value){
 	if (llvmDebbug) fprintf(stderr, "%d: %s\n", __LINE__, __func__);
-	return Builder->getInt32(value);
 	return ConstantInt::get(
 			Type::getInt32Ty(GlobalContext),
 			value);
 }
-
 
 
 // Boolean
@@ -576,19 +560,14 @@ Value *CodeGen::generateBoolean(bool value) {
 }
 
 
-
 // Null
 Value *CodeGen::generateNone(NoneAST *expr) {
 	if (llvmDebbug) fprintf(stderr, "%d: %s\n", __LINE__, __func__);
-	if (expr->getType().getPrimType() == prim_type::Type_int) {
-		return Builder->getInt32(0);
-	}else if (expr->getType().getPrimType() == prim_type::Type_bool) {
-		return Builder->getInt1(0);
-	}
-	fprintf(stderr, "asdf\n");
-	return NULL;
+	Type *nulltype = generateType(expr->getType());
+	return ConstantInt::get(
+			nulltype,
+			0);
 }
-
 
 
 bool CodeGen::linkModule(Module *dest, std::string file_name){
@@ -603,4 +582,3 @@ bool CodeGen::linkModule(Module *dest, std::string file_name){
 
 	return true;
 }
-

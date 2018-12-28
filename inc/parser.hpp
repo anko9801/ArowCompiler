@@ -76,24 +76,23 @@ typedef class Parser{
 
 		Types confirm(std::string Callee, std::vector<BaseAST*> args) {
 			PrototypeAST *proto;
-			for (int i = 0;i < PrototypeTable.size();i++) {
+			for (int i = 0;;i++) {
 				if (!PrototypeTable[i]) {
+					for (int i = 0;;i++) {
+						if (!FunctionTable[i]) {
+							fprintf(stderr, "%d:%d: error: undefined function %s\n", Tokens->getLine(), __LINE__, Callee.c_str());
+							return Types(Type_null);
+						}
+						if (FunctionTable[i]->getName() == Callee) {
+							proto = FunctionTable[i]->getPrototype();
+							break;
+						}
+					}
 					fprintf(stderr, "%d:%d: error: undefined function %s\n", Tokens->getLine(), __LINE__, Callee.c_str());
 					return Types(Type_null);
 				}
 				if (PrototypeTable[i]->getName() == Callee) {
 					proto = PrototypeTable[i];
-					break;
-				}
-			}
-
-			for (int i = 0;i < FunctionTable.size();i++) {
-				if (!FunctionTable[i]) {
-					fprintf(stderr, "%d:%d: error: undefined function %s\n", Tokens->getLine(), __LINE__, Callee.c_str());
-					return Types(Type_null);
-				}
-				if (FunctionTable[i]->getName() == Callee) {
-					proto = FunctionTable[i]->getPrototype();
 					break;
 				}
 			}
