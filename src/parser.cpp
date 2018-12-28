@@ -151,7 +151,7 @@ PrototypeAST *Parser::visitFunctionDeclaration(){
 	}
 
 	//prototype;
-	if(isExceptedToken(";")) {
+	if(Tokens->getCurString() == ";" || Tokens->getCurString() == "\n") {
 		for (int i = 0;i < PrototypeTable.size();i++) {
 			if (!PrototypeTable[i]) break;
 			if (PrototypeTable[i] == proto) {
@@ -365,7 +365,7 @@ StatementsAST *Parser::visitStatements(BaseAST* InsertPoint, int branch = 0) {
 			break;
 		}else if (stmt = visitStatement()) {
 			if (Debbug) fprintf(stderr, "%d:%d: %s %s\n", Tokens->getLine(), __LINE__, __func__, Tokens->getCurString().c_str());
-			if(isExceptedToken(";")) {
+			if(Tokens->getCurString() == ";" || Tokens->getCurString() == "\n") {
 				Tokens->getNextToken();
 			}
 			SetInsertPoint(InsertPoint);
@@ -484,7 +484,7 @@ VariableDeclAST *Parser::visitVariableDeclaration(){
 
 	//式が終わったなら次の文、AssignもあるならFuncStmtで一回ループ回った後にAssignmentExpression関数を呼び出す
 	//';'
-	if(isExceptedToken(";")) {
+	if(Tokens->getCurString() == ";" || Tokens->getCurString() == "\n") {
 		Tokens->getNextToken();
 		return new VariableDeclAST(type, name);
 	//'='
@@ -514,12 +514,6 @@ BaseAST *Parser::visitJumpStatement(){
 	expr = visitAssignmentExpression();
 	if(!expr){
 		if (Debbug) fprintf(stderr, "%d:%d: return %s\n", Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
-		Tokens->applyTokenIndex(bkup);
-		return NULL;
-	}
-
-	if(!isExceptedToken(";")) {
-		if (Debbug) fprintf(stderr, "%d:%d: error expected ';' but %s\n", Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
 		Tokens->applyTokenIndex(bkup);
 		return NULL;
 	}

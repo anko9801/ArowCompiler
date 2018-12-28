@@ -38,9 +38,9 @@ typedef class Token{
 	public:
 
 	private:
+	std::string TokenString;
 	TokenType Type;
 	std::string DataType;
-	std::string TokenString;
 	int Number;
 	bool Bool;
 	int Line;
@@ -56,7 +56,7 @@ typedef class Token{
 		if (type == TOK_TRUE || type == TOK_FALSE)
 			Bool = true;
 		else
-			Bool = NULL;
+			Bool = false;
 	};
 	~Token(){};
 

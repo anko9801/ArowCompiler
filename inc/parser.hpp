@@ -201,6 +201,7 @@ typedef class Parser{
 		BaseAST *visitPrimaryExpression();
 
 		bool isExceptedToken(TokenType type) {
+			int bkup=Tokens->getCurIndex();
 			while (Tokens->getCurString() == "\n") {
 				Tokens->getNextToken();
 				if(Tokens->getCurType() == TOK_EOF)
@@ -209,11 +210,13 @@ typedef class Parser{
 			if (Tokens->getCurType() == type) {
 				return true;
 			}else{
+				Tokens->applyTokenIndex(bkup);
 				return false;
 			}
 		}
 
 		bool isExceptedToken(std::string str) {
+			int bkup=Tokens->getCurIndex();
 			while (Tokens->getCurString() == "\n") {
 				Tokens->getNextToken();
 				if(Tokens->getCurType() == TOK_EOF)
@@ -222,6 +225,7 @@ typedef class Parser{
 			if (Tokens->getCurString() == str) {
 				return true;
 			}else{
+				Tokens->applyTokenIndex(bkup);
 				return false;
 			}
 		}

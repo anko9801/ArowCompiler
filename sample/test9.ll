@@ -14,11 +14,11 @@ target triple = "x86_64-apple-macosx10.14.0"
 
 define i32 @main() {
 entry:
-  %ifcond = icmp slt i32 0, 5
+  %ifcond = icmp slt i32 13, 20
   br label %loop
 
 loop:                                             ; preds = %loop, %entry
-  %cnt.0 = phi i32 [ 0, %entry ], [ %add_tmp, %loop ]
+  %cnt.0 = phi i32 [ 13, %entry ], [ %add_tmp, %loop ]
   %add_tmp = add i32 %cnt.0, 1
   br i1 %ifcond, label %loop, label %afterloop
 

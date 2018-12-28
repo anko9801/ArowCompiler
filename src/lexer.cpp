@@ -49,68 +49,61 @@ TokenStream *LexicalAnalysis(std::string input_filename){
 			//IDENTIFIER
 			}else if(isalpha(next_char)){
 				token_str += next_char;
-				next_char = cur_line.at(index++);
-				while(isalnum(next_char)){
-					if (isnumber(next_char) && token_str == "int") {
-						break;
-					}
-					token_str += next_char;
+				if(index < length) {
 					next_char = cur_line.at(index++);
-					if(index == length)
-						break;
+					while(isalnum(next_char)){
+						token_str += next_char;
+						if(index == length){index++;break;}
+						next_char = cur_line.at(index++);
+						if (isnumber(next_char) && (token_str == "int" || token_str == "float" || token_str == "uint"))
+							break;
+					}
+					index--;
 				}
-				index--;
 
 				// switch使いてぇええ
 				// 予約語と識別子
-				if(token_str == "int" || token_str == "bool"){
+				if(token_str == "int" || token_str == "bool" || token_str == "float" || token_str == "uint"){
 					next_token = new Token(token_str, TOK_TYPE, line_num);
-
 				}else if(token_str == "if") {
 					next_token = new Token(token_str, TOK_IF, line_num);
-
 				}else if(token_str == "while") {
 					next_token = new Token(token_str, TOK_WHILE, line_num);
-
 				}else if(token_str == "for") {
 					next_token = new Token(token_str, TOK_FOR, line_num);
-
 				}else if(token_str == "match") {
 					next_token = new Token(token_str, TOK_MATCH, line_num);
-
 				}else if(token_str == "return") {
 					next_token = new Token(token_str, TOK_RETURN, line_num);
-
 				}else if (token_str == "true") {
 					next_token = new Token(token_str, TOK_TRUE, line_num);
-
 				}else if (token_str == "false") {
 					next_token = new Token(token_str, TOK_FALSE, line_num);
-
 				}else if (token_str == "is") {
 					next_token = new Token(token_str, TOK_CAST, line_num);
-
 				}else if (token_str == "as") {
 					next_token = new Token(token_str, TOK_CAST, line_num);
-
 				}else{
 					next_token = new Token(token_str, TOK_IDENTIFIER, line_num);
 				}
 		
 			//数字
 			}else if(isdigit(next_char)){
-				if(next_char=='0'){
+				if(next_char == '0'){
 					token_str += next_char;
 					next_token = new Token(token_str, TOK_DIGIT, line_num);
 				}else{
 					token_str += next_char;
-					next_char = cur_line.at(index++);
-					while(isdigit(next_char)){
-						token_str += next_char;
+					if(index < length) {
 						next_char = cur_line.at(index++);
+						while(isdigit(next_char)){
+							token_str += next_char;
+							if(index == length){index++;break;}
+							next_char = cur_line.at(index++);
+						}
+						index--;
 					}
 					next_token = new Token(token_str, TOK_DIGIT, line_num);
-					index--;
 				}
 
 			}else if(next_char == '/') {
@@ -337,7 +330,7 @@ TokenStream *LexicalAnalysis(std::string input_filename){
 			tokens->pushToken(next_token);
 			token_str.clear();
 		}
-		//tokens->pushToken(new Token("\n", TOK_NL, line_num));
+		tokens->pushToken(new Token("\n", TOK_NL, line_num));
 
 		token_str.clear();
 		line_num++;

@@ -1,8 +1,8 @@
 int32 main() {
-	int32 cnt = 0;
-	while (cnt < 5) {
-		cnt = cnt + 1;
+	int32 cnt = 13
+	while (cnt < 20) {
+		cnt = cnt + 1
 	}
-	printnum(cnt?);
-	return cnt;
+	printnum(cnt?)
+	return cnt
 }
