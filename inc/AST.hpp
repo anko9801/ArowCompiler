@@ -1,13 +1,10 @@
 #ifndef AST_HPP 
 #define AST_HPP
 
-
 #include<string>
-//#include<map>
 #include<vector>
 #include<llvm/Support/Casting.h>
 #include"APP.hpp"
-//using namespace llvm;
 
 /************************************************
 AST

@@ -1,6 +1,5 @@
 #include "AST.hpp"
 
-
 /**
   * デストラクタ
   */

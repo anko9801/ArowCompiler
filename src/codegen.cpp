@@ -341,7 +341,6 @@ Value *CodeGen::generateBinaryExpression(BinaryExprAST *bin_expr){
 		lhs_v = generateExpression(lhs);
 		// bit数の暗黙の型変換
 		if (lhs->getType() != rhs->getType() || lhs->getType().getBits() != rhs->getType().getBits()) {
-			if (llvmDebbug) fprintf(stderr, "%d: 型変換\n", __LINE__);
 			if (lhs->getType().getBits() > rhs->getType().getBits()) {
 				if (llvmDebbug) fprintf(stderr, "%d: set lhs type\n", __LINE__);
 				rhs_v = generateCastExpression(rhs_v, rhs->getType(), lhs->getType());
@@ -356,7 +355,6 @@ Value *CodeGen::generateBinaryExpression(BinaryExprAST *bin_expr){
 	rhs_v = generateExpression(rhs);
 	// bit数の暗黙の型変換
 	if (lhs->getType() != rhs->getType() || lhs->getType().getBits() != rhs->getType().getBits()) {
-		if (llvmDebbug) fprintf(stderr, "%d: 型変換\n", __LINE__);
 		rhs_v = generateCastExpression(rhs_v, rhs->getType(), lhs->getType());
 	}
 
@@ -394,10 +392,8 @@ Value *CodeGen::generateCallExpression(CallExprAST *call_expr){
 		//isBinaryExpr
 		if(isa<BinaryExprAST>(arg)){
 			BinaryExprAST *bin_expr = dyn_cast<BinaryExprAST>(arg);
-
 			//二項演算命令を生成
 			arg_v = generateBinaryExpression(dyn_cast<BinaryExprAST>(arg));
-
 			//代入の時はLoad命令を追加
 			if(bin_expr->getOp() == "="){
 				VariableAST *var = dyn_cast<VariableAST>(bin_expr->getLHS());
