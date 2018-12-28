@@ -917,28 +917,34 @@ BaseAST *Parser::visitPrimaryExpression(){
 	//integer
 	if(Tokens->getCurType() == TOK_DIGIT){
 		int val = Tokens->getCurNumVal();
+		if (Debbug) fprintf(stderr, "%d:%d: integer\n", Tokens->getLine(), __LINE__);
 		Tokens->getNextToken();
-		return new NumberAST(val);
+		return new ValueAST(val, Types(Type_int, 32, true));
 	//integer(-)
 	}else if(Tokens->getCurString() == "-"){
+		if (Debbug) fprintf(stderr, "%d:%d: integer\n", Tokens->getLine(), __LINE__);
 		Tokens->getNextToken();
 		if(Tokens->getCurType() == TOK_DIGIT){
 			int val = Tokens->getCurNumVal();
 			Tokens->getNextToken();
-			return new NumberAST(-val);
+			return new ValueAST(-val, Types(Type_int, 32, true));
 		}else{
 			Tokens->applyTokenIndex(bkup);
 			return NULL;
 		}
 	// true / false
 	}else if(Tokens->getCurType() == TOK_TRUE) {
+		if (Debbug) fprintf(stderr, "%d:%d: true\n", Tokens->getLine(), __LINE__);
 		Tokens->getNextToken();
-		return new BooleanAST(true);
+		return new ValueAST(true, Types(Type_bool, 1, true));
 	}else if(Tokens->getCurType() == TOK_FALSE) {
+		if (Debbug) fprintf(stderr, "%d:%d: false\n", Tokens->getLine(), __LINE__);
 		Tokens->getNextToken();
-		return new BooleanAST(false);
+		return new ValueAST(false, Types(Type_bool, 1, true));
 	}else if(Tokens->getCurString() == "None") {
+		if (Debbug) fprintf(stderr, "%d:%d: none\n", Tokens->getLine(), __LINE__);
 		Tokens->getNextToken();
+		ValueAST(0, Types(Type_int, 32, true));
 		return new NoneAST();
 	//VARIABLE_IDENTIFIER
 	}else if(Tokens->getCurType() == TOK_IDENTIFIER) {

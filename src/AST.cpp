@@ -105,10 +105,8 @@ Types BaseAST::getType() {
 		return llvm::dyn_cast<VariableAST>(this)->getType();
 	}else if (llvm::isa<CastExprAST>(this)) {
 		return llvm::dyn_cast<CastExprAST>(this)->getDestType();
-	}else if (llvm::isa<NumberAST>(this)) {
-		return llvm::dyn_cast<NumberAST>(this)->getType();
-	}else if (llvm::isa<BooleanAST>(this)) {
-		return llvm::dyn_cast<BooleanAST>(this)->getType();
+	}else if (llvm::isa<ValueAST>(this)) {
+		return llvm::dyn_cast<ValueAST>(this)->getType();
 	}else if (llvm::isa<NoneAST>(this)) {
 		return llvm::dyn_cast<NoneAST>(this)->getType();
 	}
@@ -132,10 +130,8 @@ bool BaseAST::setType(Types type) {
 		return llvm::dyn_cast<VariableAST>(this)->setType(type);
 	}else if (llvm::isa<CastExprAST>(this)) {
 		return llvm::dyn_cast<CastExprAST>(this)->setDestType(type);
-	}else if (llvm::isa<NumberAST>(this)) {
-		return llvm::dyn_cast<NumberAST>(this)->setType(type);
-	}else if (llvm::isa<BooleanAST>(this)) {
-		return llvm::dyn_cast<BooleanAST>(this)->setType(type);
+	}else if (llvm::isa<ValueAST>(this)) {
+		return llvm::dyn_cast<ValueAST>(this)->setType(type);
 	}else if (llvm::isa<NoneAST>(this)) {
 		return llvm::dyn_cast<NoneAST>(this)->setType(type);
 	}

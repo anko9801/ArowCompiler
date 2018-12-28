@@ -167,10 +167,8 @@ typedef class Parser{
 				printAST(llvm::dyn_cast<WhileExprAST>(stmt)->getCond(), nest);
 				for (int i = 0;;i++)if (llvm::dyn_cast<WhileExprAST>(stmt)->getLoop(i))printAST(llvm::dyn_cast<WhileExprAST>(stmt)->getLoop(i), nest+1);else break;
 			}
-			else if(llvm::isa<NumberAST>(stmt))
-				fprintf(stderr, "Number\n");
-			else if(llvm::isa<BooleanAST>(stmt))
-				fprintf(stderr, "Boolean\n");
+			else if(llvm::isa<ValueAST>(stmt))
+				fprintf(stderr, "Value\n");
 			else if(llvm::isa<NoneAST>(stmt))
 				fprintf(stderr, "None\n");
 			else

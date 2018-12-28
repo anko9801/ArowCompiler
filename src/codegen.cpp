@@ -463,10 +463,8 @@ Value *CodeGen::generateExpression(BaseAST *expr/*, Type *type = Type::getInt32T
 		return generateCastExpression(generateExpression(dyn_cast<CastExprAST>(expr)->getSource()), dyn_cast<CastExprAST>(expr)->getSource()->getType(), dyn_cast<CastExprAST>(expr)->getDestType());
 	else if(isa<VariableAST>(expr))
 		return generateVariable(dyn_cast<VariableAST>(expr));
-	else if(isa<NumberAST>(expr))
-		return generateNumber(dyn_cast<NumberAST>(expr)->getValue());
-	else if(isa<BooleanAST>(expr))
-		return generateBoolean(dyn_cast<BooleanAST>(expr)->getValue());
+	else if(isa<ValueAST>(expr))
+		return generateValue(dyn_cast<ValueAST>(expr));
 	else if(isa<NoneAST>(expr))
 		return generateNone(dyn_cast<NoneAST>(expr));
 	return NULL;
@@ -474,8 +472,8 @@ Value *CodeGen::generateExpression(BaseAST *expr/*, Type *type = Type::getInt32T
 
 
 Value *CodeGen::generateCondition(BaseAST* Cond) {
-	if (isa<BooleanAST>(Cond)) {
-		return generateBoolean(dyn_cast<BooleanAST>(Cond)->getValue());
+	if(isa<ValueAST>(Cond)) {
+		return generateValue(dyn_cast<ValueAST>(Cond));
 
 	}else if (isa<BinaryExprAST>(Cond)) {
 		auto CondBinary = dyn_cast<BinaryExprAST>(Cond);
@@ -510,28 +508,35 @@ Value *CodeGen::generateCastExpression(Value *src, Types SrcType, Types DestType
 	if (SrcType.getPrimType() == Type_int || SrcType.getPrimType() == Type_uint) {
 		if (DestType.getPrimType() == Type_int || DestType.getPrimType() == Type_uint) {
 			if (SrcType.getBits() > DestType.getBits()) {
+				// bit数を小さくする
 				if (llvmDebbug) fprintf(stderr, "Trunc\n");
 				return Builder->CreateTrunc(src, DestTy);
 			}else if (SrcType.getBits() < DestType.getBits()) {
+				// bit数を大きくする（SExtもあるがこっちが普通らしい
 				if (llvmDebbug) fprintf(stderr, "ZExt\n");
 				return Builder->CreateZExt(src, DestTy);
 			}
 		}else if (DestType.getPrimType() == Type_float) {
+			// Signed Int to Floating Point
 			if (llvmDebbug) fprintf(stderr, "SIToFP\n");
 			return Builder->CreateSIToFP(src, DestTy);
 		}
 	}else if (SrcType.getPrimType() == Type_float) {
 		if (DestType.getPrimType() == Type_int) {
+			// Floating Point to Signed Int
 			if (llvmDebbug) fprintf(stderr, "FPToSI\n");
 			return Builder->CreateFPToSI(src, DestTy);
 		}else if (DestType.getPrimType() == Type_uint) {
+			// Floating Point to Unsigned Int
 			if (llvmDebbug) fprintf(stderr, "FPToUI\n");
 			return Builder->CreateFPToUI(src, DestTy);
 		}else if (DestType.getPrimType() == Type_float) {
 			if (SrcType.getBits() > DestType.getBits()) {
+				// bit数を小さくする
 				if (llvmDebbug) fprintf(stderr, "FPTrunc\n");
 				return Builder->CreateFPTrunc(src, DestTy);
 			}else if (SrcType.getBits() < DestType.getBits()){
+				// bit数を大きくする
 				return Builder->CreateFPExt(src, DestTy);
 				if (llvmDebbug) fprintf(stderr, "FPExt\n");
 			}
@@ -540,23 +545,9 @@ Value *CodeGen::generateCastExpression(Value *src, Types SrcType, Types DestType
 	return src;
 }
 /*
-Value * 	CreateTrunc (Value *V, Type *DestTy, const Twine &Name="")
-ビットを小さくする
-Value * 	CreateZExt (Value *V, Type *DestTy, const Twine &Name="")
-ビットを大きくする（普通に）
-Value * 	CreateSExt (Value *V, Type *DestTy, const Twine &Name="")
-ビットを大きくする（よくわからんけど、signにするみたい）
 Value * 	CreateZExtOrTrunc (Value *V, Type *DestTy, const Twine &Name="")
 Value * 	CreateSExtOrTrunc (Value *V, Type *DestTy, const Twine &Name="")
 どっちも出来る！
-Value * 	CreateFPToUI (Value *V, Type *DestTy, const Twine &Name="")
-Value * 	CreateFPToSI (Value *V, Type *DestTy, const Twine &Name="")
-Value * 	CreateUIToFP (Value *V, Type *DestTy, const Twine &Name="")
-Value * 	CreateSIToFP (Value *V, Type *DestTy, const Twine &Name="")
-Value * 	CreateFPTrunc (Value *V, Type *DestTy, const Twine &Name="")
-floatのtrunc
-Value * 	CreateFPExt (Value *V, Type *DestTy, const Twine &Name="")
-floatの大きくする
 */
 
 
@@ -573,19 +564,23 @@ Value *CodeGen::generateVariable(VariableAST *var){
 }
 
 
-// Number
-Value *CodeGen::generateNumber(int value){
+// Value
+Value *CodeGen::generateValue(ValueAST *val){
 	if (llvmDebbug) fprintf(stderr, "%d: %s\n", __LINE__, __func__);
-	return ConstantInt::get(
-			Type::getInt32Ty(GlobalContext),
-			value);
-}
-
-
-// Boolean
-Value *CodeGen::generateBoolean(bool value) {
-	if (llvmDebbug) fprintf(stderr, "%d: %s %d\n", __LINE__, __func__, value);
-	return Builder->getInt1(value);
+	Type *type = generateType(val->getType());
+	if (val->getType().getPrimType() == Type_bool) {
+		return ConstantInt::get(type, val->getValue());
+	}else if (val->getType().getPrimType() == Type_int) {
+		return ConstantInt::getSigned(type, val->getValue());
+	}else if (val->getType().getPrimType() == Type_uint) {
+		return ConstantInt::get(type, val->getValue());
+	}else if (val->getType().getPrimType() == Type_float) {
+		return ConstantFP::get(type, val->getValue());
+	}else if (val->getType().getPrimType() == Type_char) {
+		return ConstantInt::get(type, val->getValue());
+	}else if (val->getType().getPrimType() == Type_null) {
+		return ConstantInt::get(type, val->getValue());
+	}
 }
 
 
@@ -593,9 +588,7 @@ Value *CodeGen::generateBoolean(bool value) {
 Value *CodeGen::generateNone(NoneAST *expr) {
 	if (llvmDebbug) fprintf(stderr, "%d: %s\n", __LINE__, __func__);
 	Type *nulltype = generateType(expr->getType());
-	return ConstantInt::get(
-			nulltype,
-			0);
+	return Constant::getNullValue(nulltype);
 }
 
 
