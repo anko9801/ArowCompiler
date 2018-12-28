@@ -14,8 +14,7 @@ target triple = "x86_64-apple-macosx10.14.0"
 
 define i32 @main() {
 entry:
-  %call_tmp = call i1 bitcast (i32 ()* @usclock to i1 ()*)()
-  %0 = zext i1 %call_tmp to i32
+  %call_tmp = call i32 @usclock()
   %ifcond = icmp slt i32 0, 1000000
   br label %loop
 
@@ -26,9 +25,8 @@ loop:                                             ; preds = %loop, %entry
   br i1 %ifcond, label %loop, label %afterloop
 
 afterloop:                                        ; preds = %loop
-  %call_tmp4 = call i1 bitcast (i32 ()* @usclock to i1 ()*)()
-  %1 = zext i1 %call_tmp4 to i32
-  %sub_tmp = sub i32 %1, %0
+  %call_tmp4 = call i32 @usclock()
+  %sub_tmp = sub i32 %call_tmp4, %call_tmp
   %call_tmp6 = call i1 bitcast (i32 (i32)* @printnum to i1 (i32)*)(i32 %sub_tmp)
   ret i32 %add_tmp
 }

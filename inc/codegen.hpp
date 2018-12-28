@@ -64,7 +64,6 @@ class CodeGen{
 		Value *generateCastExpression(Value *src, Types SrcType, Types DestType);
 		Value *generateVariable(VariableAST *var);
 		Value *generateValue(ValueAST *val);
-		Value *generateNone(NoneAST *expr);
 		bool linkModule(Module *dest, std::string file_name);
 };
 

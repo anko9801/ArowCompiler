@@ -46,7 +46,7 @@ bool Parser::visitTranslationUnit(){
 	// LLVMライブラリの関数addLib(TranslationUnitAST, ReturnType, FuncName, {Arguments, ...})
 	addLib(TU, Types(Type_int, 1, true), "printnum", {Types(Type_int, 32, true)});
 	addLib(TU, Types(Type_int, 1, true), "sleep", {Types(Type_int, 32, true)});
-	addLib(TU, Types(Type_int, 1, true), "usclock", {});
+	addLib(TU, Types(Type_int, 32, true), "usclock", {});
 	addLib(TU, Types(Type_int, 1, true), "BlinkLED", {Types(Type_int, 32, true)});
 	addLib(TU, Types(Type_int, 1, true), "GPIOsetup", {});
 	addLib(TU, Types(Type_int, 1, true), "GPIOclear", {});
@@ -945,7 +945,7 @@ BaseAST *Parser::visitPrimaryExpression(){
 		if (Debbug) fprintf(stderr, "%d:%d: none\n", Tokens->getLine(), __LINE__);
 		Tokens->getNextToken();
 		ValueAST(0, Types(Type_int, 32, true));
-		return new NoneAST();
+		return new ValueAST(0, Types(Type_all));
 	//VARIABLE_IDENTIFIER
 	}else if(Tokens->getCurType() == TOK_IDENTIFIER) {
 		for (int i = 0;i < VariableTable.size();i++)

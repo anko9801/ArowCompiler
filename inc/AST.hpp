@@ -31,7 +31,6 @@ class WhileExprAST;
 class VariableAST;
 class CastAST;
 class ValueAST;
-class NoneAST;
 
 
 /**
@@ -50,7 +49,6 @@ enum AstID{
 	CastExprID,
 	VariableID,
 	ValueID,
-	NoneID,
 };
 
 enum prim_type {
@@ -440,10 +438,10 @@ class CastExprAST : public BaseAST {
   */
 class ValueAST : public BaseAST {
 	Types Type;
-	int Val;
+	double Val;
 
 	public:
-	ValueAST(int val, Types Type) : BaseAST(ValueID), Val(val), Type(Type){};
+	ValueAST(double val, Types Type) : BaseAST(ValueID), Val(val), Type(Type){};
 	~ValueAST(){}
 	static inline bool classof(ValueAST const*){return true;}
 	static inline bool classof(BaseAST const* base){
@@ -452,26 +450,7 @@ class ValueAST : public BaseAST {
 
 	bool setType(Types type){Type = type;return true;}
 	Types getType(){return Type;}
-	int getValue(){return Val;}
-};
-
-
-/**
-  * Noneを表すAST
-  */
-class NoneAST : public BaseAST {
-	Types Type;
-
-	public:
-	NoneAST() : BaseAST(NoneID){};
-	~NoneAST(){}
-	static inline bool classof(NoneAST const*){return true;}
-	static inline bool classof(BaseAST const* base){
-		return base->getValueID()==NoneID;
-	}
-
-	bool setType(Types type){Type = type;return true;}
-	Types getType(){return Types(Type_all);}
+	double getValue(){return Val;}
 };
 
 

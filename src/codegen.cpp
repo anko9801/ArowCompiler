@@ -465,12 +465,15 @@ Value *CodeGen::generateExpression(BaseAST *expr/*, Type *type = Type::getInt32T
 		return generateVariable(dyn_cast<VariableAST>(expr));
 	else if(isa<ValueAST>(expr))
 		return generateValue(dyn_cast<ValueAST>(expr));
-	else if(isa<NoneAST>(expr))
-		return generateNone(dyn_cast<NoneAST>(expr));
 	return NULL;
 }
 
 
+/**
+  * 条件式生成メソッド
+  * @param  BaseAST
+  * @return 生成したValueのポインタ
+  */
 Value *CodeGen::generateCondition(BaseAST* Cond) {
 	if(isa<ValueAST>(Cond)) {
 		return generateValue(dyn_cast<ValueAST>(Cond));
@@ -580,15 +583,9 @@ Value *CodeGen::generateValue(ValueAST *val){
 		return ConstantInt::get(type, val->getValue());
 	}else if (val->getType().getPrimType() == Type_null) {
 		return ConstantInt::get(type, val->getValue());
+	}else if (val->getType().getPrimType() == Type_all) {
+		return Constant::getNullValue(type);
 	}
-}
-
-
-// Null
-Value *CodeGen::generateNone(NoneAST *expr) {
-	if (llvmDebbug) fprintf(stderr, "%d: %s\n", __LINE__, __func__);
-	Type *nulltype = generateType(expr->getType());
-	return Constant::getNullValue(nulltype);
 }
 
 

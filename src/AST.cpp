@@ -107,11 +107,10 @@ Types BaseAST::getType() {
 		return llvm::dyn_cast<CastExprAST>(this)->getDestType();
 	}else if (llvm::isa<ValueAST>(this)) {
 		return llvm::dyn_cast<ValueAST>(this)->getType();
-	}else if (llvm::isa<NoneAST>(this)) {
-		return llvm::dyn_cast<NoneAST>(this)->getType();
 	}
 	return Types(Type_null);
 }
+
 
 bool BaseAST::setType(Types type) {
 	if (!this) {
@@ -132,8 +131,6 @@ bool BaseAST::setType(Types type) {
 		return llvm::dyn_cast<CastExprAST>(this)->setDestType(type);
 	}else if (llvm::isa<ValueAST>(this)) {
 		return llvm::dyn_cast<ValueAST>(this)->setType(type);
-	}else if (llvm::isa<NoneAST>(this)) {
-		return llvm::dyn_cast<NoneAST>(this)->setType(type);
 	}
 	return false;
 }

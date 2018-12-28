@@ -14,10 +14,9 @@ _main:                                  ## @main
 	.cfi_offset %rbx, -32
 	.cfi_offset %r14, -24
 	.cfi_offset %rbp, -16
-	callq	_usclock
-	movzbl	%al, %ebp
-	andl	$1, %ebp
 	xorl	%ebx, %ebx
+	callq	_usclock
+	movl	%eax, %ebp
 	movb	$1, %r14b
 	.p2align	4, 0x90
 LBB0_1:                                 ## %loop
@@ -29,9 +28,8 @@ LBB0_1:                                 ## %loop
 	jne	LBB0_1
 ## %bb.2:                               ## %afterloop
 	callq	_usclock
-	movzbl	%al, %edi
-	andl	$1, %edi
-	subl	%ebp, %edi
+	subl	%ebp, %eax
+	movl	%eax, %edi
 	callq	_printnum
 	movl	%ebx, %eax
 	popq	%rbx

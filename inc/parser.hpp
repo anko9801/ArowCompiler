@@ -169,8 +169,6 @@ typedef class Parser{
 			}
 			else if(llvm::isa<ValueAST>(stmt))
 				fprintf(stderr, "Value\n");
-			else if(llvm::isa<NoneAST>(stmt))
-				fprintf(stderr, "None\n");
 			else
 				fprintf(stderr, "unknown\n");
 		}
