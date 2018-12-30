@@ -81,24 +81,26 @@ struct Types {
 	prim_type getPrimType() {return Type;}
 	bool getNonNull() {return non_null;}
 	std::string printType() {
+		std::string type;
 		if(this->getPrimType() == Type_int)
-			return "int";
+			type = "int";
 		else if(this->getPrimType() == Type_uint)
-			return "uint";
+			type = "uint";
 		else if(this->getPrimType() == Type_bool)
-			return "bool";
+			type = "bool";
 		else if(this->getPrimType() == Type_float)
-			return "float";
+			type = "float";
 		else if(this->getPrimType() == Type_char)
-			return "char";
+			type = "char";
 		else if(this->getPrimType() == Type_null)
-			return "null";
+			type = "null";
 		else if(this->getPrimType() == Type_number)
-			return "number";
+			type = "number";
 		else if(this->getPrimType() == Type_all)
-			return "all";
+			type = "all";
 		else
-			return "yannaiyo";
+			type = "yannaiyo";
+		return type + std::to_string(this->getBits());
 	}
 
 	bool operator== (const Types &rhs) const {

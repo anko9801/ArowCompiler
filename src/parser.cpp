@@ -45,13 +45,13 @@ bool Parser::visitTranslationUnit(){
 
 	// LLVMライブラリの関数
   //addLib(TranslationUnitAST, ReturnType, FuncName, {Arguments, ...})
-	addLib(TU, Types(Type_int, 1, true), "printnum", {Types(Type_int, 32, true)});
-	addLib(TU, Types(Type_int, 1, true), "printnum", {Types(Type_float, 32, true)});
-	addLib(TU, Types(Type_int, 1, true), "sleep", {Types(Type_int, 32, true)});
+	addLib(TU, Types(Type_bool, 1, true), "printnum", {Types(Type_int, 32, true)});
+	addLib(TU, Types(Type_bool, 1, true), "printnum", {Types(Type_float, 32, true)});
+	addLib(TU, Types(Type_bool, 1, true), "sleep", {Types(Type_int, 32, true)});
 	addLib(TU, Types(Type_int, 32, true), "usclock", {});
-	addLib(TU, Types(Type_int, 1, true), "BlinkLED", {Types(Type_int, 32, true)});
-	addLib(TU, Types(Type_int, 1, true), "GPIOsetup", {});
-	addLib(TU, Types(Type_int, 1, true), "GPIOclear", {});
+	addLib(TU, Types(Type_bool, 1, true), "BlinkLED", {Types(Type_int, 32, true)});
+	addLib(TU, Types(Type_bool, 1, true), "GPIOsetup", {});
+	addLib(TU, Types(Type_bool, 1, true), "GPIOclear", {});
 
 	//ExternalDecl
 	while(true){
