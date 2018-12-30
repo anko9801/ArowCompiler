@@ -376,43 +376,37 @@ Value *CodeGen::generateBinaryExpression(BinaryExprAST *bin_expr){
 		return Builder->CreateStore(rhs_v, lhs_v);
 
 	}else if(bin_expr->getOp() == "+"){
-		if (type == Type_int) return Builder->CreateAdd(lhs_v, rhs_v, "add_tmp");
-		if (type == Type_uint) return Builder->CreateAdd(lhs_v, rhs_v, "add_tmp");
-		if (type == Type_float){
-			fprintf(stderr, "fadd\n");
+		if (type == Type_int || type == Type_uint)
+			return Builder->CreateAdd(lhs_v, rhs_v, "add_tmp");
+		if (type == Type_float)
 			return Builder->CreateFAdd(lhs_v, rhs_v, "add_tmp");
-		}
 
 	}else if(bin_expr->getOp() == "-"){
-		if (lhs->getType() == Type_int && rhs->getType() == Type_int)
+		if (type == Type_int || type == Type_uint)
 			return Builder->CreateSub(lhs_v, rhs_v, "sub_tmp");
-		else if (lhs->getType() == Type_uint && rhs->getType() == Type_uint)
-			return Builder->CreateSub(lhs_v, rhs_v, "sub_tmp");
-		else if (lhs->getType() == Type_float && rhs->getType() == Type_float)
+		if (type == Type_float)
 			return Builder->CreateFSub(lhs_v, rhs_v, "sub_tmp");
 
 	}else if(bin_expr->getOp() == "*"){
-		if (lhs->getType() == Type_int && rhs->getType() == Type_int)
+		if (type == Type_int || type == Type_uint)
 			return Builder->CreateMul(lhs_v, rhs_v, "mul_tmp");
-		else if (lhs->getType() == Type_uint && rhs->getType() == Type_uint)
-			return Builder->CreateMul(lhs_v, rhs_v, "mul_tmp");
-		else if (lhs->getType() == Type_float && rhs->getType() == Type_float)
+		if (type == Type_float)
 			return Builder->CreateFMul(lhs_v, rhs_v, "mul_tmp");
 
 	}else if(bin_expr->getOp() == "/"){
-		if (lhs->getType() == Type_int && rhs->getType() == Type_int)
+		if (type == Type_int)
 			return Builder->CreateSDiv(lhs_v, rhs_v, "div_tmp");
-		else if (lhs->getType() == Type_uint && rhs->getType() == Type_uint)
+		else if (type == Type_uint)
 			return Builder->CreateUDiv(lhs_v, rhs_v, "div_tmp");
-		else if (lhs->getType() == Type_float && rhs->getType() == Type_float)
+		else if (type == Type_float)
 			return Builder->CreateFDiv(lhs_v, rhs_v, "div_tmp");
 
 	}else if(bin_expr->getOp() == "%"){
-		if (lhs->getType() == Type_uint && rhs->getType() == Type_uint)
+		if (type == Type_uint)
 			return Builder->CreateURem(lhs_v, rhs_v, "rem_tmp");
-		else if (lhs->getType() == Type_int && rhs->getType() == Type_int)
+		else if (type == Type_int)
 			return Builder->CreateSRem(lhs_v, rhs_v, "rem_tmp");
-		else if (lhs->getType() == Type_float && rhs->getType() == Type_float)
+		else if (type == Type_float)
 			return Builder->CreateFRem(lhs_v, rhs_v, "rem_tmp");
 	}
 	return NULL;

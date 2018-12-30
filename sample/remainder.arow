@@ -1,0 +1,6 @@
+int main() {
+	int a = 3
+	float b = 2.0
+	printnum(a % b)
+	return a % b
+}
