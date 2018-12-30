@@ -24,6 +24,7 @@ class OptionParser {
 		std::string InputFileName;
 		std::string OutputFileName;
 		std::string LinkFileName;
+		bool Optimisation;
 		bool WithJit;
 		int Argc;
 		char **Argv;
@@ -35,6 +36,7 @@ class OptionParser {
 		std::string getOutputFileName(){return OutputFileName;} 	//出力ファイル名取得
 		std::string getLinkFileName(){return LinkFileName;} 	//リンク用ファイル名取得
 		bool getWithJit(){return WithJit;}		//JIT実行有無
+		bool getOptimisation(){return Optimisation;}
 		bool parseOption();
 };
 
@@ -67,6 +69,8 @@ bool OptionParser::parseOption(){
 			LinkFileName.assign(Argv[++i]);
 		}else if(Argv[i][0]=='-' && Argv[i][1] == 'j' && Argv[i][2] == 'i' && Argv[i][3] == 't' && Argv[i][4] == '\0'){
 			WithJit = true;
+		}else if(Argv[i][0]=='-' && Argv[i][1] == 'n' && Argv[i][2] == '\0'){
+			Optimisation = false;
 		}else if(Argv[i][0]=='-'){
 			fprintf(stderr,"%s は不明なオプションです\n", Argv[i]);
 			return false;
@@ -212,9 +216,9 @@ int main(int argc, char **argv) {
 	//llvm::PassManager<AnalysisManager<>> pm;
 	llvm::legacy::PassManager pm;
 
-	//SSA化
-	pm.add(llvm::createPromoteMemoryToRegisterPass());
-
+	if (opt.getOptimisation())
+		pm.add(llvm::createPromoteMemoryToRegisterPass());
+	
 	//出力
 	std::error_code error;
 	llvm::raw_fd_ostream raw_stream(opt.getOutputFileName().c_str(), error, llvm::sys::fs::OpenFlags::F_None);

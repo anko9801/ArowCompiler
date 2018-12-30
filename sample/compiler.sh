@@ -13,7 +13,7 @@ if [ -e $FILE ]; then
 	rm $FILE
 fi
 
-../bin/dcc -o $FILE.ll $FILE.arow
+../bin/dcc -o $FILE.ll -n $FILE.arow
 
 if [ -e $FILE.ll ]; then
 	llvm-link $FILE.ll ../lib/lib.ll -S -o $FILE.ll

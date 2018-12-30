@@ -192,7 +192,7 @@ Function *CodeGen::generatePrototype(PrototypeAST *proto, Module *mod){
 
 	//set names
 	Function::arg_iterator arg_iter = func->arg_begin();
-	for(int i=0; i<proto->getParamNum(); i++){
+	for(size_t i = 0; i < proto->getParamNum(); i++){
 		arg_iter->setName(proto->getParamName(i).append("_arg"));
 		++arg_iter;
 	}
@@ -212,6 +212,7 @@ Value *CodeGen::generateFunctionStatement(FunctionStmtAST *func_stmt){
 
 	//insert expr statement
 	BaseAST *stmt;
+	generateArray();
 	for(int i=0; ; i++){
 		if (llvmDebbug) fprintf(stderr, "%d\n", i+1);
 		stmt=func_stmt->getStatement(i);
@@ -233,9 +234,8 @@ Value *CodeGen::generateFunctionStatement(FunctionStmtAST *func_stmt){
 Value *CodeGen::generateVariableDeclaration(VariableDeclAST *vdecl){
 	if (llvmDebbug) fprintf(stderr, "%d: %s\n", __LINE__, __func__);
 	//create alloca
-	Value *alloca;
 	Type* type = generateType(vdecl->getType());
-	alloca = Builder->CreateAlloca(type, nullptr, vdecl->getName());
+	Value *alloca = Builder->CreateAlloca(type, nullptr, vdecl->getName());
 
 	//if args alloca
 	if(vdecl->getDeclType() == VariableDeclAST::param){
@@ -243,6 +243,13 @@ Value *CodeGen::generateVariableDeclaration(VariableDeclAST *vdecl){
 		Builder->CreateStore(CurFunc->getValueSymbolTable()->lookup(vdecl->getName().append("_arg")), alloca);
 	}
 	return alloca;
+}
+
+
+Value *CodeGen::generateArray() {
+	llvm::Type* double_t = llvm::Type::getDoubleTy(GlobalContext);
+	llvm::Type* array_t = llvm::PointerType::getUnqual(llvm::ArrayType::get(double_t, 2));
+	return Builder->CreateAlloca(array_t, Mod->getDataLayout().getAllocaAddrSpace(), ConstantInt::get(generateType(Types(Type_int)), 2), "array");
 }
 
 
@@ -612,4 +619,5 @@ Value *CodeGen::generateValue(ValueAST *val){
 	}else if (val->getType().getPrimType() == Type_all) {
 		return Constant::getNullValue(type);
 	}
+	return NULL;
 }

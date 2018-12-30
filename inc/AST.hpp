@@ -195,7 +195,7 @@ class PrototypeAST{
 	Types getType(){return Type;}
 	std::string getParamName(size_t i){if(i<Params.size())return Params.at(i).Name;return NULL;}
 	Types getParamType(size_t i){if(i<Params.size())return Params.at(i).Type;return Types(Type_null);}
-	int getParamNum(){return Params.size();}
+	size_t getParamNum(){return Params.size();}
 	std::vector<Seq> getParam(){return Params;}
 };
 

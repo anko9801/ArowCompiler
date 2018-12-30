@@ -52,6 +52,7 @@ class CodeGen{
 		Function *generatePrototype(PrototypeAST *proto, Module *mod);
 		Value *generateFunctionStatement(FunctionStmtAST *func_stmt);
 		Value *generateVariableDeclaration(VariableDeclAST *vdecl);
+		Value *generateArray();
 		Value *generateStatement(BaseAST *stmt);
 		Value *generateIfExpr(IfExprAST *if_expr);
 		Value *generateWhileExpr(WhileExprAST *while_expr);
