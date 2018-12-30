@@ -1,0 +1,6 @@
+int main() {
+	printnum(1);
+	printnum(3);
+	printnum(3);
+	return 0;
+}

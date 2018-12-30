@@ -43,7 +43,8 @@ typedef class Parser{
 				Types ReturnType, std::string FuncName,
 				std::initializer_list<Types> param_type) {
 			std::vector<Seq> param_list;
-			for (Types i : param_type) param_list.push_back(Seq(i, "i"));
+			std::string arg_name = "i";
+			for (Types i : param_type) {arg_name.push_back('i');param_list.push_back(Seq(i, "i"));}
 			PrototypeAST *proto = new PrototypeAST(ReturnType, FuncName, param_list);
 			TU->addPrototype(proto);
 			PrototypeTable.push_back(proto);
@@ -97,7 +98,7 @@ typedef class Parser{
 				}
 			}
 
-			for(int i=0;i<args.size();i++) {
+			for(size_t i = 0;i < args.size();i++) {
 				if (!(args[i]->getType() == proto->getParam()[i].Type)) {
 					SAFE_DELETE(args[i]);
 					fprintf(stderr, "%d:%d: error: no match for function param '%s'\n", Tokens->getLine(), __LINE__, Callee.c_str());
@@ -139,9 +140,7 @@ typedef class Parser{
 			for(int i=0; i < nest; i++) fprintf(stderr, "	");
 			if(!stmt) {
 				fprintf(stderr, "break\n");
-				return ;
-			}
-			else if(llvm::isa<FunctionStmtAST>(stmt)){
+			}else if(llvm::isa<FunctionStmtAST>(stmt)){
 				fprintf(stderr, "FunctionStatement\n");
 				for (int i = 0;;i++)if (llvm::dyn_cast<FunctionStmtAST>(stmt)->getStatement(i))printAST(llvm::dyn_cast<FunctionStmtAST>(stmt)->getStatement(i), nest+1);else break;
 			}else if(llvm::isa<VariableDeclAST>(stmt))
@@ -194,8 +193,8 @@ typedef class Parser{
 		BaseAST *visitWhileExpression();
 		BaseAST *visitAssignmentExpression();
 		BaseAST *visitExpression(BaseAST *lhs);
-		BaseAST *visitAdditiveExpression(BaseAST *lhs);
-		BaseAST *visitMultiplicativeExpression(BaseAST *lhs);
+		BaseAST *visitAdditiveExpression(BaseAST *lhs, Types type);
+		BaseAST *visitMultiplicativeExpression(BaseAST *lhs, Types type);
 		BaseAST *visitCastExpression();
 		BaseAST *visitPostfixExpression();
 		BaseAST *visitPrimaryExpression();
@@ -203,13 +202,12 @@ typedef class Parser{
 		bool isExceptedToken(TokenType type) {
 			int bkup=Tokens->getCurIndex();
 			while (Tokens->getCurString() == "\n") {
+				if(Tokens->getCurType() == TOK_EOF) break;
+				if (Tokens->getCurType() == type) return true;
 				Tokens->getNextToken();
-				if(Tokens->getCurType() == TOK_EOF)
-					break;
 			}
-			if (Tokens->getCurType() == type) {
-				return true;
-			}else{
+			if (Tokens->getCurType() == type) return true;
+			else{
 				Tokens->applyTokenIndex(bkup);
 				return false;
 			}
@@ -218,13 +216,12 @@ typedef class Parser{
 		bool isExceptedToken(std::string str) {
 			int bkup=Tokens->getCurIndex();
 			while (Tokens->getCurString() == "\n") {
+				if(Tokens->getCurType() == TOK_EOF) break;
+				if (Tokens->getCurString() == str) return true;
 				Tokens->getNextToken();
-				if(Tokens->getCurType() == TOK_EOF)
-					break;
 			}
-			if (Tokens->getCurString() == str) {
-				return true;
-			}else{
+			if (Tokens->getCurString() == str) return true;
+			else{
 				Tokens->applyTokenIndex(bkup);
 				return false;
 			}

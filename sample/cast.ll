@@ -14,8 +14,7 @@ target triple = "x86_64-apple-macosx10.14.0"
 
 define i32 @main() {
 entry:
-  %0 = zext i16 2 to i32
-  ret i32 %0
+  ret i32 2
 }
 
 ; Function Attrs: nounwind ssp uwtable

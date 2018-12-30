@@ -91,7 +91,6 @@ TokenStream *LexicalAnalysis(std::string input_filename){
 			}else if(isdigit(next_char)){
 				if(next_char == '0'){
 					token_str += next_char;
-					next_token = new Token(token_str, TOK_DIGIT, line_num);
 				}else{
 					token_str += next_char;
 					if(index < length) {
@@ -103,6 +102,19 @@ TokenStream *LexicalAnalysis(std::string input_filename){
 						}
 						index--;
 					}
+				}
+				
+				if (next_char == '.') {
+					index++;
+					next_char = cur_line.at(index++);
+					while(isdigit(next_char)){
+						token_str += next_char;
+						if(index == length){index++;break;}
+						next_char = cur_line.at(index++);
+					}
+					index--;
+					next_token = new Token(token_str, TOK_FLOAT, line_num);
+				}else{
 					next_token = new Token(token_str, TOK_DIGIT, line_num);
 				}
 
@@ -356,7 +368,7 @@ TokenStream *LexicalAnalysis(std::string input_filename){
   * デストラクタ
   */
 TokenStream::~TokenStream(){
-	for(int i=0; i<Tokens.size(); i++){
+	for(size_t i=0; i<Tokens.size(); i++){
 		SAFE_DELETE(Tokens[i]);
 	}
 	Tokens.clear();

@@ -29,7 +29,7 @@ class OptionParser {
 		char **Argv;
 
 	public:
-		OptionParser(int argc, char **argv):Argc(argc), Argv(argv), WithJit(false){}
+		OptionParser(int argc, char **argv) : WithJit(false), Argc(argc), Argv(argv){}
 		void printHelp();
 		std::string getInputFileName(){return InputFileName;} 		//入力ファイル名取得
 		std::string getOutputFileName(){return OutputFileName;} 	//出力ファイル名取得
@@ -38,15 +38,13 @@ class OptionParser {
 		bool parseOption();
 };
 
-
 /**
  * ヘルプ表示
  */
 void OptionParser::printHelp(){
-	fprintf(stdout, "Compiler for DummyC...\n" );
+	fprintf(stdout, "Compiler for Arow...\n" );
 	fprintf(stdout, "試作中なのでバグがあったらご報告を\n" );
 }
-
 
 /**
  * オプション切り出し
@@ -57,7 +55,6 @@ bool OptionParser::parseOption(){
 		fprintf(stderr,"引数が足りません\n");
 		return false;
 	}
-
 
 	for(int i=1; i<Argc; i++){
 		if(Argv[i][0]=='-' && Argv[i][1] == 'o' && Argv[i][2] == '\0'){
@@ -90,30 +87,39 @@ bool OptionParser::parseOption(){
 		OutputFileName = ifn;
 		OutputFileName += ".s";
 	}
-
 	return true;
 }
+
+void printAST(BaseAST* stmt, int nest);
+bool printASTs(TranslationUnitAST &tunit) {
+	for(int i=0; ; i++) {
+		FunctionAST *func = tunit.getFunction(i);
+		if(!func)
+			break;
+		fprintf(stderr, "%s\n", func->getName().c_str());
+		for (int i = 0; ;i++)
+			if (func->getBody()->getStatement(i))
+				printAST(func->getBody()->getStatement(i), 1);
+			else break;
+	}
+	return true;
+}
+
 void printAST(BaseAST* stmt, int nest){
 	for(int i=0; i < nest; i++) fprintf(stderr, "	");
 	if(!stmt) {
 		fprintf(stderr, "break\n");
-		return ;
-	}
-	else if(llvm::isa<FunctionStmtAST>(stmt)) {
+	}else if(llvm::isa<FunctionStmtAST>(stmt)) {
 		fprintf(stderr, "FunctionStatement\n");
 		for (int i = 0;;i++)if (llvm::dyn_cast<FunctionStmtAST>(stmt)->getStatement(i))printAST(dyn_cast<FunctionStmtAST>(stmt)->getStatement(i), 1);else break;
 	}else if(llvm::isa<VariableDeclAST>(stmt))
 		fprintf(stderr, "VariableDeclaration\n");
-	else if(llvm::isa<CastExprAST>(stmt))
-		fprintf(stderr, "CastExpression\n");
 	else if(llvm::isa<BinaryExprAST>(stmt))
 		fprintf(stderr, "BinaryExpression\n");
 	else if(llvm::isa<CallExprAST>(stmt))
 		fprintf(stderr, "CallExpression\n");
 	else if(llvm::isa<JumpStmtAST>(stmt))
 		fprintf(stderr, "JumpStatement\n");
-	else if(llvm::isa<VariableAST>(stmt))
-		fprintf(stderr, "Variable\n");
 	else if(llvm::isa<IfExprAST>(stmt)){
 		fprintf(stderr, "IfExpression\n");
 		printAST(llvm::dyn_cast<IfExprAST>(stmt)->getCond(), nest);
@@ -125,11 +131,73 @@ void printAST(BaseAST* stmt, int nest){
 		printAST(llvm::dyn_cast<WhileExprAST>(stmt)->getCond(), nest);
 		for (int i = 0;;i++)if (llvm::dyn_cast<WhileExprAST>(stmt)->getLoop(i))printAST(llvm::dyn_cast<WhileExprAST>(stmt)->getLoop(i), nest+1);else break;
 	}
+	else if(llvm::isa<VariableAST>(stmt))
+		fprintf(stderr, "Variable\n");
+	else if(llvm::isa<CastExprAST>(stmt))
+		fprintf(stderr, "CastExpression\n");
 	else if(llvm::isa<ValueAST>(stmt))
 		fprintf(stderr, "Value\n");
 	else
 		fprintf(stderr, "unknown\n");
 }
+
+
+class Compile {
+	private:
+		OptionParser opt;
+		std::string filetext;
+		Parser *parser;
+		CodeGen *codegen;
+
+	public:
+		Compile(OptionParser opt) : opt(opt), filetext(opt.getInputFileName()), parser(), codegen(){}
+		Parser *lex(std::string filetext);
+		TranslationUnitAST &parse();
+		CodeGen *LLVMGen();
+		OptionParser getOption(){return opt;}
+};
+
+Parser *Compile::lex(std::string filetext) {
+	parser = new Parser(filetext);
+	return parser;
+}
+
+TranslationUnitAST &Compile::parse() {
+	if (!parser->doParse()) {
+		fprintf(stderr, "err at Parser or Lexer\n");
+		SAFE_DELETE(parser);
+		exit(1);
+	}
+	TranslationUnitAST &tunit = parser->getAST();
+	if (tunit.empty()) {
+		fprintf(stderr,"TranslationUnit is empty\n");
+		SAFE_DELETE(parser);
+		exit(1);
+	}
+	return tunit;
+}
+
+CodeGen *Compile::LLVMGen() {
+	codegen = new CodeGen();
+	TranslationUnitAST &tunit = parser->getAST();
+	if (!codegen->doCodeGen(tunit, filetext, opt.getLinkFileName(), opt.getWithJit())){
+		fprintf(stderr, "err at codegen\n");
+		SAFE_DELETE(parser);
+		SAFE_DELETE(codegen);
+		exit(1);
+	}
+	//get Module
+	llvm::Module &mod = codegen->getModule();
+	if (mod.empty()) {
+		fprintf(stderr,"Module is empty\n");
+		SAFE_DELETE(parser);
+		SAFE_DELETE(codegen);
+		exit(1);
+	}
+	return codegen;
+}
+
+
 
 /**
  * main関数
@@ -148,68 +216,35 @@ int main(int argc, char **argv) {
 	if(!opt.parseOption())
 		exit(1);
 
+	std::string filetext = opt.getInputFileName();
+	Compile compile(opt);
 	//check
-	if(opt.getInputFileName().length() == 0){
+	if(filetext.length() == 0){
 		fprintf(stderr,"入力ファイル名が指定されていません\n");
 		exit(1);
 	}
+
 	left = clock();
 	fprintf(stderr, "%.3f ms : File Read\n", (double)(left - right) * 1000 / CLOCKS_PER_SEC);
 	right = left;
 
-	//lex and parse
-	Parser *parser = new Parser(opt.getInputFileName());
-	if(!parser->doParse()){
-		fprintf(stderr, "err at Parser or Lexer\n");
-		SAFE_DELETE(parser);
-		exit(1);
-	}
+	// lex
+	Parser *parser = compile.lex(filetext);
+	// parser
+	TranslationUnitAST &tunit = compile.parse();
+	// print AST
+	if (printStruct) printASTs(tunit);
+
 	left = clock();
 	fprintf(stderr, "%.3f ms : Lex and Parse\n", (double)(left - right) * 1000 / CLOCKS_PER_SEC);
 	right = left;
 
+	CodeGen *codegen = compile.LLVMGen();
+	llvm::Module &mod = codegen->getModule();
 
-	//get AST
-	TranslationUnitAST &tunit = parser->getAST();
-	// print AST
-	if (printStruct) {
-		for(int i=0; ; i++) {
-			FunctionAST *func = tunit.getFunction(i);
-			if(!func)
-				break;
-			fprintf(stderr, "%s\n", func->getName().c_str());
-			printAST(func->getBody(), 0);
-		}
-	}
-	if(tunit.empty()){
-		fprintf(stderr,"TranslationUnit is empty\n");
-		SAFE_DELETE(parser);
-		exit(1);
-	}
-
-
-	CodeGen *codegen = new CodeGen();
-	if(!codegen->doCodeGen(tunit, opt.getInputFileName(), 
-				opt.getLinkFileName(), opt.getWithJit())){
-		fprintf(stderr, "err at codegen\n");
-		SAFE_DELETE(parser);
-		SAFE_DELETE(codegen);
-		exit(1);
-	}
 	left = clock();
 	fprintf(stderr, "%.3f ms : generate the LLVM IR\n", (double)(left - right) * 1000 / CLOCKS_PER_SEC);
 	right = left;
-
-
-	//get Module
-	llvm::Module &mod=codegen->getModule();
-	if(mod.empty()){
-		fprintf(stderr,"Module is empty\n");
-		SAFE_DELETE(parser);
-		SAFE_DELETE(codegen);
-		exit(1);
-	}
-
 
 	//llvm::PassManager<AnalysisManager<>> pm;
 	llvm::legacy::PassManager pm;

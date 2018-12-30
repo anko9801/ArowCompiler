@@ -1,0 +1,5 @@
+float main() {
+	float a = 3.3
+	float b = 4.4
+	return a + b;
+}

@@ -2,17 +2,11 @@
 
 bool llvmDebbug = true;
 
-/**
-  * コンストラクタ
-  */
 CodeGen::CodeGen(){
 	Builder = new IRBuilder<>(GlobalContext);
 	Mod = NULL;
 }
 
-/**
-  * デストラクタ
-  */
 CodeGen::~CodeGen(){
 	SAFE_DELETE(Builder);
 	SAFE_DELETE(Mod);
@@ -171,6 +165,7 @@ Function *CodeGen::generatePrototype(PrototypeAST *proto, Module *mod){
 
 	//create arg_types
 	std::vector<Type*> arg_types;
+	fprintf(stderr, "%s %d\n", proto->getName().c_str(), proto->getParamNum());
 	for (int i = 0; ;i++)
 		if (proto->getParamType(i) != Types(Type_null)) arg_types.push_back(generateType(proto->getParamType(i)));
 		else break;
@@ -209,7 +204,7 @@ Value *CodeGen::generateFunctionStatement(FunctionStmtAST *func_stmt){
 	//insert expr statement
 	BaseAST *stmt;
 	for(int i=0; ; i++){
-		if (llvmDebbug) fprintf(stderr, "%d\n", i);
+		if (llvmDebbug) fprintf(stderr, "%d\n", i+1);
 		stmt=func_stmt->getStatement(i);
 		if(!stmt)
 			break;
@@ -384,16 +379,15 @@ Value *CodeGen::generateCallExpression(CallExprAST *call_expr){
 	BaseAST *arg;
 	Value *arg_v;
 	for(int i=0; ; i++){
-		if(!(arg=call_expr->getArgs(i)))
-			break;
+		arg = call_expr->getArgs(i);
+		if(!arg) break;
 
-		//isBinaryExpr
 		if(isa<BinaryExprAST>(arg)){
 			BinaryExprAST *bin_expr = dyn_cast<BinaryExprAST>(arg);
 			//二項演算命令を生成
-			arg_v = generateBinaryExpression(dyn_cast<BinaryExprAST>(arg));
+			arg_v = generateBinaryExpression(bin_expr);
 			//代入の時はLoad命令を追加
-			if(bin_expr->getOp() == "="){
+			if(bin_expr->getOp() == "=") {
 				VariableAST *var = dyn_cast<VariableAST>(bin_expr->getLHS());
 				arg_v = Builder->CreateLoad(CurFunc->getValueSymbolTable()->lookup(var->getName()), "arg_val");
 			}
@@ -528,24 +522,11 @@ Value *CodeGen::generateCastExpression(Value *src, Types SrcType, Types DestType
 			if (llvmDebbug) fprintf(stderr, "FPToUI\n");
 			return Builder->CreateFPToUI(src, DestTy);
 		}else if (DestType.getPrimType() == Type_float) {
-			if (SrcType.getBits() > DestType.getBits()) {
-				// bit数を小さくする
-				if (llvmDebbug) fprintf(stderr, "FPTrunc\n");
-				return Builder->CreateFPTrunc(src, DestTy);
-			}else if (SrcType.getBits() < DestType.getBits()){
-				// bit数を大きくする
-				return Builder->CreateFPExt(src, DestTy);
-				if (llvmDebbug) fprintf(stderr, "FPExt\n");
-			}
+			return Builder->CreateFPCast(src, DestTy);
 		}
 	}
 	return src;
 }
-/*
-Value * 	CreateZExtOrTrunc (Value *V, Type *DestTy, const Twine &Name="")
-Value * 	CreateSExtOrTrunc (Value *V, Type *DestTy, const Twine &Name="")
-どっちも出来る！
-*/
 
 
 /**
@@ -566,17 +547,17 @@ Value *CodeGen::generateValue(ValueAST *val){
 	if (llvmDebbug) fprintf(stderr, "%d: %s\n", __LINE__, __func__);
 	Type *type = generateType(val->getType());
 	if (val->getType().getPrimType() == Type_bool) {
-		return ConstantInt::get(type, val->getValue());
+		return ConstantInt::get(type, val->getValue(), false);
 	}else if (val->getType().getPrimType() == Type_int) {
-		return ConstantInt::getSigned(type, val->getValue());
+		return ConstantInt::get(type, val->getValue(), true);
 	}else if (val->getType().getPrimType() == Type_uint) {
-		return ConstantInt::get(type, val->getValue());
+		return ConstantInt::get(type, val->getValue(), false);
 	}else if (val->getType().getPrimType() == Type_float) {
 		return ConstantFP::get(type, val->getValue());
 	}else if (val->getType().getPrimType() == Type_char) {
-		return ConstantInt::get(type, val->getValue());
+		return ConstantInt::get(type, val->getValue(), false);
 	}else if (val->getType().getPrimType() == Type_null) {
-		return ConstantInt::get(type, val->getValue());
+		return ConstantInt::get(type, val->getValue(), true);
 	}else if (val->getType().getPrimType() == Type_all) {
 		return Constant::getNullValue(type);
 	}

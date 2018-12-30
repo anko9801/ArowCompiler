@@ -16,6 +16,7 @@
 enum TokenType{
 	TOK_IDENTIFIER,		//識別子
 	TOK_DIGIT,			//数字
+	TOK_FLOAT,
 	TOK_TRUE,
 	TOK_FALSE,
 	TOK_SYMBOL,			//記号
@@ -49,7 +50,7 @@ typedef class Token{
 	public:
 	Token(std::string string, TokenType type, int line) 
 		: TokenString(string), Type(type), Line(line){
-		if(type == TOK_DIGIT)
+		if(type == TOK_DIGIT || type == TOK_FLOAT)
 			Number = atoi(string.c_str());
 		else
 			Number = 0x7fffffff;
