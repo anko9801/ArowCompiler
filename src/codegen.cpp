@@ -41,7 +41,6 @@ bool CodeGen::doCodeGen(TranslationUnitAST &tunit, std::string name, std::string
 	return true;
 }
 
-
 /**
   * Module取得
   */
@@ -50,6 +49,19 @@ Module &CodeGen::getModule(){
 		return *Mod;
 	else
 		return *(new Module("null", GlobalContext));
+}
+
+bool CodeGen::linkModule(Module *dest, std::string file_name){
+	if (llvmDebbug) fprintf(stderr, "%d: %s\n", __LINE__, __func__);
+	SMDiagnostic err;
+	std::unique_ptr<Module> link_mod = llvm::parseIRFile(file_name, err, GlobalContext);
+	if(!link_mod)
+		return false;
+
+	if(Linker::linkModules(*dest, std::move(link_mod), 0))
+		return false;
+
+	return true;
 }
 
 
@@ -131,12 +143,10 @@ bool CodeGen::generateTranslationUnit(TranslationUnitAST &tunit, std::string nam
   * @param  FunctionAST Module
   * @return 生成したFunctionのポインタ
   */
-Function *CodeGen::generateFunctionDefinition(FunctionAST *func_ast,
-		Module *mod){
+Function *CodeGen::generateFunctionDefinition(FunctionAST *func_ast, Module *mod){
 	Function *func = generatePrototype(func_ast->getPrototype(), mod);
 	if(!func)
 		return NULL;
-	if (llvmDebbug) fprintf(stderr, "%d: %s\n", __LINE__, __func__);
 	CurFunc = func;
 	CurBB = BasicBlock::Create(GlobalContext, "entry", func);
 	Builder->SetInsertPoint(CurBB);
@@ -158,14 +168,13 @@ Function *CodeGen::generatePrototype(PrototypeAST *proto, Module *mod){
 		if(func->arg_size() == proto->getParamNum() && func->empty()){
 			return func;
 		}else{
-			fprintf(stderr, "error: function %s is redefined",proto->getName().c_str());
+			fprintf(stderr, "error: function %s is redefined", proto->getName().c_str());
 			return NULL;
 		}
 	}
 
 	//create arg_types
 	std::vector<Type*> arg_types;
-	fprintf(stderr, "%s %d\n", proto->getName().c_str(), proto->getParamNum());
 	for (int i = 0; ;i++)
 		if (proto->getParamType(i) != Types(Type_null)) arg_types.push_back(generateType(proto->getParamType(i)));
 		else break;
@@ -330,39 +339,81 @@ Value *CodeGen::generateBinaryExpression(BinaryExprAST *bin_expr){
 		if (llvmDebbug) fprintf(stderr, "%d: lhs is variable\n", __LINE__);
 		VariableAST *lhs_var = dyn_cast<VariableAST>(lhs);
 		lhs_v = CurFunc->getValueSymbolTable()->lookup(lhs_var->getName());
-	}else{
-		lhs_v = generateExpression(lhs);
+		rhs_v = generateExpression(rhs);
 		// bit数の暗黙の型変換
 		if (lhs->getType() != rhs->getType() || lhs->getType().getBits() != rhs->getType().getBits()) {
-			if (lhs->getType().getBits() > rhs->getType().getBits()) {
-				if (llvmDebbug) fprintf(stderr, "%d: set lhs type\n", __LINE__);
-				rhs_v = generateCastExpression(rhs_v, rhs->getType(), lhs->getType());
-				rhs->setType(lhs->getType());
-			}else if (lhs->getType().getBits() < rhs->getType().getBits()) {
+			rhs_v = generateCastExpression(rhs_v, rhs->getType(), lhs->getType());
+			rhs->setType(lhs->getType());
+		}
+	}else{
+		lhs_v = generateExpression(lhs);
+		rhs_v = generateExpression(rhs);
+		// bit数の暗黙の型変換
+		if (lhs->getType() != rhs->getType() || lhs->getType().getBits() != rhs->getType().getBits()) {
+			if (lhs->getType().getBits() < rhs->getType().getBits()) {
 				if (llvmDebbug) fprintf(stderr, "%d: set rhs type\n", __LINE__);
 				lhs_v = generateCastExpression(lhs_v, lhs->getType(), rhs->getType());
 				lhs->setType(rhs->getType());
+			}else if (lhs->getType().getBits() > rhs->getType().getBits()) {
+				if (llvmDebbug) fprintf(stderr, "%d: set lhs type\n", __LINE__);
+				rhs_v = generateCastExpression(rhs_v, rhs->getType(), lhs->getType());
+				rhs->setType(lhs->getType());
 			}
 		}
-	}
-	rhs_v = generateExpression(rhs);
-	// bit数の暗黙の型変換
-	if (lhs->getType() != rhs->getType() || lhs->getType().getBits() != rhs->getType().getBits()) {
-		rhs_v = generateCastExpression(rhs_v, rhs->getType(), lhs->getType());
 	}
 
 	if (llvmDebbug) fprintf(stderr, "%d: lhs and rhs exist\n", __LINE__);
 
+	prim_type type;
+	if (lhs->getType().getPrimType() == Type_int && rhs->getType().getPrimType() == Type_int)
+		type = Type_int;
+	else if (lhs->getType().getPrimType() == Type_uint && rhs->getType().getPrimType() == Type_uint)
+		type = Type_uint;
+	else if (lhs->getType().getPrimType() == Type_float && rhs->getType().getPrimType() == Type_float)
+		type = Type_float;
+
 	if(bin_expr->getOp() == "="){
 		return Builder->CreateStore(rhs_v, lhs_v);
+
 	}else if(bin_expr->getOp() == "+"){
-		return Builder->CreateAdd(lhs_v, rhs_v, "add_tmp");
+		if (type == Type_int) return Builder->CreateAdd(lhs_v, rhs_v, "add_tmp");
+		if (type == Type_uint) return Builder->CreateAdd(lhs_v, rhs_v, "add_tmp");
+		if (type == Type_float){
+			fprintf(stderr, "fadd\n");
+			return Builder->CreateFAdd(lhs_v, rhs_v, "add_tmp");
+		}
+
 	}else if(bin_expr->getOp() == "-"){
-		return Builder->CreateSub(lhs_v, rhs_v, "sub_tmp");
+		if (lhs->getType() == Type_int && rhs->getType() == Type_int)
+			return Builder->CreateSub(lhs_v, rhs_v, "sub_tmp");
+		else if (lhs->getType() == Type_uint && rhs->getType() == Type_uint)
+			return Builder->CreateSub(lhs_v, rhs_v, "sub_tmp");
+		else if (lhs->getType() == Type_float && rhs->getType() == Type_float)
+			return Builder->CreateFSub(lhs_v, rhs_v, "sub_tmp");
+
 	}else if(bin_expr->getOp() == "*"){
-		return Builder->CreateMul(lhs_v, rhs_v, "mul_tmp");
+		if (lhs->getType() == Type_int && rhs->getType() == Type_int)
+			return Builder->CreateMul(lhs_v, rhs_v, "mul_tmp");
+		else if (lhs->getType() == Type_uint && rhs->getType() == Type_uint)
+			return Builder->CreateMul(lhs_v, rhs_v, "mul_tmp");
+		else if (lhs->getType() == Type_float && rhs->getType() == Type_float)
+			return Builder->CreateFMul(lhs_v, rhs_v, "mul_tmp");
+
 	}else if(bin_expr->getOp() == "/"){
-		return Builder->CreateSDiv(lhs_v, rhs_v, "div_tmp");
+		if (lhs->getType() == Type_int && rhs->getType() == Type_int)
+			return Builder->CreateSDiv(lhs_v, rhs_v, "div_tmp");
+		else if (lhs->getType() == Type_uint && rhs->getType() == Type_uint)
+			return Builder->CreateUDiv(lhs_v, rhs_v, "div_tmp");
+		else if (lhs->getType() == Type_float && rhs->getType() == Type_float)
+			return Builder->CreateFDiv(lhs_v, rhs_v, "div_tmp");
+
+	}else if(bin_expr->getOp() == "%"){
+		if (lhs->getType() == Type_uint && rhs->getType() == Type_uint)
+			return Builder->CreateURem(lhs_v, rhs_v, "rem_tmp");
+		else if (lhs->getType() == Type_int && rhs->getType() == Type_int)
+			return Builder->CreateSRem(lhs_v, rhs_v, "rem_tmp");
+		else if (lhs->getType() == Type_float && rhs->getType() == Type_float)
+			return Builder->CreateFRem(lhs_v, rhs_v, "rem_tmp");
 	}
 	return NULL;
 }
@@ -447,9 +498,10 @@ Value *CodeGen::generateExpression(BaseAST *expr/*, Type *type = Type::getInt32T
 		return generateBinaryExpression(dyn_cast<BinaryExprAST>(expr));
 	else if(isa<CallExprAST>(expr))
 		return generateCallExpression(dyn_cast<CallExprAST>(expr));
-	else if(isa<CastExprAST>(expr))
-		return generateCastExpression(generateExpression(dyn_cast<CastExprAST>(expr)->getSource()), dyn_cast<CastExprAST>(expr)->getSource()->getType(), dyn_cast<CastExprAST>(expr)->getDestType());
-	else if(isa<VariableAST>(expr))
+	else if(isa<CastExprAST>(expr)) {
+		BaseAST *source = dyn_cast<CastExprAST>(expr)->getSource();
+		return generateCastExpression(generateExpression(source), source->getType(), dyn_cast<CastExprAST>(expr)->getDestType());
+	}else if(isa<VariableAST>(expr))
 		return generateVariable(dyn_cast<VariableAST>(expr));
 	else if(isa<ValueAST>(expr))
 		return generateValue(dyn_cast<ValueAST>(expr));
@@ -491,6 +543,11 @@ Value *CodeGen::generateCondition(BaseAST* Cond) {
 }
 
 
+/**
+  * キャスト命令生成メソッド
+  * @param VariableAST
+  * @return  生成したValueのポインタ
+  */
 Value *CodeGen::generateCastExpression(Value *src, Types SrcType, Types DestType) {
 	if (llvmDebbug) fprintf(stderr, "%d: %s\n", __LINE__, __func__);
 
@@ -561,18 +618,4 @@ Value *CodeGen::generateValue(ValueAST *val){
 	}else if (val->getType().getPrimType() == Type_all) {
 		return Constant::getNullValue(type);
 	}
-}
-
-
-bool CodeGen::linkModule(Module *dest, std::string file_name){
-	if (llvmDebbug) fprintf(stderr, "%d: %s\n", __LINE__, __func__);
-	SMDiagnostic err;
-	std::unique_ptr<Module> link_mod = llvm::parseIRFile(file_name, err, GlobalContext);
-	if(!link_mod)
-		return false;
-
-	if(Linker::linkModules(*dest, std::move(link_mod), 0))
-		return false;
-
-	return true;
 }

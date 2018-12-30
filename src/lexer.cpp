@@ -105,6 +105,7 @@ TokenStream *LexicalAnalysis(std::string input_filename){
 				}
 				
 				if (next_char == '.') {
+					token_str += next_char;
 					index++;
 					next_char = cur_line.at(index++);
 					while(isdigit(next_char)){

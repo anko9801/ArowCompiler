@@ -80,6 +80,26 @@ struct Types {
 	int getBits() {return bits;}
 	prim_type getPrimType() {return Type;}
 	bool getNonNull() {return non_null;}
+	std::string printType() {
+		if(this->getPrimType() == Type_int)
+			return "int";
+		else if(this->getPrimType() == Type_uint)
+			return "uint";
+		else if(this->getPrimType() == Type_bool)
+			return "bool";
+		else if(this->getPrimType() == Type_float)
+			return "float";
+		else if(this->getPrimType() == Type_char)
+			return "char";
+		else if(this->getPrimType() == Type_null)
+			return "null";
+		else if(this->getPrimType() == Type_number)
+			return "number";
+		else if(this->getPrimType() == Type_all)
+			return "all";
+		else
+			return "yannaiyo";
+	}
 
 	bool operator== (const Types &rhs) const {
 		if (Type == Type_all || rhs.Type == Type_all) return true;
@@ -89,6 +109,7 @@ struct Types {
 		else return false;
 	}
 	bool operator!= (const Types &rhs) const {
+		if (Type == Type_all || rhs.Type == Type_all) return false;
 		return !(Type == rhs.Type);
 	}
 };
@@ -122,6 +143,7 @@ class BaseAST{
 	AstID getValueID() const {return ID;}
 	Types getType();
 	bool setType(Types type);
+	void printAST(int nest);
 };
 
 
@@ -378,7 +400,7 @@ class JumpStmtAST : public BaseAST{
 
 	public:
 	JumpStmtAST(BaseAST *expr) : BaseAST(JumpStmtID), Expr(expr){}
-	~JumpStmtAST();
+	~JumpStmtAST(){}
 	static inline bool classof(JumpStmtAST const*){return true;}
 	static inline bool classof(BaseAST const* base){
 		return base->getValueID() == JumpStmtID;
@@ -398,7 +420,7 @@ class VariableAST : public BaseAST{
 
 	public:
 	VariableAST(VariableDeclAST* var_decl, const int &index = 0) : BaseAST(VariableID), Var(var_decl), Index(index){}
-	~VariableAST();
+	~VariableAST(){}
 
 	static inline bool classof(VariableAST const*){return true;}
 	static inline bool classof(BaseAST const* base){
@@ -422,8 +444,7 @@ class CastExprAST : public BaseAST {
 	bool Nestin;
 
 	public:
-	CastExprAST(BaseAST* source, Types DestType, bool Nestin = false) : BaseAST(CastExprID), Source(source), DestType(DestType), Nestin(Nestin)
-	{source->setType(DestType);}
+	CastExprAST(BaseAST* source, Types DestType, bool Nestin = false) : BaseAST(CastExprID), Source(source), DestType(DestType), Nestin(Nestin){}
 	~CastExprAST(){}
 
 	static inline bool classof(CastExprAST const*){return true;}

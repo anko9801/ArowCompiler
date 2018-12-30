@@ -90,7 +90,6 @@ bool OptionParser::parseOption(){
 	return true;
 }
 
-void printAST(BaseAST* stmt, int nest);
 bool printASTs(TranslationUnitAST &tunit) {
 	for(int i=0; ; i++) {
 		FunctionAST *func = tunit.getFunction(i);
@@ -99,46 +98,10 @@ bool printASTs(TranslationUnitAST &tunit) {
 		fprintf(stderr, "%s\n", func->getName().c_str());
 		for (int i = 0; ;i++)
 			if (func->getBody()->getStatement(i))
-				printAST(func->getBody()->getStatement(i), 1);
+				func->getBody()->getStatement(i)->printAST(1);
 			else break;
 	}
 	return true;
-}
-
-void printAST(BaseAST* stmt, int nest){
-	for(int i=0; i < nest; i++) fprintf(stderr, "	");
-	if(!stmt) {
-		fprintf(stderr, "break\n");
-	}else if(llvm::isa<FunctionStmtAST>(stmt)) {
-		fprintf(stderr, "FunctionStatement\n");
-		for (int i = 0;;i++)if (llvm::dyn_cast<FunctionStmtAST>(stmt)->getStatement(i))printAST(dyn_cast<FunctionStmtAST>(stmt)->getStatement(i), 1);else break;
-	}else if(llvm::isa<VariableDeclAST>(stmt))
-		fprintf(stderr, "VariableDeclaration\n");
-	else if(llvm::isa<BinaryExprAST>(stmt))
-		fprintf(stderr, "BinaryExpression\n");
-	else if(llvm::isa<CallExprAST>(stmt))
-		fprintf(stderr, "CallExpression\n");
-	else if(llvm::isa<JumpStmtAST>(stmt))
-		fprintf(stderr, "JumpStatement\n");
-	else if(llvm::isa<IfExprAST>(stmt)){
-		fprintf(stderr, "IfExpression\n");
-		printAST(llvm::dyn_cast<IfExprAST>(stmt)->getCond(), nest);
-		for (int i = 0;;i++)if (llvm::dyn_cast<IfExprAST>(stmt)->getThen(i))printAST(llvm::dyn_cast<IfExprAST>(stmt)->getThen(i), nest+1);else break;
-		for (int i = 0;;i++)if (llvm::dyn_cast<IfExprAST>(stmt)->getElse(i))printAST(llvm::dyn_cast<IfExprAST>(stmt)->getElse(i), nest+1);else break;
-	}
-	else if(llvm::isa<WhileExprAST>(stmt)) {
-		fprintf(stderr, "WhileExpression\n");
-		printAST(llvm::dyn_cast<WhileExprAST>(stmt)->getCond(), nest);
-		for (int i = 0;;i++)if (llvm::dyn_cast<WhileExprAST>(stmt)->getLoop(i))printAST(llvm::dyn_cast<WhileExprAST>(stmt)->getLoop(i), nest+1);else break;
-	}
-	else if(llvm::isa<VariableAST>(stmt))
-		fprintf(stderr, "Variable\n");
-	else if(llvm::isa<CastExprAST>(stmt))
-		fprintf(stderr, "CastExpression\n");
-	else if(llvm::isa<ValueAST>(stmt))
-		fprintf(stderr, "Value\n");
-	else
-		fprintf(stderr, "unknown\n");
 }
 
 

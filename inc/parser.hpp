@@ -89,8 +89,7 @@ typedef class Parser{
 							break;
 						}
 					}
-					fprintf(stderr, "%d:%d: error: undefined function %s\n", Tokens->getLine(), __LINE__, Callee.c_str());
-					return Types(Type_null);
+					break;
 				}
 				if (PrototypeTable[i]->getName() == Callee) {
 					proto = PrototypeTable[i];
@@ -121,58 +120,6 @@ typedef class Parser{
 				return Type_null;
 		}
 
-		std::string printType(Types type) {
-			if(type.Type == Type_int)
-				return "int";
-			else if(type.Type == Type_bool)
-				return "bool";
-			else if(type.Type == Type_float)
-				return "float";
-			else if(type.Type == Type_char)
-				return "char";
-			else if(type.Type == Type_null)
-				return "null";
-			else
-				return "yannaiyo";
-		}
-
-		void printAST(BaseAST* stmt, int nest = 0){
-			for(int i=0; i < nest; i++) fprintf(stderr, "	");
-			if(!stmt) {
-				fprintf(stderr, "break\n");
-			}else if(llvm::isa<FunctionStmtAST>(stmt)){
-				fprintf(stderr, "FunctionStatement\n");
-				for (int i = 0;;i++)if (llvm::dyn_cast<FunctionStmtAST>(stmt)->getStatement(i))printAST(llvm::dyn_cast<FunctionStmtAST>(stmt)->getStatement(i), nest+1);else break;
-			}else if(llvm::isa<VariableDeclAST>(stmt))
-				fprintf(stderr, "VariableDeclaration\n");
-			else if(llvm::isa<CastExprAST>(stmt))
-				fprintf(stderr, "CastExpression\n");
-			else if(llvm::isa<BinaryExprAST>(stmt))
-				fprintf(stderr, "BinaryExpression\n");
-			else if(llvm::isa<CallExprAST>(stmt))
-				fprintf(stderr, "CallExpression\n");
-			else if(llvm::isa<JumpStmtAST>(stmt))
-				fprintf(stderr, "JumpStatement\n");
-			else if(llvm::isa<VariableAST>(stmt))
-				fprintf(stderr, "Variable\n");
-			else if(llvm::isa<IfExprAST>(stmt)){
-				fprintf(stderr, "IfExpression\n");
-				printAST(llvm::dyn_cast<IfExprAST>(stmt)->getCond(), nest);
-				for (int i = 0;;i++)if (llvm::dyn_cast<IfExprAST>(stmt)->getThen(i))printAST(llvm::dyn_cast<IfExprAST>(stmt)->getThen(i), nest+1);else break;
-				for (int i = 0;;i++)if (llvm::dyn_cast<IfExprAST>(stmt)->getElse(i))printAST(llvm::dyn_cast<IfExprAST>(stmt)->getElse(i), nest+1);else break;
-			}
-			else if(llvm::isa<WhileExprAST>(stmt)) {
-				fprintf(stderr, "WhileExpression\n");
-				printAST(llvm::dyn_cast<WhileExprAST>(stmt)->getCond(), nest);
-				for (int i = 0;;i++)if (llvm::dyn_cast<WhileExprAST>(stmt)->getLoop(i))printAST(llvm::dyn_cast<WhileExprAST>(stmt)->getLoop(i), nest+1);else break;
-			}
-			else if(llvm::isa<ValueAST>(stmt))
-				fprintf(stderr, "Value\n");
-			else
-				fprintf(stderr, "unknown\n");
-		}
-		
-
 	private:
 		/**
 		  各種構文解析メソッド
@@ -191,8 +138,8 @@ typedef class Parser{
 		BaseAST *visitJumpStatement();
 		BaseAST *visitIfExpression();
 		BaseAST *visitWhileExpression();
-		BaseAST *visitAssignmentExpression();
-		BaseAST *visitExpression(BaseAST *lhs);
+		BaseAST *visitAssignmentExpression(Types type);
+		BaseAST *visitExpression(BaseAST *lhs, Types type);
 		BaseAST *visitAdditiveExpression(BaseAST *lhs, Types type);
 		BaseAST *visitMultiplicativeExpression(BaseAST *lhs, Types type);
 		BaseAST *visitCastExpression();

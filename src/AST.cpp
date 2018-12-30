@@ -1,6 +1,5 @@
 #include "AST.hpp"
 
-
 /**
   * PrototypeAST(関数宣言追加)メソッド
   * @param  VariableDeclAST
@@ -98,17 +97,6 @@ CallExprAST::~CallExprAST(){
 	// Args.clear();
 }
 
-
-JumpStmtAST::~JumpStmtAST() {
-	// SAFE_DELETE(Expr);
-}
-
-
-VariableAST::~VariableAST() {
-	// SAFE_DELETE(Var);
-}
-
-
 // AST::~AST() {
 // 	SAFE_DELETE();
 // }
@@ -151,4 +139,44 @@ bool BaseAST::setType(Types type) {
 		return llvm::dyn_cast<ValueAST>(this)->setType(type);
 	}
 	return false;
+}
+
+
+void BaseAST::printAST(int nest = 0){
+	for(int i=0; i < nest; i++) fprintf(stderr, "	");
+	if(llvm::isa<FunctionStmtAST>(this)){
+		fprintf(stderr, "FunctionStatement\n");
+		for (int i = 0;;i++)if (llvm::dyn_cast<FunctionStmtAST>(this)->getStatement(i))llvm::dyn_cast<FunctionStmtAST>(this)->getStatement(i)->printAST(nest+1);else break;
+	}else if(llvm::isa<VariableDeclAST>(this))
+		fprintf(stderr, "VariableDeclaration(%s)\n", llvm::dyn_cast<VariableDeclAST>(this)->getType().printType().c_str());
+	else if(llvm::isa<CastExprAST>(this)){
+		fprintf(stderr, "CastExpression(%s -> %s)\n", llvm::dyn_cast<CastExprAST>(this)->getSource()->getType().printType().c_str(), llvm::dyn_cast<CastExprAST>(this)->getDestType().printType().c_str());
+		llvm::dyn_cast<CastExprAST>(this)->getSource()->printAST(nest+1);
+	}else if(llvm::isa<BinaryExprAST>(this)){
+		fprintf(stderr, "BinaryExpression(%s)\n", llvm::dyn_cast<BinaryExprAST>(this)->getType().printType().c_str());
+		llvm::dyn_cast<BinaryExprAST>(this)->getLHS()->printAST(nest+1);
+		llvm::dyn_cast<BinaryExprAST>(this)->getRHS()->printAST(nest+1);
+	}else if(llvm::isa<CallExprAST>(this)){
+		fprintf(stderr, "CallExpression(%s)\n", llvm::dyn_cast<CallExprAST>(this)->getType().printType().c_str());
+		for (int i = 0;;i++)if (llvm::dyn_cast<CallExprAST>(this)->getArgs(i))llvm::dyn_cast<CallExprAST>(this)->getArgs(i)->printAST(nest+1);else break;
+	}else if(llvm::isa<JumpStmtAST>(this)){
+		fprintf(stderr, "JumpStatement(%s)\n", llvm::dyn_cast<JumpStmtAST>(this)->getType().printType().c_str());
+		llvm::dyn_cast<JumpStmtAST>(this)->getExpr()->printAST(nest+1);
+	}else if(llvm::isa<VariableAST>(this))
+		fprintf(stderr, "Variable(%s)\n", llvm::dyn_cast<VariableAST>(this)->getType().printType().c_str());
+	else if(llvm::isa<IfExprAST>(this)){
+		fprintf(stderr, "IfExpression\n");
+		llvm::dyn_cast<IfExprAST>(this)->getCond()->printAST(nest);
+		for (int i = 0;;i++)if (llvm::dyn_cast<IfExprAST>(this)->getThen(i))llvm::dyn_cast<IfExprAST>(this)->getThen(i)->printAST(nest+1);else break;
+		for (int i = 0;;i++)if (llvm::dyn_cast<IfExprAST>(this)->getElse(i))llvm::dyn_cast<IfExprAST>(this)->getElse(i)->printAST(nest+1);else break;
+	}
+	else if(llvm::isa<WhileExprAST>(this)) {
+		fprintf(stderr, "WhileExpression\n");
+		llvm::dyn_cast<WhileExprAST>(this)->getCond()->printAST(nest);
+		for (int i = 0;;i++)if (llvm::dyn_cast<WhileExprAST>(this)->getLoop(i))llvm::dyn_cast<WhileExprAST>(this)->getLoop(i)->printAST(nest+1);else break;
+	}
+	else if(llvm::isa<ValueAST>(this))
+		fprintf(stderr, "Value(%s)\n", llvm::dyn_cast<ValueAST>(this)->getType().printType().c_str());
+	else
+		fprintf(stderr, "unknown\n");
 }
