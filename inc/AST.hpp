@@ -100,7 +100,9 @@ struct Types {
 			type = "all";
 		else
 			type = "yannaiyo";
-		return type + std::to_string(this->getBits());
+		type += std::to_string(this->getBits());
+		if (this->getNonNull()) type += "?";
+		return type;
 	}
 
 	bool operator== (const Types &rhs) const {

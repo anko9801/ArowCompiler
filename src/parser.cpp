@@ -323,7 +323,7 @@ FunctionStmtAST *Parser::visitFunctionStatement(PrototypeAST *proto){
 	//add parameter to FunctionStatement
 	VariableDeclAST *vdecl;
 	SetInsertPoint(func_stmt);
-	for(int i = 0;i < proto->getParamNum(); i++){
+	for(size_t i = 0;i < proto->getParamNum(); i++){
 		vdecl = new VariableDeclAST(proto->getParamType(i), proto->getParamName(i));
 		vdecl->setDeclType(VariableDeclAST::param);
 		addStatement(vdecl);
@@ -772,19 +772,9 @@ BaseAST *Parser::visitAdditiveExpression(BaseAST *lhs, Types type = Types(Type_a
 		rhs = visitMultiplicativeExpression(NULL, type);
 		if(rhs) {
 			// 暗黙の型変換
-			if (lhs->getType() != type)
-				lhs = new CastExprAST(lhs, type);
-			if (rhs->getType() != type)
-				rhs = new CastExprAST(rhs, type);
-			if (lhs->getType() != rhs->getType()) {
-				if (lhs->getType().getBits() < rhs->getType().getBits()) {
-					lhs = new CastExprAST(lhs, rhs->getType());
-					type = rhs->getType();
-				}else{
-					rhs = new CastExprAST(rhs, lhs->getType());
-					type = lhs->getType();
-				}
-			}
+			lhs = visitImplicitCastNumber(lhs, rhs->getType());
+			rhs = visitImplicitCastNumber(rhs, lhs->getType());
+			// 型変換が行われなかった時
 			type = lhs->getType();
 			return visitAdditiveExpression(new BinaryExprAST("-", lhs, rhs, type), type);
 			// if(other->getType() != Types(Type_number)){fprintf(stderr, "error: Type is not difference\n");return NULL;}
@@ -822,19 +812,9 @@ BaseAST *Parser::visitMultiplicativeExpression(BaseAST *lhs, Types type = Types(
 		rhs = visitCastExpression();
 		if(rhs){
 			// 暗黙の型変換
-			if (lhs->getType() != type)
-				lhs = new CastExprAST(lhs, type);
-			if (rhs->getType() != type)
-				rhs = new CastExprAST(rhs, type);
-			if (lhs->getType() != rhs->getType()) {
-				if (lhs->getType().getBits() < rhs->getType().getBits()) {
-					lhs = new CastExprAST(lhs, rhs->getType());
-					type = rhs->getType();
-				}else{
-					rhs = new CastExprAST(rhs, lhs->getType());
-					type = lhs->getType();
-				}
-			}
+			lhs = visitImplicitCastNumber(lhs, rhs->getType());
+			rhs = visitImplicitCastNumber(rhs, lhs->getType());
+			// 型変換が行われなかった時
 			type = lhs->getType();
 			return visitMultiplicativeExpression(new BinaryExprAST("*", lhs, rhs, type));
 		}else{
@@ -850,19 +830,9 @@ BaseAST *Parser::visitMultiplicativeExpression(BaseAST *lhs, Types type = Types(
 		rhs=visitCastExpression();
 		if(rhs){
 			// 暗黙の型変換
-			if (lhs->getType() != type)
-				lhs = new CastExprAST(lhs, type);
-			if (rhs->getType() != type)
-				rhs = new CastExprAST(rhs, type);
-			if (lhs->getType() != rhs->getType()) {
-				if (lhs->getType().getBits() < rhs->getType().getBits()) {
-					lhs = new CastExprAST(lhs, rhs->getType());
-					type = rhs->getType();
-				}else{
-					rhs = new CastExprAST(rhs, lhs->getType());
-					type = lhs->getType();
-				}
-			}
+			lhs = visitImplicitCastNumber(lhs, rhs->getType());
+			rhs = visitImplicitCastNumber(rhs, lhs->getType());
+			// 型変換が行われなかった時
 			type = lhs->getType();
 			return visitMultiplicativeExpression(new BinaryExprAST("/", lhs, rhs, type));
 		}else{
@@ -878,19 +848,9 @@ BaseAST *Parser::visitMultiplicativeExpression(BaseAST *lhs, Types type = Types(
 		rhs = visitCastExpression();
 		if(rhs){
 			// 暗黙の型変換
-			if (lhs->getType() != type)
-				lhs = new CastExprAST(lhs, type);
-			if (rhs->getType() != type)
-				rhs = new CastExprAST(rhs, type);
-			if (lhs->getType() != rhs->getType()) {
-				if (lhs->getType().getBits() < rhs->getType().getBits()) {
-					lhs = new CastExprAST(lhs, rhs->getType());
-					type = rhs->getType();
-				}else{
-					rhs = new CastExprAST(rhs, lhs->getType());
-					type = lhs->getType();
-				}
-			}
+			lhs = visitImplicitCastNumber(lhs, rhs->getType());
+			rhs = visitImplicitCastNumber(rhs, lhs->getType());
+			// 型変換が行われなかった時
 			type = lhs->getType();
 			return visitMultiplicativeExpression(new BinaryExprAST("%", lhs, rhs, type), type);
 		}else{
@@ -950,7 +910,7 @@ BaseAST *Parser::visitCastExpression(){
   * @return 解析成功：AST　解析失敗：NULL
   */
 BaseAST *Parser::visitImplicitCastNumber(BaseAST *src, Types impl_type){
-	if (src->getType() == impl_type)
+	if (src->getType() == impl_type && src->getType().getBits() == impl_type.getBits())
 		return src;
 	
 	int src_priority;
@@ -964,8 +924,8 @@ BaseAST *Parser::visitImplicitCastNumber(BaseAST *src, Types impl_type){
 	if (src->getType().getPrimType() == Type_int) src_priority = 1;
 	if (src->getType().getPrimType() == Type_uint) src_priority = 0;
 
-	fprintf(stderr, "bits %d %d\n", src->getType().getBits(), impl_type.getBits());
-	if (src_priority < impl_priority) {
+	fprintf(stderr, "%d: bits %d %d\n", __LINE__, src->getType().getBits(), impl_type.getBits());
+	if (src_priority < impl_priority || src->getType().getBits() < impl_type.getBits()) {
 		return new CastExprAST(src,
 			Types(impl_type.getPrimType(),
 				std::max(src->getType().getBits(), impl_type.getBits()),
@@ -1078,8 +1038,7 @@ BaseAST *Parser::visitPostfixExpression(){
 	for (size_t i = 0;i < args.size();i++) {
 		// 暗黙の型変換
 		args[i] = visitImplicitCastNumber(args[i], proto->getParamType(i));
-		fprintf(stderr, "bits %d %d\n", args[i]->getType().getBits(), proto->getParamType(i).getBits());
-		args[i] = visitImplicitCastBits(args[i], proto->getParamType(i));
+		// args[i] = visitImplicitCastBits(args[i], proto->getParamType(i));
 		if (args[i]->getType().getPrimType() != proto->getParamType(i).getPrimType()) {
 			SAFE_DELETE(args[i]);
 			fprintf(stderr, "%d:%d: error: no match for function param '%s'\n", Tokens->getLine(), __LINE__, Callee.c_str());
