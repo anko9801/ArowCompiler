@@ -707,6 +707,8 @@ BaseAST *Parser::visitExpression(BaseAST *lhs, Types type) {
 	if (!lhs)
 		return NULL;
 
+	fprintf(stderr, "expr %s\n", lhs->getType().printType().c_str());
+
 	if (lhs && lhs->getType() == Types(Type_number)) {
 		if (isExceptedToken("<") ||
 			isExceptedToken(">") ||
@@ -719,7 +721,7 @@ BaseAST *Parser::visitExpression(BaseAST *lhs, Types type) {
 
 			Tokens->getNextToken();
 			rhs = visitAdditiveExpression(NULL, Types(Type_number));
-			if (rhs && rhs->getType().getPrimType() == Type_number) {
+			if (rhs && rhs->getType() == Types(Type_number)) {
 				return new BinaryExprAST(op, lhs, rhs, Types(Type_bool));
 			}else{
 				SAFE_DELETE(lhs);
@@ -793,7 +795,7 @@ BaseAST *Parser::visitAdditiveExpression(BaseAST *lhs, Types type = Types(Type_a
 			return NULL;
 		}
 	}
-	if (lhs->getType() != type)
+	if (type == Types(Type_number) && lhs->getType() != type)
 		lhs = new CastExprAST(lhs, type);
 	return lhs;
 }
