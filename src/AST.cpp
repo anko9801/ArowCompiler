@@ -87,16 +87,6 @@ WhileExprAST::~WhileExprAST() {
 	SAFE_DELETE(Cond);
 }
 
-
-CallExprAST::~CallExprAST(){
-	// if (Args.size() != 0) {
-	// 	for(size_t i = 0;i < Args.size();i++){
-	// 		SAFE_DELETE(Args[i]);
-	// 	}
-	// }
-	// Args.clear();
-}
-
 // AST::~AST() {
 // 	SAFE_DELETE();
 // }
@@ -157,7 +147,11 @@ void BaseAST::printAST(int nest = 0){
 		llvm::dyn_cast<BinaryExprAST>(this)->getLHS()->printAST(nest+1);
 		llvm::dyn_cast<BinaryExprAST>(this)->getRHS()->printAST(nest+1);
 	}else if(llvm::isa<CallExprAST>(this)){
-		fprintf(stderr, "CallExpression(%s)\n", llvm::dyn_cast<CallExprAST>(this)->getType().printType().c_str());
+		fprintf(stderr, "CallExpression(");
+		for (int i = 0; ;i++)
+			if (llvm::dyn_cast<CallExprAST>(this)->getProto()->getParamType(i) == Types(Type_null)) break;
+			else fprintf(stderr, "%s -> ", llvm::dyn_cast<CallExprAST>(this)->getProto()->getParamType(i).printType().c_str()); 
+		fprintf(stderr, "%s)\n", llvm::dyn_cast<CallExprAST>(this)->getProto()->getType().printType().c_str());
 		for (int i = 0;;i++)if (llvm::dyn_cast<CallExprAST>(this)->getArgs(i))llvm::dyn_cast<CallExprAST>(this)->getArgs(i)->printAST(nest+1);else break;
 	}else if(llvm::isa<JumpStmtAST>(this)){
 		fprintf(stderr, "JumpStatement(%s)\n", llvm::dyn_cast<JumpStmtAST>(this)->getType().printType().c_str());

@@ -75,45 +75,16 @@ typedef class Parser{
 			return false;
 		}
 
-		Types confirm(std::string Callee, std::vector<BaseAST*> args) {
-			PrototypeAST *proto;
-			for (int i = 0;;i++) {
-				if (!PrototypeTable[i]) {
-					for (int i = 0;;i++) {
-						if (!FunctionTable[i]) {
-							fprintf(stderr, "%d:%d: error: undefined function %s\n", Tokens->getLine(), __LINE__, Callee.c_str());
-							return Types(Type_null);
-						}
-						if (FunctionTable[i]->getName() == Callee) {
-							proto = FunctionTable[i]->getPrototype();
-							break;
-						}
-					}
-					break;
-				}
-				if (PrototypeTable[i]->getName() == Callee) {
-					proto = PrototypeTable[i];
-					break;
-				}
-			}
-
-			for(size_t i = 0;i < args.size();i++) {
-				if (!(args[i]->getType() == proto->getParam()[i].Type)) {
-					SAFE_DELETE(args[i]);
-					fprintf(stderr, "%d:%d: error: no match for function param '%s'\n", Tokens->getLine(), __LINE__, Callee.c_str());
-					return Types(Type_null);
-				}
-			}
-			return proto->getType();
-		}
 
 		prim_type str2Type(std::string Type) {
 			if(Type == "int")
 				return Type_int;
-			else if(Type == "bool")
-				return Type_bool;
+			else if(Type == "uint")
+				return Type_uint;
 			else if(Type == "float")
 				return Type_float;
+			else if(Type == "bool")
+				return Type_bool;
 			else if(Type == "char")
 				return Type_char;
 			else
@@ -143,6 +114,9 @@ typedef class Parser{
 		BaseAST *visitAdditiveExpression(BaseAST *lhs, Types type);
 		BaseAST *visitMultiplicativeExpression(BaseAST *lhs, Types type);
 		BaseAST *visitCastExpression();
+		BaseAST *visitImplicitCastNumber(BaseAST *src, Types impl_type);
+		BaseAST *visitImplicitCastNonNull(BaseAST *src, Types impl_type);
+		BaseAST *visitImplicitCastBits(BaseAST *src, Types impl_type);
 		BaseAST *visitPostfixExpression();
 		BaseAST *visitPrimaryExpression();
 

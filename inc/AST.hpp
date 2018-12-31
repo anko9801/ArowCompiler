@@ -112,6 +112,9 @@ struct Types {
 	}
 	bool operator!= (const Types &rhs) const {
 		if (Type == Type_all || rhs.Type == Type_all) return false;
+		if (Type == Type_number && (rhs.Type == Type_int || rhs.Type == Type_uint || rhs.Type == Type_float)) return false;
+		if ((Type == Type_int || Type == Type_uint || Type == Type_float) && rhs.Type == Type_number) return false;
+		if (Type == rhs.Type) return false;
 		return !(Type == rhs.Type);
 	}
 };
@@ -191,6 +194,8 @@ class PrototypeAST{
 	PrototypeAST(const Types &type, const std::string &name, const std::vector<Seq> &params)
 		: Type(type), Name(name), Params(params){}
 
+	bool setType(Types type){Type = type;return true;}
+
 	std::string getName(){return Name;}
 	Types getType(){return Type;}
 	std::string getParamName(size_t i){if(i<Params.size())return Params.at(i).Name;return NULL;}
@@ -212,6 +217,7 @@ class FunctionAST{
 	FunctionAST(PrototypeAST *proto) : Proto(proto){}
 	~FunctionAST();
 
+	bool setType(Types type){Proto->setType(type);return true;}
 	Types getType(){return Proto->getType();}
 	std::string getName(){return Proto->getName();}
 	PrototypeAST *getPrototype(){return Proto;}
@@ -376,11 +382,12 @@ class CallExprAST : public BaseAST{
 	Types Type;
 	std::string Callee;
 	std::vector<BaseAST*> Args;
+	PrototypeAST *proto;
 
 	public:
-	CallExprAST(const Types &type, const std::string &callee, std::vector<BaseAST*> &args)
-		: BaseAST(CallExprID), Type(type), Callee(callee), Args(args){}
-	~CallExprAST();
+	CallExprAST(const Types &type, const std::string &callee, std::vector<BaseAST*> &args, PrototypeAST *proto)
+		: BaseAST(CallExprID), Type(type), Callee(callee), Args(args), proto(proto){}
+	~CallExprAST(){}
 	static inline bool classof(CallExprAST const*){return true;}
 	static inline bool classof(BaseAST const* base){
 		return base->getValueID() == CallExprID;
@@ -391,6 +398,7 @@ class CallExprAST : public BaseAST{
 	std::string getCallee(){return Callee;}
 	BaseAST *getArgs(size_t i){if(i<Args.size())return Args.at(i);else return NULL;}
 	Types getType(){return Type;}
+	PrototypeAST *getProto(){return proto;}
 };
 
 

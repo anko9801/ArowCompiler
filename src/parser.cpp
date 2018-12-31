@@ -1,6 +1,6 @@
 #include "parser.hpp"
 
-bool Debbug = false;
+bool Debbug = true;
 
 /**
   * コンストラクタ
@@ -46,7 +46,6 @@ bool Parser::visitTranslationUnit(){
 	// LLVMライブラリの関数
   //addLib(TranslationUnitAST, ReturnType, FuncName, {Arguments, ...})
 	addLib(TU, Types(Type_bool, 1, true), "printnum", {Types(Type_int, 32, true)});
-	addLib(TU, Types(Type_bool, 1, true), "printnum", {Types(Type_float, 32, true)});
 	addLib(TU, Types(Type_bool, 1, true), "sleep", {Types(Type_int, 32, true)});
 	addLib(TU, Types(Type_int, 32, true), "usclock", {});
 	addLib(TU, Types(Type_bool, 1, true), "BlinkLED", {Types(Type_int, 32, true)});
@@ -72,27 +71,29 @@ bool Parser::visitTranslationUnit(){
   * @param TranslationUnitAST
   * @return true 
   */
-bool Parser::visitExternalDeclaration(
-		TranslationUnitAST *tunit) {
+bool Parser::visitExternalDeclaration(TranslationUnitAST *tunit) {
 	//FunctionDefinition
 	FunctionAST *func_def = visitFunctionDefinition();
 	// warningが出ていたら戻す
-	if(warning) return false;
-	if(func_def){
+	if (warning) return false;
+	if (func_def) {
 		tunit->addFunction(func_def);
 		return true;
 	}
 	//FunctionDeclaration
-	PrototypeAST *proto=visitFunctionDeclaration();
-	if(proto){
+	PrototypeAST *proto = visitFunctionDeclaration();
+	if (proto) {
 		tunit->addPrototype(proto);
 		return true;
 	}
-
 	return false;
 }
 
 
+/**
+  * Types用構文解析メソッド
+  * @return 解析成功：Types　解析失敗：Type_null
+  */
 Types Parser::visitTypes() {
 	int bkup = Tokens->getCurIndex();
 
@@ -534,6 +535,17 @@ BaseAST *Parser::visitJumpStatement(){
 		Tokens->applyTokenIndex(bkup);
 		return NULL;
 	}
+	// 暗黙の型変換
+	if (expr->getType() != getFuncType()) {
+		if (expr->getType().getPrimType() == Type_number && getFuncType().getPrimType() == Type_number) {
+			expr = new CastExprAST(expr, getFuncType());
+			expr->setType(getFuncType());
+		}
+	}
+	if (expr->getType().getBits() != getFuncType().getBits()) {
+		expr = new CastExprAST(expr, getFuncType());
+		expr->setType(getFuncType());
+	}
 	return new JumpStmtAST(expr);
 }
 
@@ -707,7 +719,7 @@ BaseAST *Parser::visitExpression(BaseAST *lhs, Types type) {
 
 			Tokens->getNextToken();
 			rhs = visitAdditiveExpression(NULL, Types(Type_number));
-			if (rhs && rhs->getType() == Types(Type_number)) {
+			if (rhs && rhs->getType().getPrimType() == Type_number) {
 				return new BinaryExprAST(op, lhs, rhs, Types(Type_bool));
 			}else{
 				SAFE_DELETE(lhs);
@@ -741,19 +753,8 @@ BaseAST *Parser::visitAdditiveExpression(BaseAST *lhs, Types type = Types(Type_a
 		rhs = visitMultiplicativeExpression(NULL, type);
 		if(rhs){
 			// 暗黙の型変換
-			if (lhs->getType() != type)
-				lhs = new CastExprAST(lhs, type);
-			if (rhs->getType() != type)
-				rhs = new CastExprAST(rhs, type);
-			if (lhs->getType() != rhs->getType()) {
-				if (lhs->getType().getBits() < rhs->getType().getBits()) {
-					lhs = new CastExprAST(lhs, rhs->getType());
-					type = rhs->getType();
-				}else{
-					rhs = new CastExprAST(rhs, lhs->getType());
-					type = lhs->getType();
-				}
-			}
+			lhs = visitImplicitCastNumber(lhs, rhs->getType());
+			rhs = visitImplicitCastNumber(rhs, lhs->getType());
 			// 型変換が行われなかった時
 			type = lhs->getType();
 			return visitAdditiveExpression(new BinaryExprAST("+", lhs, rhs, type), type);
@@ -792,6 +793,8 @@ BaseAST *Parser::visitAdditiveExpression(BaseAST *lhs, Types type = Types(Type_a
 			return NULL;
 		}
 	}
+	if (lhs->getType() != type)
+		lhs = new CastExprAST(lhs, type);
 	return lhs;
 }
 
@@ -941,6 +944,66 @@ BaseAST *Parser::visitCastExpression(){
 
 
 /**
+  * ImplicitCastNumber用構文解析メソッド
+  * @return 解析成功：AST　解析失敗：NULL
+  */
+BaseAST *Parser::visitImplicitCastNumber(BaseAST *src, Types impl_type){
+	if (src->getType() == impl_type)
+		return src;
+	
+	int src_priority;
+	int impl_priority;
+
+	if (impl_type.getPrimType() == Type_float) impl_priority = 2;
+	if (impl_type.getPrimType() == Type_int) impl_priority = 1;
+	if (impl_type.getPrimType() == Type_uint) impl_priority = 0;
+
+	if (src->getType().getPrimType() == Type_float) src_priority = 2;
+	if (src->getType().getPrimType() == Type_int) src_priority = 1;
+	if (src->getType().getPrimType() == Type_uint) src_priority = 0;
+
+	fprintf(stderr, "bits %d %d\n", src->getType().getBits(), impl_type.getBits());
+	if (src_priority < impl_priority) {
+		return new CastExprAST(src,
+			Types(impl_type.getPrimType(),
+				std::max(src->getType().getBits(), impl_type.getBits()),
+				std::min(src->getType().getNonNull(), impl_type.getNonNull())
+			)
+		);
+	}
+	return src;
+}
+
+
+/**
+  * ImplicitCastNonNull用構文解析メソッド
+  * @return 解析成功：AST　解析失敗：NULL
+  */
+BaseAST *Parser::visitImplicitCastNonNull(BaseAST *src, Types impl_type){
+	if (src->getType() == impl_type) {
+		if (src->getType().getNonNull() > impl_type.getNonNull()) {
+			return new CastExprAST(src, impl_type);
+		}
+	}
+	return src;
+}
+
+
+/**
+  * ImplicitCastBits用構文解析メソッド
+  * @return 解析成功：AST　解析失敗：NULL
+  */
+BaseAST *Parser::visitImplicitCastBits(BaseAST *src, Types impl_type){
+	if (src->getType() == impl_type) {
+		if (src->getType().getBits() < impl_type.getBits()) {
+			return new CastExprAST(src, impl_type);
+		}
+	}
+	return src;
+}
+
+
+/**
   * PostfixExpression用構文解析メソッド
   * @return 解析成功：AST　解析失敗：NULL
   */
@@ -979,25 +1042,56 @@ BaseAST *Parser::visitPostfixExpression(){
 		while(isExceptedToken(",")){
 			Tokens->getNextToken();
 			//IDENTIFIER
-			assign_expr=visitAssignmentExpression(Type_all);
-			if(assign_expr) args.push_back(assign_expr);
+			assign_expr = visitAssignmentExpression(Type_all);
+			if (assign_expr) args.push_back(assign_expr);
 			else break;
 		}
 	}
 
-	//関数の名前と引数の型の確認
-	Types func_type = confirm(Callee, args);
-	if(func_type.getPrimType() == Type_null) {
-		Tokens->applyTokenIndex(bkup);
-		return NULL;
+	//関数の名前の確認
+	PrototypeAST *proto;
+	for (int i = 0;;i++) {
+		if (!PrototypeTable[i]) {
+			for (int i = 0;;i++) {
+				if (!FunctionTable[i]) {
+					fprintf(stderr, "%d:%d: error: undefined function %s\n", Tokens->getLine(), __LINE__, Callee.c_str());
+					Tokens->applyTokenIndex(bkup);
+					return NULL;
+				}
+				if (FunctionTable[i]->getName() == Callee) {
+					proto = FunctionTable[i]->getPrototype();
+					break;
+				}
+			}
+			break;
+		}
+		if (PrototypeTable[i]->getName() == Callee) {
+			proto = PrototypeTable[i];
+			break;
+		}
+	}
+	Types func_type = proto->getType();
+
+	// 引数の型の確認
+	for (size_t i = 0;i < args.size();i++) {
+		// 暗黙の型変換
+		args[i] = visitImplicitCastNumber(args[i], proto->getParamType(i));
+		fprintf(stderr, "bits %d %d\n", args[i]->getType().getBits(), proto->getParamType(i).getBits());
+		args[i] = visitImplicitCastBits(args[i], proto->getParamType(i));
+		if (args[i]->getType().getPrimType() != proto->getParamType(i).getPrimType()) {
+			SAFE_DELETE(args[i]);
+			fprintf(stderr, "%d:%d: error: no match for function param '%s'\n", Tokens->getLine(), __LINE__, Callee.c_str());
+			Tokens->applyTokenIndex(bkup);
+			return NULL;
+		}
 	}
 
 	//RIGHT PALEN
-	if(isExceptedToken(")")){
+	if (isExceptedToken(")")) {
 		Tokens->getNextToken();
-		return new CallExprAST(func_type, Callee, args);
+		return new CallExprAST(func_type, Callee, args, proto);
 	}else{
-		for(size_t i = 0;i < args.size();i++)
+		for (size_t i = 0;i < args.size();i++)
 			SAFE_DELETE(args[i]);
 		Tokens->applyTokenIndex(bkup);
 		fprintf(stderr, "%d:%d: error: expected ')' but %s\n", Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
@@ -1043,18 +1137,13 @@ BaseAST *Parser::visitPrimaryExpression(){
 			return NULL;
 		}
 	// true / false
-	}else if(isExceptedToken(TOK_TRUE)) {
+	}else if(isExceptedToken(TOK_TRUTH)) {
 		if (Debbug) fprintf(stderr, "%d:%d: true\n", Tokens->getLine(), __LINE__);
 		Tokens->getNextToken();
-		return new ValueAST(true, Types(Type_bool, 1, true));
-	}else if(isExceptedToken(TOK_FALSE)) {
-		if (Debbug) fprintf(stderr, "%d:%d: false\n", Tokens->getLine(), __LINE__);
-		Tokens->getNextToken();
-		return new ValueAST(false, Types(Type_bool, 1, true));
+		return new ValueAST(Tokens->getCurBoolVal(), Types(Type_bool, 1, true));
 	}else if(isExceptedToken("None")) {
 		if (Debbug) fprintf(stderr, "%d:%d: none\n", Tokens->getLine(), __LINE__);
 		Tokens->getNextToken();
-		ValueAST(0, Types(Type_int, 32, true));
 		return new ValueAST(0, Types(Type_all));
 	//VARIABLE_IDENTIFIER
 	}else if(isExceptedToken(TOK_IDENTIFIER)) {

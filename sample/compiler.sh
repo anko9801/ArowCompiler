@@ -1,5 +1,10 @@
 #!/bin/bash
 
+declare -a array
+for a in $@;do
+    array=("${array[@]}" $a)
+done
+
 FILE=$1
 FILE="${FILE%.*}"
 
@@ -13,7 +18,7 @@ if [ -e $FILE ]; then
 	rm $FILE
 fi
 
-../bin/dcc -o $FILE.ll -n $FILE.arow
+../bin/dcc -o $FILE.ll $FILE.arow
 
 if [ -e $FILE.ll ]; then
 	llvm-link $FILE.ll ../lib/lib.ll -S -o $FILE.ll

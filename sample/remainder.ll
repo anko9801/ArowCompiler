@@ -14,20 +14,11 @@ target triple = "x86_64-apple-macosx10.14.0"
 
 define i32 @main() {
 entry:
-  %array = alloca [2 x double]*, i32 2
-  %a = alloca i32
-  store i32 3, i32* %a
-  %b = alloca float
-  store float 2.000000e+00, float* %b
-  %var_tmp = load i32, i32* %a
-  %var_tmp1 = load float, float* %b
-  %0 = fptosi float %var_tmp1 to i32
-  %rem_tmp = srem i32 %var_tmp, %0
+  %0 = fptosi float 2.000000e+00 to i32
+  %rem_tmp = srem i32 3, %0
   %call_tmp = call i1 bitcast (i32 (i32)* @printnum to i1 (i32)*)(i32 %rem_tmp)
-  %var_tmp2 = load i32, i32* %a
-  %var_tmp3 = load float, float* %b
-  %1 = fptosi float %var_tmp3 to i32
-  %rem_tmp4 = srem i32 %var_tmp2, %1
+  %1 = fptosi float 2.000000e+00 to i32
+  %rem_tmp4 = srem i32 3, %1
   ret i32 %rem_tmp4
 }
 

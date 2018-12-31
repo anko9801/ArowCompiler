@@ -68,7 +68,7 @@ bool CodeGen::linkModule(Module *dest, std::string file_name){
 Type *CodeGen::generateType(Types type) {
 	if (type.getPrimType() == Type_void) {
 		return Type::getVoidTy(GlobalContext);
-	}else if (type.getPrimType() == Type_int) {
+	}else if (type.getPrimType() == Type_int || type.getPrimType() == Type_uint) {
 		if (type.getBits() == 1) {
 			return Type::getInt1Ty(GlobalContext);
 		}else if (type.getBits() == 8) {
@@ -372,12 +372,8 @@ Value *CodeGen::generateBinaryExpression(BinaryExprAST *bin_expr){
 	if (llvmDebbug) fprintf(stderr, "%d: lhs and rhs exist\n", __LINE__);
 
 	prim_type type;
-	if (lhs->getType().getPrimType() == Type_int && rhs->getType().getPrimType() == Type_int)
-		type = Type_int;
-	else if (lhs->getType().getPrimType() == Type_uint && rhs->getType().getPrimType() == Type_uint)
-		type = Type_uint;
-	else if (lhs->getType().getPrimType() == Type_float && rhs->getType().getPrimType() == Type_float)
-		type = Type_float;
+	if (lhs->getType().getPrimType() == rhs->getType().getPrimType())
+		type = lhs->getType().getPrimType();
 
 	if(bin_expr->getOp() == "="){
 		return Builder->CreateStore(rhs_v, lhs_v);
@@ -484,8 +480,7 @@ Value *CodeGen::generateStatement(BaseAST *stmt){
 		return generateWhileExpr(dyn_cast<WhileExprAST>(stmt));
 	else if(isa<IfExprAST>(stmt))
 		return generateIfExpr(dyn_cast<IfExprAST>(stmt));
-	else
-		return NULL;
+	return NULL;
 }
 
 
@@ -536,11 +531,8 @@ Value *CodeGen::generateCondition(BaseAST* Cond) {
 			return Builder->CreateICmpSGE(lhs_v, rhs_v, "ifcond");
 		else if (CondBinary->getOp() == "<=")
 			return Builder->CreateICmpSLE(lhs_v, rhs_v, "ifcond");
-		else
-			return NULL;
-	}else{
-		return NULL;
-	}
+	}	
+	return NULL;
 }
 
 

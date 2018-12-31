@@ -17,8 +17,8 @@ enum TokenType{
 	TOK_IDENTIFIER,		//識別子
 	TOK_DIGIT,			//数字
 	TOK_FLOAT,
-	TOK_TRUE,
-	TOK_FALSE,
+	TOK_TRUTH,
+	TOK_IMPORT,
 	TOK_SYMBOL,			//記号
 	TOK_TYPE,			//型
 	TOK_IF,
@@ -54,7 +54,7 @@ typedef class Token{
 			Number = atoi(string.c_str());
 		else
 			Number = 0x7fffffff;
-		if (type == TOK_TRUE || type == TOK_FALSE)
+		if (type == TOK_TRUTH)
 			Bool = true;
 		else
 			Bool = false;
@@ -89,7 +89,6 @@ class TokenStream{
 	public:
 		TokenStream():CurIndex(0){}
 		~TokenStream();
-
 
 		bool ungetToken(int Times=1);
 		bool getNextToken();

@@ -1,0 +1,4 @@
+float main() {
+	float16 a = 3 + 3.3
+	return a
+}

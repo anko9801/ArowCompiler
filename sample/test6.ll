@@ -14,7 +14,7 @@ target triple = "x86_64-apple-macosx10.14.0"
 
 define i32 @main() {
 entry:
-  br i1 true, label %then, label %else
+  br i1 false, label %then, label %else
 
 then:                                             ; preds = %entry
   br label %ifcont

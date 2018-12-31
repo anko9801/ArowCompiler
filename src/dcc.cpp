@@ -24,7 +24,7 @@ class OptionParser {
 		std::string InputFileName;
 		std::string OutputFileName;
 		std::string LinkFileName;
-		bool Optimisation;
+		bool Lazy;
 		bool WithJit;
 		int Argc;
 		char **Argv;
@@ -36,7 +36,7 @@ class OptionParser {
 		std::string getOutputFileName(){return OutputFileName;} 	//出力ファイル名取得
 		std::string getLinkFileName(){return LinkFileName;} 	//リンク用ファイル名取得
 		bool getWithJit(){return WithJit;}		//JIT実行有無
-		bool getOptimisation(){return Optimisation;}
+		bool getLazy(){return Lazy;}
 		bool parseOption();
 };
 
@@ -70,7 +70,7 @@ bool OptionParser::parseOption(){
 		}else if(Argv[i][0]=='-' && Argv[i][1] == 'j' && Argv[i][2] == 'i' && Argv[i][3] == 't' && Argv[i][4] == '\0'){
 			WithJit = true;
 		}else if(Argv[i][0]=='-' && Argv[i][1] == 'n' && Argv[i][2] == '\0'){
-			Optimisation = false;
+			Lazy = true;
 		}else if(Argv[i][0]=='-'){
 			fprintf(stderr,"%s は不明なオプションです\n", Argv[i]);
 			return false;
@@ -82,14 +82,13 @@ bool OptionParser::parseOption(){
 	//OutputFileName
 	std::string ifn = InputFileName;
 	int len = ifn.length();
-	if (OutputFileName.empty() && (len > 2) &&
-		ifn[len-3] == '.' &&
-		((ifn[len-2] == 'd' && ifn[len-1] == 'c'))) {
-		OutputFileName = std::string(ifn.begin(), ifn.end()-3); 
-		OutputFileName += ".s";
+	if (OutputFileName.empty() && (len > 5) &&
+		ifn[len-5] == '.' && ifn[len-4] == 'a' && ifn[len-3] == 'r' && ifn[len-2] == 'o' && ifn[len-1] == 'w') {
+		OutputFileName = std::string(ifn.begin(), ifn.end()-5); 
+		OutputFileName += ".ll";
 	} else if(OutputFileName.empty()){
 		OutputFileName = ifn;
-		OutputFileName += ".s";
+		OutputFileName += ".ll";
 	}
 	return true;
 }
@@ -99,7 +98,12 @@ bool printASTs(TranslationUnitAST &tunit) {
 		FunctionAST *func = tunit.getFunction(i);
 		if(!func)
 			break;
-		fprintf(stderr, "%s\n", func->getName().c_str());
+		PrototypeAST *proto = func->getPrototype();
+		fprintf(stderr, "%s(", proto->getName().c_str());
+		for (int i = 0; ;i++)
+			if (proto->getParamType(i) == Types(Type_null)) break;
+			else fprintf(stderr, "%s -> ", proto->getParamType(i).printType().c_str()); 
+		fprintf(stderr, "%s)\n", proto->getType().printType().c_str());
 		for (int i = 0; ;i++)
 			if (func->getBody()->getStatement(i))
 				func->getBody()->getStatement(i)->printAST(1);
@@ -216,7 +220,7 @@ int main(int argc, char **argv) {
 	//llvm::PassManager<AnalysisManager<>> pm;
 	llvm::legacy::PassManager pm;
 
-	if (opt.getOptimisation())
+	if (!opt.getLazy())
 		pm.add(llvm::createPromoteMemoryToRegisterPass());
 	
 	//出力
