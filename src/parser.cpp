@@ -1,6 +1,6 @@
 #include "parser.hpp"
 
-bool Debbug = true;
+bool Debbug = false;
 
 /**
   * コンストラクタ
@@ -389,7 +389,7 @@ StatementsAST *Parser::visitStatements(BaseAST* InsertPoint, int branch = 0) {
 			stmts->addStatement(stmt);
 			continue;
 		}else{
-			fprintf(stderr, "%d:%d: unknown %s\n", Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
+			if (Debbug) fprintf(stderr, "%d:%d: unknown %s\n", Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
 			Tokens->applyTokenIndex(bkup);
 			stmts->clear();
 			SAFE_DELETE(InsertPoint);
@@ -707,8 +707,6 @@ BaseAST *Parser::visitExpression(BaseAST *lhs, Types type) {
 	if (!lhs)
 		return NULL;
 
-	fprintf(stderr, "expr %s\n", lhs->getType().printType().c_str());
-
 	if (lhs && lhs->getType() == Types(Type_number)) {
 		if (isExceptedToken("<") ||
 			isExceptedToken(">") ||
@@ -899,7 +897,9 @@ BaseAST *Parser::visitCastExpression(){
 		if (Debbug) fprintf(stderr, "%d:%d: non-null\n", Tokens->getLine(), __LINE__);
 		lhs->getType().setNonNull(true);
 		Tokens->getNextToken();
-		return new CastExprAST(lhs, lhs->getType(), false);
+		return new CastExprAST(lhs,
+			Types(lhs->getType().getPrimType(), lhs->getType().getBits(), true),
+			false);
 	}
 	return lhs;
 }
@@ -912,7 +912,7 @@ BaseAST *Parser::visitCastExpression(){
 BaseAST *Parser::visitImplicitCastNumber(BaseAST *src, Types impl_type){
 	if (src->getType() == impl_type && src->getType().getBits() == impl_type.getBits())
 		return src;
-	
+
 	int src_priority;
 	int impl_priority;
 
@@ -924,7 +924,6 @@ BaseAST *Parser::visitImplicitCastNumber(BaseAST *src, Types impl_type){
 	if (src->getType().getPrimType() == Type_int) src_priority = 1;
 	if (src->getType().getPrimType() == Type_uint) src_priority = 0;
 
-	fprintf(stderr, "%d: bits %d %d\n", __LINE__, src->getType().getBits(), impl_type.getBits());
 	if (src_priority < impl_priority || src->getType().getBits() < impl_type.getBits()) {
 		return new CastExprAST(src,
 			Types(impl_type.getPrimType(),
@@ -1038,8 +1037,7 @@ BaseAST *Parser::visitPostfixExpression(){
 	for (size_t i = 0;i < args.size();i++) {
 		// 暗黙の型変換
 		args[i] = visitImplicitCastNumber(args[i], proto->getParamType(i));
-		// args[i] = visitImplicitCastBits(args[i], proto->getParamType(i));
-		if (args[i]->getType().getPrimType() != proto->getParamType(i).getPrimType()) {
+		if (args[i]->getType() != proto->getParamType(i) || args[i]->getType().getNonNull() != proto->getParamType(i).getNonNull()) {
 			SAFE_DELETE(args[i]);
 			fprintf(stderr, "%d:%d: error: no match for function param '%s'\n", Tokens->getLine(), __LINE__, Callee.c_str());
 			Tokens->applyTokenIndex(bkup);

@@ -36,6 +36,7 @@ class CodeGen{
 		IRBuilder<> *Builder;	//LLVM-IRを生成するIRBuilder クラス
 		BasicBlock *CurBB;
 		std::map<std::string/*Variable*/, Value*> VariableTable;
+		BasicBlock *Error;
 
 	public:
 		CodeGen();

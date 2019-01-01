@@ -519,19 +519,56 @@ Value *CodeGen::generateCondition(BaseAST* Cond) {
 		Value *lhs_v = generateExpression(CondBinary->getLHS());
 		Value *rhs_v = generateExpression(CondBinary->getRHS());
 
+		Types type = Types(Type_null);
+
+		if (CondBinary->getLHS()->getType() == CondBinary->getRHS()->getType()) {
+				type = CondBinary->getLHS()->getType();
+		}
+
 		if (CondBinary->getOp() == "==")
-			return Builder->CreateICmpEQ(lhs_v, rhs_v, "ifcond");
+			if (type == Types(Type_int) || type == Types(Type_uint))
+				return Builder->CreateICmpEQ(lhs_v, rhs_v, "ifcond");
+			if (type == Types(Type_float))
+				return Builder->CreateFCmpOEQ(lhs_v, rhs_v, "ifcond");
+	
 		else if (CondBinary->getOp() == "!=")
-			return Builder->CreateICmpNE(lhs_v, rhs_v, "ifcond");
+			if (type == Types(Type_int) || type == Types(Type_uint))
+				return Builder->CreateICmpNE(lhs_v, rhs_v, "ifcond");
+			if (type == Types(Type_float))
+				return Builder->CreateFCmpONE(lhs_v, rhs_v, "ifcond");
+		
 		else if (CondBinary->getOp() == ">")
-			return Builder->CreateICmpSGT(lhs_v, rhs_v, "ifcond");
+			if (type == Types(Type_int))
+				return Builder->CreateICmpSGT(lhs_v, rhs_v, "ifcond");
+			if (type == Types(Type_uint))
+				return Builder->CreateICmpUGT(lhs_v, rhs_v, "ifcond");
+			if (type == Types(Type_float))
+				return Builder->CreateFCmpOGT(lhs_v, rhs_v, "ifcond");
+
 		else if (CondBinary->getOp() == "<")
-			return Builder->CreateICmpSLT(lhs_v, rhs_v, "ifcond");
+			if (type == Types(Type_int))
+				return Builder->CreateICmpSLT(lhs_v, rhs_v, "ifcond");
+			if (type == Types(Type_uint))
+				return Builder->CreateICmpULT(lhs_v, rhs_v, "ifcond");
+			if (type == Types(Type_float))
+				return Builder->CreateFCmpOLT(lhs_v, rhs_v, "ifcond");
+
 		else if (CondBinary->getOp() == ">=")
-			return Builder->CreateICmpSGE(lhs_v, rhs_v, "ifcond");
+			if (type == Types(Type_int))
+				return Builder->CreateICmpSGE(lhs_v, rhs_v, "ifcond");
+			if (type == Types(Type_uint))
+				return Builder->CreateICmpUGE(lhs_v, rhs_v, "ifcond");
+			if (type == Types(Type_float))
+				return Builder->CreateFCmpOGE(lhs_v, rhs_v, "ifcond");
+
 		else if (CondBinary->getOp() == "<=")
-			return Builder->CreateICmpSLE(lhs_v, rhs_v, "ifcond");
-	}	
+			if (type == Types(Type_int))
+				return Builder->CreateICmpSLE(lhs_v, rhs_v, "ifcond");
+			if (type == Types(Type_uint))
+				return Builder->CreateICmpULE(lhs_v, rhs_v, "ifcond");
+			if (type == Types(Type_float))
+				return Builder->CreateFCmpOLE(lhs_v, rhs_v, "ifcond");
+	}
 	return NULL;
 }
 
@@ -545,6 +582,11 @@ Value *CodeGen::generateCastExpression(Value *src, Types SrcType, Types DestType
 	if (llvmDebbug) fprintf(stderr, "%d: %s\n", __LINE__, __func__);
 
 	Type *DestTy = generateType(DestType);
+
+	if (SrcType.getNonNull() < DestType.getNonNull()) {
+		// Value *CondV = Builder->CreateICmpNE(src, 0, "ifcond");
+		// Builder->CreateCondBr(CondV, ThenBB, ElseBB);
+	}
 
 	if (SrcType.getPrimType() == Type_int || SrcType.getPrimType() == Type_uint) {
 		if (DestType.getPrimType() == Type_int || DestType.getPrimType() == Type_uint) {

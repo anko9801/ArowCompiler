@@ -64,27 +64,9 @@ StatementsAST::~StatementsAST(){
 }
 
 
-FunctionStmtAST::~FunctionStmtAST(){
-	for(size_t i = 0;i < StmtLists.size();i++){
-		SAFE_DELETE(StmtLists[i]);
-	}
-	StmtLists.clear();
-}
-
-
 BinaryExprAST::~BinaryExprAST(){
 	SAFE_DELETE(LHS);
 	SAFE_DELETE(RHS);
-}
-
-
-IfExprAST::~IfExprAST() {
-	SAFE_DELETE(Cond);
-}
-
-
-WhileExprAST::~WhileExprAST() {
-	SAFE_DELETE(Cond);
 }
 
 // AST::~AST() {

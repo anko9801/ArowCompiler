@@ -258,19 +258,18 @@ class StatementsAST {
   * 関数定義(本文)を表すAST
   */
 class FunctionStmtAST : public BaseAST {
-	std::vector<BaseAST*> StmtLists;
+	StatementsAST *stmts = new StatementsAST();
 
 	public:
 	FunctionStmtAST() : BaseAST(FunctionStmtID){}
-	~FunctionStmtAST();
+	~FunctionStmtAST(){}
 	static inline bool classof(FunctionStmtAST const*){return true;}
 	static inline bool classof(BaseAST const* base){
-		return base->getValueID()==FunctionStmtID;
+		return base->getValueID() == FunctionStmtID;
 	}
+	bool addStatement(BaseAST *stmt){stmts->addStatement(stmt);return true;}
 
-	bool addStatement(BaseAST *stmt){StmtLists.push_back(stmt);return true;}
-
-	BaseAST *getStatement(size_t i){if(i<StmtLists.size())return StmtLists.at(i);else return NULL;}
+	BaseAST *getStatement(size_t i){return stmts->getStatement(i);}
 };
 
 
@@ -342,7 +341,7 @@ class IfExprAST : public BaseAST {
 
 	public:
 	IfExprAST(BaseAST *Cond) : BaseAST(IfExprID), Cond(Cond){}
-	~IfExprAST();
+	~IfExprAST(){}
 	static inline bool classof(IfExprAST const*){return true;}
 	static inline bool classof(BaseAST const* base){
 		return base->getValueID() == IfExprID;
@@ -365,7 +364,7 @@ class WhileExprAST : public BaseAST {
 
 	public:
 	WhileExprAST(BaseAST *Cond) : BaseAST(WhileExprID), Cond(Cond){}
-	~WhileExprAST();
+	~WhileExprAST(){}
 	static inline bool classof(WhileExprAST const*){return true;}
 	static inline bool classof(BaseAST const* base){
 		return base->getValueID() == WhileExprID;

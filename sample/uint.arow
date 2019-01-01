@@ -1,5 +1,5 @@
 uint main() {
 	uint2 a = 5
-	printnum(a as int2)
+	printnum(a as int2?)
 	return a
 }
