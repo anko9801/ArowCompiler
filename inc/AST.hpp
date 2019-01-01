@@ -165,15 +165,26 @@ class TranslationUnitAST{
 		TranslationUnitAST(){}
 		~TranslationUnitAST();
 
-		bool addPrototype(PrototypeAST *proto);
-		bool addFunction(FunctionAST *func);
-		bool empty();
+		bool addPrototype(PrototypeAST *proto) {
+			Prototypes.push_back(proto);
+			return true;
+		}
+		bool addFunction(FunctionAST *func) {
+			Functions.push_back(func);
+			return true;
+		}
+		bool empty() {
+			if(Prototypes.size()==0 && Functions.size()==0)
+				return true;
+			else
+				return false;
+        }
 
 		PrototypeAST *getPrototype(size_t i){
 			if(i<Prototypes.size())
 				return Prototypes.at(i);
 			else
-			 return NULL;
+			    return NULL;
 		}
 		FunctionAST *getFunction(size_t i){
 			if(i<Functions.size())

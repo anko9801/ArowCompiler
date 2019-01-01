@@ -1,35 +1,6 @@
 #include "AST.hpp"
 
 /**
-  * PrototypeAST(関数宣言追加)メソッド
-  * @param  VariableDeclAST
-  * @retirm true
-  */
-bool TranslationUnitAST::addPrototype(PrototypeAST *proto){
-		Prototypes.push_back(proto);
-		return true;
-}
-
-
-/**
-  * FunctionAST(関数定義追加)メソッド
-  * @param  VariableDeclAST
-  * @retirm true
-  */
-bool TranslationUnitAST::addFunction(FunctionAST *func){
-		Functions.push_back(func);
-		return true;
-}
-
-bool TranslationUnitAST::empty(){
-	if(Prototypes.size()==0 && Functions.size()==0)
-		return true;
-	else
-		return false;
-}
-
-
-/**
   * デストラクタ
   */
 TranslationUnitAST::~TranslationUnitAST(){
@@ -68,10 +39,6 @@ BinaryExprAST::~BinaryExprAST(){
 	SAFE_DELETE(LHS);
 	SAFE_DELETE(RHS);
 }
-
-// AST::~AST() {
-// 	SAFE_DELETE();
-// }
 
 
 Types BaseAST::getType() {
