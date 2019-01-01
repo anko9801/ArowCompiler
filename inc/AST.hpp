@@ -80,45 +80,9 @@ struct Types {
 	int getBits() {return bits;}
 	prim_type getPrimType() {return Type;}
 	bool getNonNull() {return non_null;}
-	std::string printType() {
-		std::string type;
-		if(this->getPrimType() == Type_int)
-			type = "int";
-		else if(this->getPrimType() == Type_uint)
-			type = "uint";
-		else if(this->getPrimType() == Type_bool)
-			type = "bool";
-		else if(this->getPrimType() == Type_float)
-			type = "float";
-		else if(this->getPrimType() == Type_char)
-			type = "char";
-		else if(this->getPrimType() == Type_null)
-			type = "null";
-		else if(this->getPrimType() == Type_number)
-			type = "number";
-		else if(this->getPrimType() == Type_all)
-			type = "all";
-		else
-			type = "yannaiyo";
-		type += std::to_string(this->getBits());
-		if (this->getNonNull()) type += "?";
-		return type;
-	}
-
-	bool operator== (const Types &rhs) const {
-		if (Type == Type_all || rhs.Type == Type_all) return true;
-		if (Type == Type_number && (rhs.Type == Type_int || rhs.Type == Type_uint || rhs.Type == Type_float)) return true;
-		if ((Type == Type_int || Type == Type_uint || Type == Type_float) && rhs.Type == Type_number) return true;
-		if (Type == rhs.Type) return true;
-		else return false;
-	}
-	bool operator!= (const Types &rhs) const {
-		if (Type == Type_all || rhs.Type == Type_all) return false;
-		if (Type == Type_number && (rhs.Type == Type_int || rhs.Type == Type_uint || rhs.Type == Type_float)) return false;
-		if ((Type == Type_int || Type == Type_uint || Type == Type_float) && rhs.Type == Type_number) return false;
-		if (Type == rhs.Type) return false;
-		return !(Type == rhs.Type);
-	}
+	std::string printType();
+	bool operator== (const Types &rhs) const;
+	bool operator!= (const Types &rhs) const;
 };
 
 struct Seq {
@@ -126,14 +90,8 @@ struct Seq {
 	std::string Name;
 
 	Seq(Types type, std::string name) : Type(type), Name(name){}
-	bool operator< (const Seq &rhs) const {
-		if (Name < rhs.Name) return true;
-		else return false;
-	}
-	bool operator== (const Seq &rhs) const {
-		if (Type == rhs.Type && Name == rhs.Name) return true;
-		else return false;
-	}
+	bool operator< (const Seq &rhs) const;
+	bool operator== (const Seq &rhs) const;
 };
 
 
@@ -181,13 +139,13 @@ class TranslationUnitAST{
         }
 
 		PrototypeAST *getPrototype(size_t i){
-			if(i<Prototypes.size())
+			if(i < Prototypes.size())
 				return Prototypes.at(i);
 			else
 			    return NULL;
 		}
 		FunctionAST *getFunction(size_t i){
-			if(i<Functions.size())
+			if(i < Functions.size())
 				return Functions.at(i);
 			else
 				return NULL;
@@ -213,7 +171,7 @@ class PrototypeAST{
 	Types getType(){return Type;}
 	std::string getParamName(size_t i){if(i<Params.size())return Params.at(i).Name;return NULL;}
 	Types getParamType(size_t i){if(i<Params.size())return Params.at(i).Type;return Types(Type_null);}
-	size_t getParamNum(){return Params.size();}
+	size_t getParamSize(){return Params.size();}
 	std::vector<Seq> getParam(){return Params;}
 };
 

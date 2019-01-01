@@ -165,7 +165,7 @@ Function *CodeGen::generatePrototype(PrototypeAST *proto, Module *mod){
 	//already declared?
 	Function *func = mod->getFunction(proto->getName());
 	if(func){
-		if(func->arg_size() == proto->getParamNum() && func->empty()){
+		if(func->arg_size() == proto->getParamSize() && func->empty()){
 			return func;
 		}else{
 			fprintf(stderr, "error: function %s is redefined", proto->getName().c_str());
@@ -192,7 +192,7 @@ Function *CodeGen::generatePrototype(PrototypeAST *proto, Module *mod){
 
 	//set names
 	Function::arg_iterator arg_iter = func->arg_begin();
-	for(size_t i = 0; i < proto->getParamNum(); i++){
+	for(size_t i = 0; i < proto->getParamSize(); i++){
 		arg_iter->setName(proto->getParamName(i).append("_arg"));
 		++arg_iter;
 	}
