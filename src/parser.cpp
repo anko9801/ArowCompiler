@@ -1,6 +1,6 @@
 #include "parser.hpp"
 
-bool Debbug = false;
+bool Debbug = true;
 
 /**
   * コンストラクタ
@@ -45,22 +45,53 @@ bool Parser::visitTranslationUnit(){
 
 	// LLVMライブラリの関数
   //addLib(TranslationUnitAST, ReturnType, FuncName, {Arguments, ...})
-	addLib(TU, Types(Type_bool, 1, true), "printnum", {Types(Type_int, 32, true)});
-	addLib(TU, Types(Type_bool, 1, true), "sleep", {Types(Type_int, 32, true)});
-	addLib(TU, Types(Type_int, 32, true), "usclock", {});
-	addLib(TU, Types(Type_bool, 1, true), "BlinkLED", {Types(Type_int, 32, true)});
-	addLib(TU, Types(Type_bool, 1, true), "GPIOsetup", {});
-	addLib(TU, Types(Type_bool, 1, true), "GPIOclear", {});
+	// addLib(TU, Types(Type_bool, 1, true), "printnum", {Types(Type_int, 32, true)});
+	// addLib(TU, Types(Type_bool, 1, true), "sleep", {Types(Type_int, 32, true)});
+	// addLib(TU, Types(Type_int, 32, true), "usclock", {});
+	// addLib(TU, Types(Type_bool, 1, true), "BlinkLED", {Types(Type_int, 32, true)});
+	// addLib(TU, Types(Type_bool, 1, true), "GPIOsetup", {});
+	// addLib(TU, Types(Type_bool, 1, true), "GPIOclear", {});
 
+	return visitModule();
+}
+
+bool Parser::visitModule() {
 	//ExternalDecl
-	while(true){
-		if(!visitExternalDeclaration(TU)){
+	while (true) {
+		if (!visitExternalDeclaration(TU)) {
 			SAFE_DELETE(TU);
 			return false;
 		}
-		if(isExceptedToken(TOK_EOF))
+		if (isExpectedToken(TOK_EOF))
 			break;
 	}
+	return true;
+}
+
+bool Parser::visitImportFile() {
+	fprintf(stderr, "%d:%d: %s %s\n", Tokens->getLine(), __LINE__, __func__, Tokens->getCurString().c_str());
+	if (!isExpectedToken("import"))
+		return false;
+	Tokens->getNextToken();
+
+	if (!isExpectedToken(TOK_IDENTIFIER))
+		return false;
+	std::string filename = Tokens->getCurString();
+	Tokens->getNextToken();
+
+	if (!isExpectedToken("."))
+		return false;
+	Tokens->getNextToken();
+	
+	if (!isExpectedToken("arow"))
+		return false;
+	Tokens->getNextToken();
+
+	TokenStream *Tokens_old = Tokens;
+
+	Tokens = LexicalAnalysis(filename + ".arow");
+	visitModule();
+	Tokens = Tokens_old;
 	return true;
 }
 
@@ -72,20 +103,23 @@ bool Parser::visitTranslationUnit(){
   * @return true 
   */
 bool Parser::visitExternalDeclaration(TranslationUnitAST *tunit) {
-	//FunctionDefinition
-	FunctionAST *func_def = visitFunctionDefinition();
-	// warningが出ていたら戻す
-	if (warning) return false;
-	if (func_def) {
-		tunit->addFunction(func_def);
-		return true;
-	}
 	//FunctionDeclaration
 	PrototypeAST *proto = visitFunctionDeclaration();
 	if (proto) {
 		tunit->addPrototype(proto);
 		return true;
 	}
+	
+	//FunctionDefinition
+	FunctionAST *func_def = visitFunctionDefinition();
+	if (func_def) {
+		tunit->addFunction(func_def);
+		return true;
+	}
+
+	if (visitImportFile())
+		return true;
+
 	return false;
 }
 
@@ -100,7 +134,7 @@ Types Parser::visitTypes() {
 	int bits;prim_type Type;bool non_null = false;int ArraySize = 0;
 
 	// primary type
-	if(!isExceptedToken(TOK_TYPE)) {
+	if(!isExpectedToken(TOK_TYPE)) {
 		Tokens->applyTokenIndex(bkup);
 		return Types(Type_null);
 	}
@@ -108,7 +142,7 @@ Types Parser::visitTypes() {
 	Tokens->getNextToken();
 
 	// bit数
-	if(isExceptedToken(TOK_DIGIT)) {
+	if(isExpectedToken(TOK_DIGIT)) {
 		bits = Tokens->getCurNumVal();
 		Tokens->getNextToken();
 	}else{
@@ -118,15 +152,15 @@ Types Parser::visitTypes() {
 	}
 
 	// non-null type
-	if(isExceptedToken("?")) {
+	if(isExpectedToken("?")) {
 		non_null = true;
 		Tokens->getNextToken();
 	}
 
 	// array
-	if(isExceptedToken("[")) {
+	if(isExpectedToken("[")) {
 		Tokens->getNextToken();
-		if(!isExceptedToken(TOK_DIGIT)) {
+		if(!isExpectedToken(TOK_DIGIT)) {
 			Tokens->applyTokenIndex(bkup);
 			return Types(Type_null);
 		}
@@ -149,27 +183,12 @@ PrototypeAST *Parser::visitFunctionDeclaration(){
 
 	if (Debbug) fprintf(stderr, "%s\n", __func__);
 	PrototypeAST *proto = visitPrototype();
-	if(!proto){
+	if (!proto)
 		return NULL;
-	}
 
 	//prototype;
-	if(isExceptedToken(";") || isExceptedToken("\n")) {
-		for (size_t i = 0;i < PrototypeTable.size();i++) {
-			if (PrototypeTable[i] == proto) {
-				fprintf(stderr, "Function：%s is redefined\n", proto->getName().c_str());
-				SAFE_DELETE(proto);
-				return NULL;
-			}
-		}
-		FunctionAST *func = new FunctionAST(proto);
-		for (size_t i = 0;i < FunctionTable.size();i++) {
-			if (FunctionTable[i] == func) {
-				fprintf(stderr, "Function：%s is redefined\n", proto->getName().c_str());
-				SAFE_DELETE(proto);
-				return NULL;
-			}
-		}
+	if (isExpectedToken(";") || isExpectedToken("\n")) {
+		PrototypeTable.push_back(proto);
 		Tokens->getNextToken();
 		return proto;
 	}else{
@@ -189,9 +208,9 @@ FunctionAST *Parser::visitFunctionDefinition(){
 
 	if(Debbug) fprintf(stderr, "%s\n", __func__);
 	PrototypeAST *proto = visitPrototype();
-	if(!proto) {
+	if(!proto)
 		return NULL;
-	}
+
 	FunctionAST *func = new FunctionAST(proto);
 	for (size_t i = 0;i < FunctionTable.size();i++) {
 		if (FunctionTable[i] == func) {
@@ -236,7 +255,7 @@ PrototypeAST *Parser::visitPrototype(){
 	}
 
 	//IDENTIFIER
-	if(!isExceptedToken(TOK_IDENTIFIER)){
+	if(!isExpectedToken(TOK_IDENTIFIER)){
 		Tokens->applyTokenIndex(bkup);
 		return NULL;
 	}
@@ -244,7 +263,7 @@ PrototypeAST *Parser::visitPrototype(){
 	Tokens->getNextToken();
 
 	//'('
-	if(!isExceptedToken("(")){
+	if(!isExpectedToken("(")){
 		Tokens->applyTokenIndex(bkup);
 		return NULL;
 	}
@@ -256,7 +275,7 @@ PrototypeAST *Parser::visitPrototype(){
 	bool is_first_param = true;
 	param_type = visitTypes();
 	if(param_type != Types(Type_null)){
-		if(!isExceptedToken(TOK_IDENTIFIER)){
+		if(!isExpectedToken(TOK_IDENTIFIER)){
 			fprintf(stderr, "%d:%d: error: expected identifer but %s\n", Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
 			Tokens->applyTokenIndex(bkup);
 			return NULL;
@@ -264,20 +283,20 @@ PrototypeAST *Parser::visitPrototype(){
 		param_list.push_back(Seq(param_type, Tokens->getCurString()));
 		Tokens->getNextToken();
 		while(true){
-			if(!isExceptedToken(")")){
+			if(isExpectedToken(")"))
 				break;
-			}
 			//','
-			if(!is_first_param && !isExceptedToken(",")){
+			if(!is_first_param && !isExpectedToken(",")){
 				Tokens->getNextToken();
 			}
 
 			param_type = visitTypes();
 			if(param_type == Types(Type_null)){
+				fprintf(stderr, "%d:%d: error: argument type is nothing\n", Tokens->getLine(), __LINE__);
 				break;
 			}
 
-			if(!isExceptedToken(TOK_IDENTIFIER)){
+			if(!isExpectedToken(TOK_IDENTIFIER)){
 				fprintf(stderr, "%d:%d: error: expected identifer but %s\n", Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
 				Tokens->applyTokenIndex(bkup);
 				return NULL;
@@ -297,14 +316,30 @@ PrototypeAST *Parser::visitPrototype(){
 	}
 
 	//')'
-	if(!isExceptedToken(")")){
+	if (!isExpectedToken(")")) {
 		Tokens->applyTokenIndex(bkup);
 		return NULL;
 	}
 	Tokens->getNextToken();
 
 	PrototypeAST *proto = new PrototypeAST(func_type, func_name, param_list);
-	PrototypeTable.push_back(proto);
+
+	for (size_t i = 0;i < PrototypeTable.size();i++) {
+		if (PrototypeTable[i] == proto) {
+			fprintf(stderr, "Prototype %s is redefined\n", proto->getName().c_str());
+			SAFE_DELETE(proto);
+			return NULL;
+		}
+	}
+	FunctionAST *func = new FunctionAST(proto);
+	for (size_t i = 0;i < FunctionTable.size();i++) {
+		if (FunctionTable[i] == func) {
+			fprintf(stderr, "Function %s is redefined\n", proto->getName().c_str());
+			SAFE_DELETE(proto);
+			return NULL;
+		}
+	}
+
 	return proto;
 }
 
@@ -360,7 +395,7 @@ StatementsAST *Parser::visitStatements(BaseAST* InsertPoint, int branch = 0) {
 	StatementsAST *stmts = new StatementsAST();
 	BaseAST *stmt;
 
-	if (!isExceptedToken("{")) {
+	if (!isExpectedToken("{")) {
 		stmt = visitStatement();
 		if (stmt) {
 			SetInsertPoint(InsertPoint);
@@ -368,7 +403,7 @@ StatementsAST *Parser::visitStatements(BaseAST* InsertPoint, int branch = 0) {
 			stmts->addStatement(stmt);
 			return stmts;
 		}
-		if (!isExceptedToken("{")) {
+		if (!isExpectedToken("{")) {
 			Tokens->applyTokenIndex(bkup);
 			SAFE_DELETE(InsertPoint);
 			return stmts;
@@ -378,7 +413,7 @@ StatementsAST *Parser::visitStatements(BaseAST* InsertPoint, int branch = 0) {
 
 	while(true) {
 		if (Debbug) fprintf(stderr, "%d:%d: %s %s\n", Tokens->getLine(), __LINE__, __func__, Tokens->getCurString().c_str());
-		if (isExceptedToken("}")) {
+		if (isExpectedToken("}")) {
 			Tokens->getNextToken();
 			break;
 		}
@@ -410,17 +445,17 @@ BaseAST *Parser::visitStatement(){
 	BaseAST *stmt;
 
 	// if文
-	if (isExceptedToken(TOK_IF)) {
+	if (isExpectedToken(TOK_IF)) {
 		stmt = visitIfExpression();
 		return stmt;
 	}
 	// while文
-	if (isExceptedToken(TOK_WHILE)) {
+	if (isExpectedToken(TOK_WHILE)) {
 		stmt = visitWhileExpression();
 		return stmt;
 	}
 	// return文
-	if (isExceptedToken(TOK_RETURN)) {
+	if (isExpectedToken(TOK_RETURN)) {
 		stmt = visitJumpStatement();
 		if (!stmt || stmt->getType() != getFuncType()) {
 			fprintf(stderr, "%d:%d: error: return type is expected %s but %s\n", Tokens->getLine(), __LINE__, getFuncType().printType().c_str(), stmt->getType().printType().c_str());
@@ -437,7 +472,7 @@ BaseAST *Parser::visitStatement(){
 		if (Debbug) fprintf(stderr, "%d:%d: %s %s\n", Tokens->getLine(), __LINE__, var_decl->getType().printType().c_str(), var_decl->getName().c_str());
 		VariableTable.push_back(var_decl);
 
-		if (isExceptedToken("=")) {
+		if (isExpectedToken("=")) {
 			Tokens->ungetToken(1);
 			return var_decl;
 		}
@@ -467,7 +502,7 @@ VariableDeclAST *Parser::visitVariableDeclaration(){
 	}
 
 	//IDENTIFIER
-	if(!isExceptedToken(TOK_IDENTIFIER)){
+	if(!isExpectedToken(TOK_IDENTIFIER)){
 		Tokens->applyTokenIndex(bkup);
 		fprintf(stderr, "%d:%d: error: cannot find identifier of variable\n", Tokens->getLine(), __LINE__);
 		return NULL;
@@ -477,9 +512,9 @@ VariableDeclAST *Parser::visitVariableDeclaration(){
 	Tokens->getNextToken();
 
 	//配列かどうか
-	if(isExceptedToken("[")){
+	if(isExpectedToken("[")){
 		Tokens->getNextToken();
-		if (!isExceptedToken(TOK_DIGIT)) {
+		if (!isExpectedToken(TOK_DIGIT)) {
 			Tokens->applyTokenIndex(bkup);
 			return NULL;
 		}
@@ -487,7 +522,7 @@ VariableDeclAST *Parser::visitVariableDeclaration(){
 		type.setArray(Tokens->getCurNumVal());
 
 		Tokens->getNextToken();
-		if (!isExceptedToken("]")) {
+		if (!isExpectedToken("]")) {
 			Tokens->applyTokenIndex(bkup);
 			return NULL;
 		}
@@ -503,15 +538,14 @@ VariableDeclAST *Parser::visitVariableDeclaration(){
 
 	//式が終わったなら次の文、AssignもあるならFuncStmtで一回ループ回った後にAssignmentExpression関数を呼び出す
 	//';'
-	if(isExceptedToken(";") || isExceptedToken("\n")) {
+	if(isExpectedToken(";") || isExpectedToken("\n")) {
 		Tokens->getNextToken();
 		return new VariableDeclAST(type, name);
 	//'='
-	}else if(isExceptedToken("=")) {
+	}else if(isExpectedToken("=")) {
 		return new VariableDeclAST(type, name);
 	}else{
 		Tokens->applyTokenIndex(bkup);
-		fprintf(stderr, "%d:%d: error: cannot find semicoron\n", Tokens->getLine(), __LINE__);
 		return NULL;
 	}
 }
@@ -525,7 +559,7 @@ BaseAST *Parser::visitJumpStatement(){
 	int bkup=Tokens->getCurIndex();
 	BaseAST *expr;
 
-	if(!isExceptedToken(TOK_RETURN))
+	if(!isExpectedToken(TOK_RETURN))
 		return NULL;
 	Tokens->getNextToken();
 
@@ -559,13 +593,13 @@ BaseAST *Parser::visitIfExpression(){
 
 	BaseAST *CondStmt;
 
-	if (!isExceptedToken(TOK_IF)) {
+	if (!isExpectedToken(TOK_IF)) {
 		Tokens->applyTokenIndex(bkup);
 		return NULL;
 	}
 	Tokens->getNextToken();
 	
-	if (!isExceptedToken("(")) {
+	if (!isExpectedToken("(")) {
 		fprintf(stderr, "%d:%d: expected '(' but %s\n", Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
 		Tokens->applyTokenIndex(bkup);
 		return NULL;
@@ -579,7 +613,7 @@ BaseAST *Parser::visitIfExpression(){
 	}
 	BaseAST *if_expr = new IfExprAST(CondStmt);
 
-	if (!isExceptedToken(")")) {
+	if (!isExpectedToken(")")) {
 		fprintf(stderr, "%d:%d: expected ')' but %s\n", Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
 		Tokens->applyTokenIndex(bkup);
 		return NULL;
@@ -588,7 +622,7 @@ BaseAST *Parser::visitIfExpression(){
 
 	visitStatements(if_expr, 0);
 
-	if (!isExceptedToken("else")) {
+	if (!isExpectedToken("else")) {
 		return if_expr;
 	}
 	Tokens->getNextToken();
@@ -607,13 +641,13 @@ BaseAST *Parser::visitWhileExpression(){
 
 	BaseAST *CondStmt;
 	if (Debbug) fprintf(stderr, "%d:%d: %s\n", Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
-	if (!isExceptedToken(TOK_WHILE)) {
+	if (!isExpectedToken(TOK_WHILE)) {
 		Tokens->applyTokenIndex(bkup);
 		return NULL;
 	}
 	Tokens->getNextToken();
 
-	if (!isExceptedToken("(")) {
+	if (!isExpectedToken("(")) {
 		fprintf(stderr, "%d:%d: expected '(' but %s\n", Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
 		Tokens->applyTokenIndex(bkup);
 		return NULL;
@@ -628,7 +662,7 @@ BaseAST *Parser::visitWhileExpression(){
 	}
 	BaseAST *while_expr = new WhileExprAST(CondStmt);
 
-	if (!isExceptedToken(")")) {
+	if (!isExpectedToken(")")) {
 		fprintf(stderr, "%d:%d: expected ')' but %s\n", Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
 		Tokens->applyTokenIndex(bkup);
 		return NULL;
@@ -651,7 +685,7 @@ BaseAST *Parser::visitAssignmentExpression(Types type) {
 	//	| IDENTIFIER '=' additive_expression
 	BaseAST *lhs;
 
-	if (isExceptedToken(TOK_IDENTIFIER)) {
+	if (isExpectedToken(TOK_IDENTIFIER)) {
 		//変数が宣言されているか確認
 		bool all_confirm = false;
 		for (size_t i = 0;i < VariableTable.size();i++) {
@@ -662,7 +696,7 @@ BaseAST *Parser::visitAssignmentExpression(Types type) {
 				int Index = 0;
 				lhs = new VariableAST(VariableTable[i], Index);
 				BaseAST *rhs;
-				if(isExceptedToken("=")){
+				if(isExpectedToken("=")){
 					Tokens->getNextToken();
 
 					rhs = visitExpression(NULL, VariableTable[i]->getType());
@@ -687,7 +721,7 @@ BaseAST *Parser::visitAssignmentExpression(Types type) {
 	if(!lhs)
 		return NULL;
 	
-	if(isExceptedToken(";") || isExceptedToken("\n")) {
+	if(isExpectedToken(";") || isExpectedToken("\n")) {
 		Tokens->getNextToken();
 		return lhs;
 	}
@@ -708,12 +742,12 @@ BaseAST *Parser::visitExpression(BaseAST *lhs, Types type) {
 		return NULL;
 
 	if (lhs && lhs->getType() == Types(Type_number)) {
-		if (isExceptedToken("<") ||
-			isExceptedToken(">") ||
-			isExceptedToken("<=") ||
-			isExceptedToken(">=") ||
-			isExceptedToken("==") ||
-			isExceptedToken("!=")) {
+		if (isExpectedToken("<") ||
+			isExpectedToken(">") ||
+			isExpectedToken("<=") ||
+			isExpectedToken(">=") ||
+			isExpectedToken("==") ||
+			isExpectedToken("!=")) {
 			std::string op = Tokens->getCurString();
 			BaseAST *rhs;
 
@@ -748,7 +782,7 @@ BaseAST *Parser::visitAdditiveExpression(BaseAST *lhs, Types type = Types(Type_a
 	BaseAST *rhs;
 
 	//+
-	if(isExceptedToken("+")){
+	if(isExpectedToken("+")){
 		Tokens->getNextToken();
 		rhs = visitMultiplicativeExpression(NULL, type);
 		if(rhs){
@@ -765,7 +799,7 @@ BaseAST *Parser::visitAdditiveExpression(BaseAST *lhs, Types type = Types(Type_a
 			return NULL;
 		}
 	//-
-	}else if(isExceptedToken("-")){
+	}else if(isExpectedToken("-")){
 		Tokens->getNextToken();
 		rhs = visitMultiplicativeExpression(NULL, type);
 		if(rhs) {
@@ -805,7 +839,7 @@ BaseAST *Parser::visitMultiplicativeExpression(BaseAST *lhs, Types type = Types(
 	BaseAST *rhs;
 
 	// *
-	if(isExceptedToken("*")){
+	if(isExpectedToken("*")){
 		Tokens->getNextToken();
 		rhs = visitCastExpression();
 		if(rhs){
@@ -823,7 +857,7 @@ BaseAST *Parser::visitMultiplicativeExpression(BaseAST *lhs, Types type = Types(
 		}
 			
 	// /
-	}else if(isExceptedToken("/")){
+	}else if(isExpectedToken("/")){
 		Tokens->getNextToken();
 		rhs=visitCastExpression();
 		if(rhs){
@@ -841,7 +875,7 @@ BaseAST *Parser::visitMultiplicativeExpression(BaseAST *lhs, Types type = Types(
 		}
 
 	// %
-	}else if(isExceptedToken("%")){
+	}else if(isExpectedToken("%")){
 		Tokens->getNextToken();
 		rhs = visitCastExpression();
 		if(rhs){
@@ -873,7 +907,7 @@ BaseAST *Parser::visitCastExpression(){
 	if(!lhs)
 		return NULL;
 
-	if(isExceptedToken("as")) {
+	if(isExpectedToken("as")) {
 		Tokens->getNextToken();
 		Types DestType = visitTypes();
 		if (Debbug) fprintf(stderr, "%d:%d: as %s\n", Tokens->getLine(), __LINE__, DestType.printType().c_str());
@@ -883,7 +917,7 @@ BaseAST *Parser::visitCastExpression(){
 		}
 		return new CastExprAST(lhs, DestType, false);
 
-	}else if(isExceptedToken("is")) {
+	}else if(isExpectedToken("is")) {
 		Tokens->getNextToken();
 		Types DestType = visitTypes();
 		if (Debbug) fprintf(stderr, "%d:%d: is %s\n", Tokens->getLine(), __LINE__, DestType.printType().c_str());
@@ -893,7 +927,7 @@ BaseAST *Parser::visitCastExpression(){
 		}
 		return new CastExprAST(lhs, DestType, true);
 
-	}else if(isExceptedToken("?")) {
+	}else if(isExpectedToken("?")) {
 		if (Debbug) fprintf(stderr, "%d:%d: non-null\n", Tokens->getLine(), __LINE__);
 		lhs->getType().setNonNull(true);
 		Tokens->getNextToken();
@@ -978,7 +1012,7 @@ BaseAST *Parser::visitPostfixExpression(){
 
 	// 関数呼び出し用
 	//FUNCTION_IDENTIFIER
-	if(!isExceptedToken(TOK_IDENTIFIER))
+	if(!isExpectedToken(TOK_IDENTIFIER))
 		return NULL;
 
 	//関数名取得
@@ -987,7 +1021,7 @@ BaseAST *Parser::visitPostfixExpression(){
 	Tokens->getNextToken();
 
 	//LEFT PALEN
-	if(!isExceptedToken("(")){
+	if(!isExpectedToken("(")){
 		Tokens->applyTokenIndex(bkup);
 		fprintf(stderr, "%d:%d: error: LEFT PALEN is nothing\n", Tokens->getLine(), __LINE__);
 		return NULL;
@@ -1000,7 +1034,7 @@ BaseAST *Parser::visitPostfixExpression(){
 	BaseAST *assign_expr = visitAssignmentExpression(Type_all);
 	if(assign_expr){
 		args.push_back(assign_expr);
-		while(isExceptedToken(",")){
+		while(isExpectedToken(",")){
 			Tokens->getNextToken();
 			//IDENTIFIER
 			assign_expr = visitAssignmentExpression(Type_all);
@@ -1046,7 +1080,7 @@ BaseAST *Parser::visitPostfixExpression(){
 	}
 
 	//RIGHT PALEN
-	if (isExceptedToken(")")) {
+	if (isExpectedToken(")")) {
 		Tokens->getNextToken();
 		return new CallExprAST(func_type, Callee, args, proto);
 	}else{
@@ -1068,26 +1102,26 @@ BaseAST *Parser::visitPrimaryExpression(){
 
 	// 数値、真偽値、条件式、変数呼び出しなど
 	//integer
-	if(isExceptedToken(TOK_DIGIT)){
+	if(isExpectedToken(TOK_DIGIT)){
 		int val = Tokens->getCurNumVal();
 		if (Debbug) fprintf(stderr, "%d:%d: integer\n", Tokens->getLine(), __LINE__);
 		Tokens->getNextToken();
 		return new ValueAST(val, Types(Type_int, 32, true));
 	//float
-	}else if(isExceptedToken(TOK_FLOAT)){
+	}else if(isExpectedToken(TOK_FLOAT)){
 		float val = Tokens->getCurNumVal();
 		if (Debbug) fprintf(stderr, "%d:%d: float\n", Tokens->getLine(), __LINE__);
 		Tokens->getNextToken();
 		return new ValueAST(val, Types(Type_float, 32, true));
 	//負の数
-	}else if(isExceptedToken("-")){
+	}else if(isExpectedToken("-")){
 		if (Debbug) fprintf(stderr, "%d:%d: integer\n", Tokens->getLine(), __LINE__);
 		Tokens->getNextToken();
-		if(isExceptedToken(TOK_DIGIT)) {
+		if(isExpectedToken(TOK_DIGIT)) {
 			int val = Tokens->getCurNumVal();
 			Tokens->getNextToken();
 			return new ValueAST(-val, Types(Type_int, 32, true));
-		}else if(isExceptedToken(TOK_FLOAT)) {
+		}else if(isExpectedToken(TOK_FLOAT)) {
 			float val = Tokens->getCurNumVal();
 			Tokens->getNextToken();
 			return new ValueAST(-val, Types(Type_float, 32, true));
@@ -1096,16 +1130,16 @@ BaseAST *Parser::visitPrimaryExpression(){
 			return NULL;
 		}
 	// true / false
-	}else if(isExceptedToken(TOK_TRUTH)) {
+	}else if(isExpectedToken(TOK_TRUTH)) {
 		if (Debbug) fprintf(stderr, "%d:%d: true\n", Tokens->getLine(), __LINE__);
 		Tokens->getNextToken();
 		return new ValueAST(Tokens->getCurBoolVal(), Types(Type_bool, 1, true));
-	}else if(isExceptedToken("None")) {
+	}else if(isExpectedToken("None")) {
 		if (Debbug) fprintf(stderr, "%d:%d: none\n", Tokens->getLine(), __LINE__);
 		Tokens->getNextToken();
 		return new ValueAST(0, Types(Type_all));
 	//VARIABLE_IDENTIFIER
-	}else if(isExceptedToken(TOK_IDENTIFIER)) {
+	}else if(isExpectedToken(TOK_IDENTIFIER)) {
 		for (size_t i = 0;i < VariableTable.size();i++)
 			if (VariableTable[i]->getName() == Tokens->getCurString()) {
 				if (Debbug) fprintf(stderr, "%d:%d: call variable %s\n", Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
@@ -1113,7 +1147,7 @@ BaseAST *Parser::visitPrimaryExpression(){
 				return new VariableAST(VariableTable[i]);
 			}
 	// '(' expression ')'
-	}else if(isExceptedToken("(")){
+	}else if(isExpectedToken("(")){
 		Tokens->getNextToken();
 
 		//expression
@@ -1124,7 +1158,7 @@ BaseAST *Parser::visitPrimaryExpression(){
 		}
 
 		//RIGHT PALEN
-		if(!isExceptedToken(")")){
+		if(!isExpectedToken(")")){
 			if (Debbug) fprintf(stderr, "%d:%d: expected ')' but %s\n", Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
 			SAFE_DELETE(assign_expr);
 			Tokens->applyTokenIndex(bkup);

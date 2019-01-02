@@ -2,12 +2,12 @@
 
 bool llvmDebbug = true;
 
-CodeGen::CodeGen(){
+CodeGen::CodeGen() {
 	Builder = new IRBuilder<>(GlobalContext);
 	Mod = NULL;
 }
 
-CodeGen::~CodeGen(){
+CodeGen::~CodeGen() {
 	SAFE_DELETE(Builder);
 	SAFE_DELETE(Mod);
 }

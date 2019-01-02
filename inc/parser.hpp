@@ -96,12 +96,14 @@ typedef class Parser{
 		  各種構文解析メソッド
 		  */
 		bool visitTranslationUnit();
+		bool visitModule();
 		bool visitExternalDeclaration(TranslationUnitAST *tunit);
 		Types visitTypes();
 		PrototypeAST *visitFunctionDeclaration();
 		FunctionAST *visitFunctionDefinition();
 		PrototypeAST *visitPrototype();
 		FunctionStmtAST *visitFunctionStatement(PrototypeAST *proto);
+		bool visitImportFile();
 		VariableDeclAST *visitVariableDeclaration();
 		BaseAST *visitArrayExpression(Types Type, int Size);
 		StatementsAST *visitStatements(BaseAST *InsertPoint, int branch);
@@ -120,7 +122,7 @@ typedef class Parser{
 		BaseAST *visitPostfixExpression();
 		BaseAST *visitPrimaryExpression();
 
-		bool isExceptedToken(TokenType type) {
+		bool isExpectedToken(TokenType type) {
 			int bkup=Tokens->getCurIndex();
 			while (Tokens->getCurString() == "\n") {
 				if(Tokens->getCurType() == TOK_EOF) break;
@@ -134,7 +136,7 @@ typedef class Parser{
 			}
 		}
 
-		bool isExceptedToken(std::string str) {
+		bool isExpectedToken(std::string str) {
 			int bkup=Tokens->getCurIndex();
 			while (Tokens->getCurString() == "\n") {
 				if(Tokens->getCurType() == TOK_EOF) break;

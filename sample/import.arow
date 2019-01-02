@@ -1,0 +1,5 @@
+import stdlib.arow
+
+int main() {
+	return 3;
+}

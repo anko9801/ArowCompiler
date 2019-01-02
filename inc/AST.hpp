@@ -15,6 +15,7 @@ AST
   */
 class BaseAST;
 class TranslationUnitAST;
+class ImportAST;
 class FunctionAST;
 class PrototypeAST;
 class StatementsAST;
@@ -35,6 +36,7 @@ class ValueAST;
   */
 enum AstID{
 	BaseID,
+	ImportID,
 	FunctionStmtID,
 	StatementsID,
 	VariableDeclID,
@@ -150,6 +152,17 @@ class TranslationUnitAST{
 			else
 				return NULL;
 		}
+};
+
+
+class ImportAST {
+	std::string filename;
+
+	public:
+	ImportAST(std::string filename) : filename(filename){}
+	~ImportAST(){}
+
+	std::string getFileName() {return filename;}
 };
 
 
