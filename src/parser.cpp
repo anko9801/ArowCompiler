@@ -42,16 +42,6 @@ TranslationUnitAST &Parser::getAST(){
   */
 bool Parser::visitTranslationUnit(){
 	TU = new TranslationUnitAST();
-
-	// LLVMライブラリの関数
-  //addLib(TranslationUnitAST, ReturnType, FuncName, {Arguments, ...})
-	// addLib(TU, Types(Type_bool, 1, true), "printnum", {Types(Type_int, 32, true)});
-	// addLib(TU, Types(Type_bool, 1, true), "sleep", {Types(Type_int, 32, true)});
-	// addLib(TU, Types(Type_int, 32, true), "usclock", {});
-	// addLib(TU, Types(Type_bool, 1, true), "BlinkLED", {Types(Type_int, 32, true)});
-	// addLib(TU, Types(Type_bool, 1, true), "GPIOsetup", {});
-	// addLib(TU, Types(Type_bool, 1, true), "GPIOclear", {});
-
 	return visitModule();
 }
 
@@ -83,16 +73,24 @@ bool Parser::visitImportFile() {
 		return false;
 	Tokens->getNextToken();
 	
-	if (!isExpectedToken("arow"))
+	if (isExpectedToken("arow")) {
+		Tokens->getNextToken();
+
+		TokenStream *Tokens_old = Tokens;
+
+		Tokens = LexicalAnalysis(filename + ".arow");
+		visitModule();
+		Tokens = Tokens_old;
+	}else if (isExpectedToken("ll")) {
+		TU->addImport(new ImportAST(filename + ".ll"));
+	}else{
 		return false;
-	Tokens->getNextToken();
-
-	TokenStream *Tokens_old = Tokens;
-
-	Tokens = LexicalAnalysis(filename + ".arow");
-	visitModule();
-	Tokens = Tokens_old;
-	return true;
+	}
+	if (isExpectedToken(";") || isExpectedToken("\n")) {
+		Tokens->getNextToken();
+		return true;
+	}
+	return false;
 }
 
 

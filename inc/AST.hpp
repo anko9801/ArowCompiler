@@ -120,6 +120,7 @@ class BaseAST{
 class TranslationUnitAST{
 	std::vector<PrototypeAST*> Prototypes;
 	std::vector<FunctionAST*> Functions;
+	std::vector<ImportAST*> Imports;
 
 	public:
 		TranslationUnitAST(){}
@@ -131,6 +132,10 @@ class TranslationUnitAST{
 		}
 		bool addFunction(FunctionAST *func) {
 			Functions.push_back(func);
+			return true;
+		}
+		bool addImport(ImportAST *import) {
+			Imports.push_back(import);
 			return true;
 		}
 		bool empty() {
@@ -152,15 +157,25 @@ class TranslationUnitAST{
 			else
 				return NULL;
 		}
+		ImportAST *getImport(size_t i){
+			if(i < Imports.size())
+				return Imports.at(i);
+			else
+				return NULL;
+		}
 };
 
 
-class ImportAST {
+class ImportAST : public BaseAST {
 	std::string filename;
 
 	public:
-	ImportAST(std::string filename) : filename(filename){}
+	ImportAST(std::string filename) : BaseAST(ImportID), filename(filename){}
 	~ImportAST(){}
+	static inline bool classof(ImportAST const*){return true;}
+	static inline bool classof(BaseAST const* base){
+		return base->getValueID() == ImportID;
+	}
 
 	std::string getFileName() {return filename;}
 };

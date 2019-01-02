@@ -115,6 +115,17 @@ bool CodeGen::generateTranslationUnit(TranslationUnitAST &tunit, std::string nam
 	Mod = new Module(name, GlobalContext);
 	//funtion declaration
 	for(int i=0; ; i++){
+		ImportAST *import = tunit.getImport(i);
+		if(!import)
+			break;
+		else if(linkModule(new Module(import->getFileName(), GlobalContext), import->getFileName())) {
+			SAFE_DELETE(Mod);
+			return false;
+		}
+	}
+
+	//funtion declaration
+	for(int i=0; ; i++){
 		PrototypeAST *proto = tunit.getPrototype(i);
 		if(!proto)
 			break;
