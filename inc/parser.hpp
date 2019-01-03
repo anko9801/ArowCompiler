@@ -69,6 +69,9 @@ typedef class Parser{
 			}else if(llvm::isa<WhileExprAST>(InsertPoint)) {
 				llvm::dyn_cast<WhileExprAST>(InsertPoint)->addLoop(stmt);
 				return true;
+			// }else if(llvm::isa<MatchExprAST>(InsertPoint)) {
+			// 	llvm::dyn_cast<MatchExprAST>(InsertPoint)->addLoop(stmt);
+			// 	return true;
 			}else{
 				fprintf(stderr, "error: unknown InsertPoint\n");
 			}
@@ -111,6 +114,7 @@ typedef class Parser{
 		BaseAST *visitJumpStatement();
 		BaseAST *visitIfExpression();
 		BaseAST *visitWhileExpression();
+		BaseAST *visitMatchExpression();
 		BaseAST *visitAssignmentExpression(Types type);
 		BaseAST *visitExpression(BaseAST *lhs, Types type);
 		BaseAST *visitAdditiveExpression(BaseAST *lhs, Types type);

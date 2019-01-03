@@ -73,6 +73,10 @@ TokenStream *LexicalAnalysis(std::string input_filename){
 					next_token = new Token(token_str, TOK_FOR, line_num);
 				}else if(token_str == "match") {
 					next_token = new Token(token_str, TOK_MATCH, line_num);
+				}else if(token_str == "async") {
+					next_token = new Token(token_str, TOK_ASYNC, line_num);
+				}else if(token_str == "await") {
+					next_token = new Token(token_str, TOK_AWAIT, line_num);
 				}else if(token_str == "return") {
 					next_token = new Token(token_str, TOK_RETURN, line_num);
 				}else if (token_str == "true" || token_str == "false") {
@@ -324,6 +328,11 @@ TokenStream *LexicalAnalysis(std::string input_filename){
 						break;
 
 					case '.':
+						token_str += next_char;
+						next_token = new Token(token_str, TOK_SYMBOL, line_num);
+						break;
+
+					case '_':
 						token_str += next_char;
 						next_token = new Token(token_str, TOK_SYMBOL, line_num);
 						break;

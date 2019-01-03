@@ -5,7 +5,7 @@ bool Debbug = true;
 /**
   * コンストラクタ
   */
-Parser::Parser(std::string filename){
+Parser::Parser(std::string filename) {
 	Tokens = LexicalAnalysis(filename);
 }
 
@@ -14,8 +14,8 @@ Parser::Parser(std::string filename){
   * 構文解析実効
   * @return 解析成功：true　解析失敗：false
   */
-bool Parser::doParse(){
-	if(!Tokens){
+bool Parser::doParse() {
+	if (!Tokens) {
 		fprintf(stderr, "error at lexer\n");
 		return false;
 	}else{
@@ -28,8 +28,8 @@ bool Parser::doParse(){
   * AST取得
   * @return TranslationUnitへの参照
   */
-TranslationUnitAST &Parser::getAST(){
-	if(TU)
+TranslationUnitAST &Parser::getAST() {
+	if (TU)
 		return *TU;
 	else
 		return *(new TranslationUnitAST());
@@ -40,7 +40,7 @@ TranslationUnitAST &Parser::getAST(){
   * TranslationUnit用構文解析メソッド
   * @return 解析成功：true　解析失敗：false
   */
-bool Parser::visitTranslationUnit(){
+bool Parser::visitTranslationUnit() {
 	TU = new TranslationUnitAST();
 	return visitModule();
 }
@@ -151,15 +151,15 @@ Types Parser::visitTypes() {
 	}
 
 	// non-null type
-	if(isExpectedToken("?")) {
+	if (isExpectedToken("?")) {
 		non_null = true;
 		Tokens->getNextToken();
 	}
 
 	// array
-	if(isExpectedToken("[")) {
+	if (isExpectedToken("[")) {
 		Tokens->getNextToken();
-		if(!isExpectedToken(TOK_DIGIT)) {
+		if (!isExpectedToken(TOK_DIGIT)) {
 			Tokens->applyTokenIndex(bkup);
 			return Types(Type_null);
 		}
@@ -177,7 +177,7 @@ Types Parser::visitTypes() {
   * FunctionDeclaration用構文解析メソッド
   * @return 解析成功：PrototypeAST　解析失敗：NULL
   */
-PrototypeAST *Parser::visitFunctionDeclaration(){
+PrototypeAST *Parser::visitFunctionDeclaration() {
 	int bkup = Tokens->getCurIndex();
 
 	if (Debbug) fprintf(stderr, "%s\n", __func__);
@@ -202,12 +202,12 @@ PrototypeAST *Parser::visitFunctionDeclaration(){
   * FunctionDefinition用構文解析メソッド
   * @return 解析成功：FunctionAST　解析失敗：NULL
   */
-FunctionAST *Parser::visitFunctionDefinition(){
+FunctionAST *Parser::visitFunctionDefinition() {
 	int bkup=Tokens->getCurIndex();
 
-	if(Debbug) fprintf(stderr, "%s\n", __func__);
+	if (Debbug) fprintf(stderr, "%s\n", __func__);
 	PrototypeAST *proto = visitPrototype();
-	if(!proto)
+	if (!proto)
 		return NULL;
 
 	FunctionAST *func = new FunctionAST(proto);
@@ -221,7 +221,7 @@ FunctionAST *Parser::visitFunctionDefinition(){
 
 	VariableTable.clear();
 	FunctionStmtAST *func_stmt = visitFunctionStatement(proto);
-	if(func_stmt){
+	if (func_stmt) {
 		if (Debbug) fprintf(stderr, "%d:%d: %s %s\n", Tokens->getLine(), __LINE__, __func__, Tokens->getCurString().c_str());
 		return new FunctionAST(proto, func_stmt);
 	}else{
@@ -236,7 +236,7 @@ FunctionAST *Parser::visitFunctionDefinition(){
   * Prototype用構文解析メソッド
   * @return 解析成功：PrototypeAST　解析失敗：NULL
   */
-PrototypeAST *Parser::visitPrototype(){
+PrototypeAST *Parser::visitPrototype() {
 	if (Debbug) fprintf(stderr, "%s\n", __func__);
 	Types func_type;
 	std::string func_name;
@@ -247,13 +247,13 @@ PrototypeAST *Parser::visitPrototype(){
 
 	//type_specifier
 	func_type = visitTypes();
-	if(func_type.getPrimType() == Type_null) {
+	if (func_type.getPrimType() == Type_null) {
 		Tokens->applyTokenIndex(bkup);
 		return NULL;
 	}
 
 	//IDENTIFIER
-	if(!isExpectedToken(TOK_IDENTIFIER)){
+	if (!isExpectedToken(TOK_IDENTIFIER)) {
 		Tokens->applyTokenIndex(bkup);
 		return NULL;
 	}
@@ -261,7 +261,7 @@ PrototypeAST *Parser::visitPrototype(){
 	Tokens->getNextToken();
 
 	//'('
-	if(!isExpectedToken("(")){
+	if (!isExpectedToken("(")) {
 		Tokens->applyTokenIndex(bkup);
 		return NULL;
 	}
@@ -272,29 +272,29 @@ PrototypeAST *Parser::visitPrototype(){
 	Types param_type;
 	bool is_first_param = true;
 	param_type = visitTypes();
-	if(param_type != Types(Type_null)){
-		if(!isExpectedToken(TOK_IDENTIFIER)){
+	if (param_type != Types(Type_null)) {
+		if (!isExpectedToken(TOK_IDENTIFIER)) {
 			fprintf(stderr, "%d:%d: error: expected identifer but %s\n", Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
 			Tokens->applyTokenIndex(bkup);
 			return NULL;
 		}
 		param_list.push_back(Seq(param_type, Tokens->getCurString()));
 		Tokens->getNextToken();
-		while(true){
-			if(isExpectedToken(")"))
+		while (true) {
+			if (isExpectedToken(")"))
 				break;
 			//','
-			if(!is_first_param && !isExpectedToken(",")){
+			if (!is_first_param && !isExpectedToken(",")) {
 				Tokens->getNextToken();
 			}
 
 			param_type = visitTypes();
-			if(param_type == Types(Type_null)){
+			if (param_type == Types(Type_null)) {
 				fprintf(stderr, "%d:%d: error: argument type is nothing\n", Tokens->getLine(), __LINE__);
 				break;
 			}
 
-			if(!isExpectedToken(TOK_IDENTIFIER)){
+			if (!isExpectedToken(TOK_IDENTIFIER)) {
 				fprintf(stderr, "%d:%d: error: expected identifer but %s\n", Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
 				Tokens->applyTokenIndex(bkup);
 				return NULL;
@@ -321,7 +321,6 @@ PrototypeAST *Parser::visitPrototype(){
 	Tokens->getNextToken();
 
 	PrototypeAST *proto = new PrototypeAST(func_type, func_name, param_list);
-
 	for (size_t i = 0;i < PrototypeTable.size();i++) {
 		if (PrototypeTable[i] == proto) {
 			fprintf(stderr, "Prototype %s is redefined\n", proto->getName().c_str());
@@ -347,7 +346,7 @@ PrototypeAST *Parser::visitPrototype(){
   * @param 勘数名，引数を格納したPrototypeクラスのインスタンス
   * @return 解析成功：FunctionSmtAST　解析失敗：NULL
   */
-FunctionStmtAST *Parser::visitFunctionStatement(PrototypeAST *proto){
+FunctionStmtAST *Parser::visitFunctionStatement(PrototypeAST *proto) {
 	int bkup=Tokens->getCurIndex();
 
 	//create FunctionStatement
@@ -356,7 +355,7 @@ FunctionStmtAST *Parser::visitFunctionStatement(PrototypeAST *proto){
 	//add parameter to FunctionStatement
 	VariableDeclAST *vdecl;
 	SetInsertPoint(func_stmt);
-	for(size_t i = 0;i < proto->getParamSize(); i++){
+	for(size_t i = 0;i < proto->getParamSize(); i++) {
 		vdecl = new VariableDeclAST(proto->getParamType(i), proto->getParamName(i));
 		vdecl->setDeclType(VariableDeclAST::param);
 		addStatement(vdecl);
@@ -367,15 +366,15 @@ FunctionStmtAST *Parser::visitFunctionStatement(PrototypeAST *proto){
 
 	StatementsAST *stmts = visitStatements(func_stmt, 0);
 	if (warning) return func_stmt;
-	BaseAST *last_stmt = stmts->getStatement(stmts->size()-1);
+	BaseAST *last_stmt = stmts->getStatement(stmts->getSize()-1);
 
 	//check if last statement is jump_statement
-	if(!last_stmt) {
+	if (!last_stmt) {
 		warning = true;
 		Tokens->applyTokenIndex(bkup);
 		return func_stmt;
 	}
-	if(!llvm::isa<JumpStmtAST>(last_stmt)){
+	if (!llvm::isa<JumpStmtAST>(last_stmt)) {
 		fprintf(stderr, "%d:%d: warning: end of statement is not return statement\n", Tokens->getLine(), __LINE__);
 		warning = true;
 	}
@@ -396,8 +395,10 @@ StatementsAST *Parser::visitStatements(BaseAST* InsertPoint, int branch = 0) {
 	if (!isExpectedToken("{")) {
 		stmt = visitStatement();
 		if (stmt) {
-			SetInsertPoint(InsertPoint);
-			addStatement(stmt, branch);
+			if (InsertPoint) {
+				SetInsertPoint(InsertPoint);
+				addStatement(stmt, branch);
+			}
 			stmts->addStatement(stmt);
 			return stmts;
 		}
@@ -409,7 +410,7 @@ StatementsAST *Parser::visitStatements(BaseAST* InsertPoint, int branch = 0) {
 	}
 	Tokens->getNextToken();
 
-	while(true) {
+	while (true) {
 		if (Debbug) fprintf(stderr, "%d:%d: %s %s\n", Tokens->getLine(), __LINE__, __func__, Tokens->getCurString().c_str());
 		if (isExpectedToken("}")) {
 			Tokens->getNextToken();
@@ -417,15 +418,18 @@ StatementsAST *Parser::visitStatements(BaseAST* InsertPoint, int branch = 0) {
 		}
 		stmt = visitStatement();
 		if (stmt) {
-			SetInsertPoint(InsertPoint);
-			addStatement(stmt, branch);
+			if (InsertPoint) {
+				SetInsertPoint(InsertPoint);
+				addStatement(stmt, branch);
+			}
 			stmts->addStatement(stmt);
 			continue;
 		}else{
 			if (Debbug) fprintf(stderr, "%d:%d: unknown %s\n", Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
 			Tokens->applyTokenIndex(bkup);
 			stmts->clear();
-			SAFE_DELETE(InsertPoint);
+			if (InsertPoint)
+				SAFE_DELETE(InsertPoint);
 			warning = true;
 			return stmts;
 		}
@@ -438,7 +442,7 @@ StatementsAST *Parser::visitStatements(BaseAST* InsertPoint, int branch = 0) {
   * Statement用構文解析メソッド
   * @return 解析成功：AST　解析失敗：NULL
   */
-BaseAST *Parser::visitStatement(){
+BaseAST *Parser::visitStatement() {
 	int bkup = Tokens->getCurIndex();
 	BaseAST *stmt;
 
@@ -450,6 +454,11 @@ BaseAST *Parser::visitStatement(){
 	// while文
 	if (isExpectedToken(TOK_WHILE)) {
 		stmt = visitWhileExpression();
+		return stmt;
+	}
+	// match文
+	if (isExpectedToken(TOK_MATCH)) {
+		stmt = visitMatchExpression();
 		return stmt;
 	}
 	// return文
@@ -489,7 +498,7 @@ BaseAST *Parser::visitStatement(){
   * VariableDeclaration用構文解析メソッド
   * @return 解析成功：VariableDeclAST　解析失敗：NULL
   */
-VariableDeclAST *Parser::visitVariableDeclaration(){
+VariableDeclAST *Parser::visitVariableDeclaration() {
 	int bkup = Tokens->getCurIndex();
 	std::string name;
 
@@ -500,7 +509,7 @@ VariableDeclAST *Parser::visitVariableDeclaration(){
 	}
 
 	//IDENTIFIER
-	if(!isExpectedToken(TOK_IDENTIFIER)){
+	if (!isExpectedToken(TOK_IDENTIFIER)) {
 		Tokens->applyTokenIndex(bkup);
 		fprintf(stderr, "%d:%d: error: cannot find identifier of variable\n", Tokens->getLine(), __LINE__);
 		return NULL;
@@ -510,7 +519,7 @@ VariableDeclAST *Parser::visitVariableDeclaration(){
 	Tokens->getNextToken();
 
 	//配列かどうか
-	if(isExpectedToken("[")){
+	if (isExpectedToken("[")) {
 		Tokens->getNextToken();
 		if (!isExpectedToken(TOK_DIGIT)) {
 			Tokens->applyTokenIndex(bkup);
@@ -536,11 +545,11 @@ VariableDeclAST *Parser::visitVariableDeclaration(){
 
 	//式が終わったなら次の文、AssignもあるならFuncStmtで一回ループ回った後にAssignmentExpression関数を呼び出す
 	//';'
-	if(isExpectedToken(";") || isExpectedToken("\n")) {
+	if (isExpectedToken(";") || isExpectedToken("\n")) {
 		Tokens->getNextToken();
 		return new VariableDeclAST(type, name);
 	//'='
-	}else if(isExpectedToken("=")) {
+	}else if (isExpectedToken("=")) {
 		return new VariableDeclAST(type, name);
 	}else{
 		Tokens->applyTokenIndex(bkup);
@@ -553,16 +562,16 @@ VariableDeclAST *Parser::visitVariableDeclaration(){
   * JumpStatement用構文解析メソッド
   * @return 解析成功：AST　解析失敗：NULL
   */
-BaseAST *Parser::visitJumpStatement(){
+BaseAST *Parser::visitJumpStatement() {
 	int bkup=Tokens->getCurIndex();
 	BaseAST *expr;
 
-	if(!isExpectedToken(TOK_RETURN))
+	if (!isExpectedToken(TOK_RETURN))
 		return NULL;
 	Tokens->getNextToken();
 
 	expr = visitAssignmentExpression(getFuncType());
-	if(!expr) {
+	if (!expr) {
 		if (Debbug) fprintf(stderr, "%d:%d: return %s\n", Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
 		Tokens->applyTokenIndex(bkup);
 		return NULL;
@@ -586,7 +595,7 @@ BaseAST *Parser::visitJumpStatement(){
   * IfExpression用構文解析メソッド
   * @return 解析成功：AST　解析失敗：NULL
   */
-BaseAST *Parser::visitIfExpression(){
+BaseAST *Parser::visitIfExpression() {
 	int bkup = Tokens->getCurIndex();
 
 	BaseAST *CondStmt;
@@ -605,7 +614,7 @@ BaseAST *Parser::visitIfExpression(){
 	Tokens->getNextToken();
 
 	CondStmt = visitExpression(NULL, Types(Type_bool));
-	if (!CondStmt || CondStmt->getType() != Types(Type_bool, 1, true)){
+	if (!CondStmt || CondStmt->getType() != Types(Type_bool, 1, true)) {
 		Tokens->applyTokenIndex(bkup);
 		return NULL;
 	}
@@ -634,7 +643,7 @@ BaseAST *Parser::visitIfExpression(){
   * WhileExpression用構文解析メソッド
   * @return 解析成功：AST　解析失敗：NULL
   */
-BaseAST *Parser::visitWhileExpression(){
+BaseAST *Parser::visitWhileExpression() {
 	int bkup = Tokens->getCurIndex();
 
 	BaseAST *CondStmt;
@@ -654,7 +663,7 @@ BaseAST *Parser::visitWhileExpression(){
 
 	CondStmt = visitExpression(NULL, Types(Type_bool));
 	if (Debbug) fprintf(stderr, "%d:%d: %s\n", Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
-	if (!CondStmt || CondStmt->getType() != Types(Type_bool)){
+	if (!CondStmt || CondStmt->getType() != Types(Type_bool)) {
 		Tokens->applyTokenIndex(bkup);
 		return NULL;
 	}
@@ -670,6 +679,91 @@ BaseAST *Parser::visitWhileExpression(){
 	visitStatements(while_expr);
 	if (Debbug) fprintf(stderr, "%d:%d: %s\n", Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
 	return while_expr;
+}
+
+
+/**
+  * MatchExpression用構文解析メソッド
+  * @return 解析成功：AST　解析失敗：NULL
+  */
+BaseAST *Parser::visitMatchExpression() {
+	int bkup = Tokens->getCurIndex();
+
+	if (Debbug) fprintf(stderr, "%d:%d: %s\n", Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
+	if (!isExpectedToken(TOK_MATCH)) {
+		Tokens->applyTokenIndex(bkup);
+		return NULL;
+	}
+	Tokens->getNextToken();
+
+	if (!isExpectedToken("(")) {
+		fprintf(stderr, "%d:%d: expected '(' but %s\n", Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
+		Tokens->applyTokenIndex(bkup);
+		return NULL;
+	}
+	Tokens->getNextToken();
+
+	BaseAST *Eval = visitAssignmentExpression(Types(Type_all));
+	if (!Eval) {
+		Tokens->applyTokenIndex(bkup);
+		return NULL;
+	}
+	MatchExprAST *match_expr = new MatchExprAST(Eval);
+
+	if (!isExpectedToken(")")) {
+		fprintf(stderr, "%d:%d: expected ')' but %s\n", Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
+		Tokens->applyTokenIndex(bkup);
+		return NULL;
+	}
+	Tokens->getNextToken();
+
+	if (!isExpectedToken("{")) {
+		fprintf(stderr, "%d:%d: expected '{' but %s\n", Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
+		Tokens->applyTokenIndex(bkup);
+		return NULL;
+	}
+	Tokens->getNextToken();
+
+	BaseAST *eval;
+	StatementsAST *stmts;
+	while (true) {
+		eval = visitExpression(NULL, Types(Type_all));
+		if (!eval) {
+			Tokens->applyTokenIndex(bkup);
+			return NULL;
+		}
+		match_expr->addEval(eval);
+
+		if (!isExpectedToken("=>")) {
+			Tokens->applyTokenIndex(bkup);
+			return NULL;
+		}
+		Tokens->getNextToken();
+
+		stmts = visitStatements(NULL);
+		if (!stmts || !stmts->getSize()) {
+			Tokens->applyTokenIndex(bkup);
+			return NULL;
+		}
+		match_expr->addStmts(stmts);
+
+		if (isExpectedToken(",")) {
+			Tokens->getNextToken();
+			continue;
+		}else{
+			break;
+		}
+	}
+
+	if (!isExpectedToken("}")) {
+		fprintf(stderr, "%d:%d: expected '}' but %s\n", Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
+		Tokens->applyTokenIndex(bkup);
+		return NULL;
+	}
+	Tokens->getNextToken();
+
+	if (Debbug) fprintf(stderr, "%d:%d: %s\n", Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
+	return match_expr;
 }
 
 
@@ -694,7 +788,7 @@ BaseAST *Parser::visitAssignmentExpression(Types type) {
 				int Index = 0;
 				lhs = new VariableAST(VariableTable[i], Index);
 				BaseAST *rhs;
-				if(isExpectedToken("=")){
+				if (isExpectedToken("=")) {
 					Tokens->getNextToken();
 
 					rhs = visitExpression(NULL, VariableTable[i]->getType());
@@ -716,10 +810,10 @@ BaseAST *Parser::visitAssignmentExpression(Types type) {
 
 	//additive_expression
 	lhs = visitExpression(NULL, Types(Type_all));
-	if(!lhs)
+	if (!lhs)
 		return NULL;
 	
-	if(isExpectedToken(";") || isExpectedToken("\n")) {
+	if (isExpectedToken(";") || isExpectedToken("\n")) {
 		Tokens->getNextToken();
 		return lhs;
 	}
@@ -769,21 +863,21 @@ BaseAST *Parser::visitExpression(BaseAST *lhs, Types type) {
  * @param lhs(左辺),初回呼び出し時はNULL
  * @return 解析成功：AST　解析失敗：NULL
  */
-BaseAST *Parser::visitAdditiveExpression(BaseAST *lhs, Types type = Types(Type_all)){
+BaseAST *Parser::visitAdditiveExpression(BaseAST *lhs, Types type = Types(Type_all)) {
 	//bkup index
 	int bkup=Tokens->getCurIndex();
 
-	if(!lhs)
+	if (!lhs)
 		lhs = visitMultiplicativeExpression(NULL, type);
-	if(!lhs)
+	if (!lhs)
 		return NULL;
 	BaseAST *rhs;
 
 	//+
-	if(isExpectedToken("+")){
+	if (isExpectedToken("+")) {
 		Tokens->getNextToken();
 		rhs = visitMultiplicativeExpression(NULL, type);
-		if(rhs){
+		if (rhs) {
 			// 暗黙の型変換
 			lhs = visitImplicitCastNumber(lhs, rhs->getType());
 			rhs = visitImplicitCastNumber(rhs, lhs->getType());
@@ -797,17 +891,17 @@ BaseAST *Parser::visitAdditiveExpression(BaseAST *lhs, Types type = Types(Type_a
 			return NULL;
 		}
 	//-
-	}else if(isExpectedToken("-")){
+	}else if (isExpectedToken("-")) {
 		Tokens->getNextToken();
 		rhs = visitMultiplicativeExpression(NULL, type);
-		if(rhs) {
+		if (rhs) {
 			// 暗黙の型変換
 			lhs = visitImplicitCastNumber(lhs, rhs->getType());
 			rhs = visitImplicitCastNumber(rhs, lhs->getType());
 			// 型変換が行われなかった時
 			type = lhs->getType();
 			return visitAdditiveExpression(new BinaryExprAST("-", lhs, rhs, type), type);
-			// if(other->getType() != Types(Type_number)){fprintf(stderr, "error: Type is not difference\n");return NULL;}
+			// if (other->getType() != Types(Type_number)) {fprintf(stderr, "error: Type is not difference\n");return NULL;}
 		}else{
 			SAFE_DELETE(lhs);
 			Tokens->applyTokenIndex(bkup);
@@ -826,21 +920,21 @@ BaseAST *Parser::visitAdditiveExpression(BaseAST *lhs, Types type = Types(Type_a
  * @param  lhs(左辺),初回呼び出し時はNULL
  * @return 解析成功：AST　解析失敗：NULL
  */
-BaseAST *Parser::visitMultiplicativeExpression(BaseAST *lhs, Types type = Types(Type_all)){
+BaseAST *Parser::visitMultiplicativeExpression(BaseAST *lhs, Types type = Types(Type_all)) {
 	//bkup index
 	int bkup=Tokens->getCurIndex();
 
-	if(!lhs)
+	if (!lhs)
 		lhs = visitCastExpression();
-	if(!lhs)
+	if (!lhs)
 		return NULL;
 	BaseAST *rhs;
 
 	// *
-	if(isExpectedToken("*")){
+	if (isExpectedToken("*")) {
 		Tokens->getNextToken();
 		rhs = visitCastExpression();
-		if(rhs){
+		if (rhs) {
 			// 暗黙の型変換
 			lhs = visitImplicitCastNumber(lhs, rhs->getType());
 			rhs = visitImplicitCastNumber(rhs, lhs->getType());
@@ -855,10 +949,10 @@ BaseAST *Parser::visitMultiplicativeExpression(BaseAST *lhs, Types type = Types(
 		}
 			
 	// /
-	}else if(isExpectedToken("/")){
+	}else if (isExpectedToken("/")) {
 		Tokens->getNextToken();
 		rhs=visitCastExpression();
-		if(rhs){
+		if (rhs) {
 			// 暗黙の型変換
 			lhs = visitImplicitCastNumber(lhs, rhs->getType());
 			rhs = visitImplicitCastNumber(rhs, lhs->getType());
@@ -873,10 +967,10 @@ BaseAST *Parser::visitMultiplicativeExpression(BaseAST *lhs, Types type = Types(
 		}
 
 	// %
-	}else if(isExpectedToken("%")){
+	}else if (isExpectedToken("%")) {
 		Tokens->getNextToken();
 		rhs = visitCastExpression();
-		if(rhs){
+		if (rhs) {
 			// 暗黙の型変換
 			lhs = visitImplicitCastNumber(lhs, rhs->getType());
 			rhs = visitImplicitCastNumber(rhs, lhs->getType());
@@ -898,34 +992,34 @@ BaseAST *Parser::visitMultiplicativeExpression(BaseAST *lhs, Types type = Types(
   * CastExpression用構文解析メソッド
   * @return 解析成功：AST　解析失敗：NULL
   */
-BaseAST *Parser::visitCastExpression(){
+BaseAST *Parser::visitCastExpression() {
 	//bkup index
 	int bkup=Tokens->getCurIndex();
 	BaseAST *lhs = visitPostfixExpression();
-	if(!lhs)
+	if (!lhs)
 		return NULL;
 
-	if(isExpectedToken("as")) {
+	if (isExpectedToken("as")) {
 		Tokens->getNextToken();
 		Types DestType = visitTypes();
 		if (Debbug) fprintf(stderr, "%d:%d: as %s\n", Tokens->getLine(), __LINE__, DestType.printType().c_str());
-		if (DestType.getPrimType() == Type_null){
+		if (DestType.getPrimType() == Type_null) {
 			Tokens->applyTokenIndex(bkup);
 			return NULL;
 		}
 		return new CastExprAST(lhs, DestType, false);
 
-	}else if(isExpectedToken("is")) {
+	}else if (isExpectedToken("is")) {
 		Tokens->getNextToken();
 		Types DestType = visitTypes();
 		if (Debbug) fprintf(stderr, "%d:%d: is %s\n", Tokens->getLine(), __LINE__, DestType.printType().c_str());
-		if (DestType.getPrimType() == Type_null){
+		if (DestType.getPrimType() == Type_null) {
 			Tokens->applyTokenIndex(bkup);
 			return NULL;
 		}
 		return new CastExprAST(lhs, DestType, true);
 
-	}else if(isExpectedToken("?")) {
+	}else if (isExpectedToken("?")) {
 		if (Debbug) fprintf(stderr, "%d:%d: non-null\n", Tokens->getLine(), __LINE__);
 		lhs->getType().setNonNull(true);
 		Tokens->getNextToken();
@@ -941,7 +1035,7 @@ BaseAST *Parser::visitCastExpression(){
   * ImplicitCastNumber用構文解析メソッド
   * @return 解析成功：AST　解析失敗：NULL
   */
-BaseAST *Parser::visitImplicitCastNumber(BaseAST *src, Types impl_type){
+BaseAST *Parser::visitImplicitCastNumber(BaseAST *src, Types impl_type) {
 	if (src->getType() == impl_type && src->getType().getBits() == impl_type.getBits())
 		return src;
 
@@ -972,7 +1066,7 @@ BaseAST *Parser::visitImplicitCastNumber(BaseAST *src, Types impl_type){
   * ImplicitCastNonNull用構文解析メソッド
   * @return 解析成功：AST　解析失敗：NULL
   */
-BaseAST *Parser::visitImplicitCastNonNull(BaseAST *src, Types impl_type){
+BaseAST *Parser::visitImplicitCastNonNull(BaseAST *src, Types impl_type) {
 	if (src->getType() == impl_type) {
 		if (src->getType().getNonNull() > impl_type.getNonNull()) {
 			return new CastExprAST(src, impl_type);
@@ -986,7 +1080,7 @@ BaseAST *Parser::visitImplicitCastNonNull(BaseAST *src, Types impl_type){
   * ImplicitCastBits用構文解析メソッド
   * @return 解析成功：AST　解析失敗：NULL
   */
-BaseAST *Parser::visitImplicitCastBits(BaseAST *src, Types impl_type){
+BaseAST *Parser::visitImplicitCastBits(BaseAST *src, Types impl_type) {
 	if (src->getType() == impl_type) {
 		if (src->getType().getBits() < impl_type.getBits()) {
 			return new CastExprAST(src, impl_type);
@@ -1000,17 +1094,17 @@ BaseAST *Parser::visitImplicitCastBits(BaseAST *src, Types impl_type){
   * PostfixExpression用構文解析メソッド
   * @return 解析成功：AST　解析失敗：NULL
   */
-BaseAST *Parser::visitPostfixExpression(){
+BaseAST *Parser::visitPostfixExpression() {
 	int bkup=Tokens->getCurIndex();
 
 	//primary_expression
 	BaseAST *prim_expr = visitPrimaryExpression();
-	if(prim_expr)
+	if (prim_expr)
 		return prim_expr;
 
 	// 関数呼び出し用
 	//FUNCTION_IDENTIFIER
-	if(!isExpectedToken(TOK_IDENTIFIER))
+	if (!isExpectedToken(TOK_IDENTIFIER))
 		return NULL;
 
 	//関数名取得
@@ -1019,7 +1113,7 @@ BaseAST *Parser::visitPostfixExpression(){
 	Tokens->getNextToken();
 
 	//LEFT PALEN
-	if(!isExpectedToken("(")){
+	if (!isExpectedToken("(")) {
 		Tokens->applyTokenIndex(bkup);
 		fprintf(stderr, "%d:%d: error: LEFT PALEN is nothing\n", Tokens->getLine(), __LINE__);
 		return NULL;
@@ -1030,9 +1124,9 @@ BaseAST *Parser::visitPostfixExpression(){
 	std::vector<BaseAST*> args;
 
 	BaseAST *assign_expr = visitAssignmentExpression(Type_all);
-	if(assign_expr){
+	if (assign_expr) {
 		args.push_back(assign_expr);
-		while(isExpectedToken(",")){
+		while (isExpectedToken(",")) {
 			Tokens->getNextToken();
 			//IDENTIFIER
 			assign_expr = visitAssignmentExpression(Type_all);
@@ -1043,25 +1137,30 @@ BaseAST *Parser::visitPostfixExpression(){
 
 	//関数の名前の確認
 	PrototypeAST *proto;
-	for (int i = 0;;i++) {
+	for (int i = 0;i < PrototypeTable.size();i++) {
 		if (!PrototypeTable[i]) {
-			for (int i = 0;;i++) {
-				if (!FunctionTable[i]) {
-					fprintf(stderr, "%d:%d: error: undefined function %s\n", Tokens->getLine(), __LINE__, Callee.c_str());
-					Tokens->applyTokenIndex(bkup);
-					return NULL;
-				}
-				if (FunctionTable[i]->getName() == Callee) {
-					proto = FunctionTable[i]->getPrototype();
-					break;
-				}
-			}
 			break;
 		}
 		if (PrototypeTable[i]->getName() == Callee) {
 			proto = PrototypeTable[i];
 			break;
 		}
+	}
+	if (!proto) {
+		for (int j = 0;j < FunctionTable.size();j++) {
+			if (!FunctionTable[j]) {
+				fprintf(stderr, "%d:%d: error: undefined function %s\n", Tokens->getLine(), __LINE__, Callee.c_str());
+				break;
+			}
+			if (FunctionTable[j]->getName() == Callee) {
+				proto = FunctionTable[j]->getPrototype();
+				break;
+			}
+		}
+	}
+	if (!proto) {
+		Tokens->applyTokenIndex(bkup);
+		return NULL;
 	}
 	Types func_type = proto->getType();
 
@@ -1070,7 +1169,8 @@ BaseAST *Parser::visitPostfixExpression(){
 		// 暗黙の型変換
 		args[i] = visitImplicitCastNumber(args[i], proto->getParamType(i));
 		if (args[i]->getType() != proto->getParamType(i) || args[i]->getType().getNonNull() != proto->getParamType(i).getNonNull()) {
-			SAFE_DELETE(args[i]);
+			for (size_t j = 0;j < args.size();j++)
+				SAFE_DELETE(args[j]);
 			fprintf(stderr, "%d:%d: error: no match for function param '%s'\n", Tokens->getLine(), __LINE__, Callee.c_str());
 			Tokens->applyTokenIndex(bkup);
 			return NULL;
@@ -1095,31 +1195,31 @@ BaseAST *Parser::visitPostfixExpression(){
   * PrimaryExpression用構文解析メソッド
   * @return 解析成功時：AST　失敗時：NULL
   */
-BaseAST *Parser::visitPrimaryExpression(){
+BaseAST *Parser::visitPrimaryExpression() {
 	int bkup=Tokens->getCurIndex();
 
 	// 数値、真偽値、条件式、変数呼び出しなど
 	//integer
-	if(isExpectedToken(TOK_DIGIT)){
+	if (isExpectedToken(TOK_DIGIT)) {
 		int val = Tokens->getCurNumVal();
 		if (Debbug) fprintf(stderr, "%d:%d: integer\n", Tokens->getLine(), __LINE__);
 		Tokens->getNextToken();
 		return new ValueAST(val, Types(Type_int, 32, true));
 	//float
-	}else if(isExpectedToken(TOK_FLOAT)){
+	}else if (isExpectedToken(TOK_FLOAT)) {
 		float val = Tokens->getCurNumVal();
 		if (Debbug) fprintf(stderr, "%d:%d: float\n", Tokens->getLine(), __LINE__);
 		Tokens->getNextToken();
 		return new ValueAST(val, Types(Type_float, 32, true));
 	//負の数
-	}else if(isExpectedToken("-")){
+	}else if (isExpectedToken("-")) {
 		if (Debbug) fprintf(stderr, "%d:%d: integer\n", Tokens->getLine(), __LINE__);
 		Tokens->getNextToken();
-		if(isExpectedToken(TOK_DIGIT)) {
+		if (isExpectedToken(TOK_DIGIT)) {
 			int val = Tokens->getCurNumVal();
 			Tokens->getNextToken();
 			return new ValueAST(-val, Types(Type_int, 32, true));
-		}else if(isExpectedToken(TOK_FLOAT)) {
+		}else if (isExpectedToken(TOK_FLOAT)) {
 			float val = Tokens->getCurNumVal();
 			Tokens->getNextToken();
 			return new ValueAST(-val, Types(Type_float, 32, true));
@@ -1128,16 +1228,18 @@ BaseAST *Parser::visitPrimaryExpression(){
 			return NULL;
 		}
 	// true / false
-	}else if(isExpectedToken(TOK_TRUTH)) {
+	}else if (isExpectedToken(TOK_TRUTH)) {
 		if (Debbug) fprintf(stderr, "%d:%d: true\n", Tokens->getLine(), __LINE__);
 		Tokens->getNextToken();
 		return new ValueAST(Tokens->getCurBoolVal(), Types(Type_bool, 1, true));
-	}else if(isExpectedToken("None")) {
+	}else if (isExpectedToken("None")) {
 		if (Debbug) fprintf(stderr, "%d:%d: none\n", Tokens->getLine(), __LINE__);
 		Tokens->getNextToken();
 		return new ValueAST(0, Types(Type_all));
+	}else if (isExpectedToken("_")) {
+		return new PlaceholderAST();
 	//VARIABLE_IDENTIFIER
-	}else if(isExpectedToken(TOK_IDENTIFIER)) {
+	}else if (isExpectedToken(TOK_IDENTIFIER)) {
 		for (size_t i = 0;i < VariableTable.size();i++)
 			if (VariableTable[i]->getName() == Tokens->getCurString()) {
 				if (Debbug) fprintf(stderr, "%d:%d: call variable %s\n", Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
@@ -1145,18 +1247,18 @@ BaseAST *Parser::visitPrimaryExpression(){
 				return new VariableAST(VariableTable[i]);
 			}
 	// '(' expression ')'
-	}else if(isExpectedToken("(")){
+	}else if (isExpectedToken("(")) {
 		Tokens->getNextToken();
 
 		//expression
 		BaseAST *assign_expr = visitAssignmentExpression(Type_all);
-		if(!assign_expr){
+		if (!assign_expr) {
 			Tokens->applyTokenIndex(bkup);
 			return NULL;
 		}
 
 		//RIGHT PALEN
-		if(!isExpectedToken(")")){
+		if (!isExpectedToken(")")) {
 			if (Debbug) fprintf(stderr, "%d:%d: expected ')' but %s\n", Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
 			SAFE_DELETE(assign_expr);
 			Tokens->applyTokenIndex(bkup);

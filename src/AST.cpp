@@ -27,6 +27,7 @@ std::string Types::printType() {
 
 bool Types::operator== (const Types &rhs) const {
 	if (Type == Type_all || rhs.Type == Type_all) return true;
+	if (Type == Type_none || rhs.Type == Type_none) return true;
 	if (Type == Type_number && (rhs.Type == Type_int || rhs.Type == Type_uint || rhs.Type == Type_float)) return true;
 	if ((Type == Type_int || Type == Type_uint || Type == Type_float) && rhs.Type == Type_number) return true;
 	if (Type == rhs.Type) return true;
@@ -35,6 +36,7 @@ bool Types::operator== (const Types &rhs) const {
 
 bool Types::operator!= (const Types &rhs) const {
 	if (Type == Type_all || rhs.Type == Type_all) return false;
+	if (Type == Type_none || rhs.Type == Type_none) return false;
 	if (Type == Type_number && (rhs.Type == Type_int || rhs.Type == Type_uint || rhs.Type == Type_float)) return false;
 	if ((Type == Type_int || Type == Type_uint || Type == Type_float) && rhs.Type == Type_number) return false;
 	if (Type == rhs.Type) return false;
@@ -70,7 +72,8 @@ TranslationUnitAST::~TranslationUnitAST(){
 
 FunctionAST::~FunctionAST(){
 	SAFE_DELETE(Proto);
-	SAFE_DELETE(Body);
+	if (Body)
+		SAFE_DELETE(Body);
 }
 
 

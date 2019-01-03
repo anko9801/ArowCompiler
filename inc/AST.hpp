@@ -26,6 +26,8 @@ class CallExprAST;
 class JumpStmtAST;
 class IfExprAST;
 class WhileExprAST;
+class MatchExprAST;
+class PlaceholderAST;
 class VariableAST;
 class CastExprAST;
 class ValueAST;
@@ -43,10 +45,12 @@ enum AstID{
 	BinaryExprID,
 	IfExprID,
 	WhileExprID,
+	MatchExprID,
 	CallExprID,
 	JumpStmtID,
 	CastExprID,
 	VariableID,
+	PlaceholderID,
 	ValueID,
 };
 
@@ -244,7 +248,7 @@ class StatementsAST {
 		VarDecls.clear();
 		return true;
 	}
-	int size() {return Statements.size();}
+	size_t getSize() {return Statements.size();}
 	
 	BaseAST *getStatement(size_t i){if(i<Statements.size())return Statements.at(i);else return NULL;}
 	VariableDeclAST *getVarDecl(size_t i){if(i<VarDecls.size())return VarDecls.at(i);else return NULL;}
@@ -373,6 +377,30 @@ class WhileExprAST : public BaseAST {
 };
 
 
+/**
+ * Match文を表すAST
+ */
+class MatchExprAST : public BaseAST {
+	BaseAST *Eval;
+	std::vector<BaseAST*> EvalList;
+	std::vector<StatementsAST*> StmtsList;
+
+	public:
+	MatchExprAST(BaseAST *Eval) : BaseAST(MatchExprID), Eval(Eval){}
+	~MatchExprAST(){}
+	static inline bool classof(MatchExprAST const*){return true;}
+	static inline bool classof(BaseAST const* base){
+		return base->getValueID() == MatchExprID;
+	}
+
+	BaseAST *getEval(){return Eval;}
+	bool addEval(BaseAST *stmt){EvalList.push_back(stmt);return true;}
+	bool addStmts(StatementsAST *stmts){StmtsList.push_back(stmts);return true;}
+	BaseAST *getEval(size_t i){if (i < EvalList.size())return EvalList[i];else return NULL;}
+	StatementsAST *getStmts(size_t i){if (i < StmtsList.size())return StmtsList[i];else return NULL;}
+};
+
+
 /** 
   * 関数呼び出しを表すAST
   */
@@ -467,6 +495,16 @@ class CastExprAST : public BaseAST {
 	bool getNestin(){return Nestin;}
 };
 
+
+class PlaceholderAST : public BaseAST {
+	public:
+	PlaceholderAST() : BaseAST(PlaceholderID){};
+	~PlaceholderAST(){}
+	static inline bool classof(PlaceholderAST const*){return true;}
+	static inline bool classof(BaseAST const* base){
+		return base->getValueID() == PlaceholderID;
+	}
+};
 
 /** 
   * 値を表すAST

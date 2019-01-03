@@ -16,7 +16,6 @@ fi
 ../bin/dcc -o $FILE.ll $FILE.arow
 
 if [ -e $FILE.ll ]; then
-	#llvm-link $FILE.ll lib.ll -S -o $FILE.ll
 	if [ -z $2 ]; then
 		llc -o $FILE.s $FILE.ll -filetype=asm
 		gcc -o $FILE $FILE.s
