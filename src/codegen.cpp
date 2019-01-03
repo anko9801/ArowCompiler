@@ -113,12 +113,12 @@ Type *CodeGen::generateType(Types type) {
   */
 bool CodeGen::generateTranslationUnit(TranslationUnitAST &tunit, std::string name){
 	Mod = new Module(name, GlobalContext);
-	//funtion declaration
+	//import
 	for(int i=0; ; i++){
 		ImportAST *import = tunit.getImport(i);
 		if(!import)
 			break;
-		else if(linkModule(new Module(import->getFileName(), GlobalContext), import->getFileName())) {
+		else if(!linkModule(new Module(import->getFileName(), GlobalContext), import->getFileName())) {
 			SAFE_DELETE(Mod);
 			return false;
 		}

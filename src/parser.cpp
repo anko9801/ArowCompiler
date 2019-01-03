@@ -82,6 +82,7 @@ bool Parser::visitImportFile() {
 		visitModule();
 		Tokens = Tokens_old;
 	}else if (isExpectedToken("ll")) {
+		Tokens->getNextToken();
 		TU->addImport(new ImportAST(filename + ".ll"));
 	}else{
 		return false;

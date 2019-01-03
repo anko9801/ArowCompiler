@@ -1,4 +1,4 @@
-
+import lib.ll
 
 bool? printnum(int32? i);
 bool? sleep(int32? i);
