@@ -1,3 +1,5 @@
+import stdlib.arow
+
 uint main() {
 	uint2 a = 5
 	printnum(a as int2?)

@@ -133,7 +133,7 @@ Types Parser::visitTypes() {
 	int bits;prim_type Type;bool non_null = false;int ArraySize = 0;
 
 	// primary type
-	if(!isExpectedToken(TOK_TYPE)) {
+	if (!isExpectedToken(TOK_TYPE)) {
 		Tokens->applyTokenIndex(bkup);
 		return Types(Type_null);
 	}
@@ -141,7 +141,7 @@ Types Parser::visitTypes() {
 	Tokens->getNextToken();
 
 	// bit数
-	if(isExpectedToken(TOK_DIGIT)) {
+	if (isExpectedToken(TOK_DIGIT)) {
 		bits = Tokens->getCurNumVal();
 		Tokens->getNextToken();
 	}else{
@@ -248,7 +248,6 @@ PrototypeAST *Parser::visitPrototype(){
 	//type_specifier
 	func_type = visitTypes();
 	if(func_type.getPrimType() == Type_null) {
-		if (Debbug) fprintf(stderr, "%d:%d: error: type is null\n", Tokens->getLine(), __LINE__);
 		Tokens->applyTokenIndex(bkup);
 		return NULL;
 	}

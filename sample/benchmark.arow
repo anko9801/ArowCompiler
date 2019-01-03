@@ -1,3 +1,5 @@
+import stdlib.arow
+
 int main() {
 	int i = 0;
 	int start = usclock();

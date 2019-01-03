@@ -1,6 +1,8 @@
+import stdlib.arow
+
 int main() {
-	int a = 4;
-	int b = 5;
+	int? a = 4;
+	int? b = 5;
 	if (a == 4) {
 		printnum(a + b);
 		printnum(a - b);

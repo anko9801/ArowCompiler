@@ -1,3 +1,5 @@
+import stdlib.arow
+
 int32 main() {
 	int32 cnt = 13
 	while (cnt < 20) {

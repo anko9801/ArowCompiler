@@ -118,10 +118,9 @@ bool CodeGen::generateTranslationUnit(TranslationUnitAST &tunit, std::string nam
 		ImportAST *import = tunit.getImport(i);
 		if(!import)
 			break;
-		else if(!linkModule(new Module(import->getFileName(), GlobalContext), import->getFileName())) {
-			SAFE_DELETE(Mod);
+		std::string link_file = import->getFileName();
+		if(!link_file.empty() && !linkModule(Mod, link_file))
 			return false;
-		}
 	}
 
 	//funtion declaration
@@ -176,10 +175,10 @@ Function *CodeGen::generatePrototype(PrototypeAST *proto, Module *mod){
 	//already declared?
 	Function *func = mod->getFunction(proto->getName());
 	if(func){
-		if(func->arg_size() == proto->getParamSize() && func->empty()){
+		if(func->arg_size() == proto->getParamSize()/* && func->empty()*/){
 			return func;
 		}else{
-			fprintf(stderr, "error: function %s is redefined", proto->getName().c_str());
+			fprintf(stderr, "error: function %s is redefined\n", proto->getName().c_str());
 			return NULL;
 		}
 	}

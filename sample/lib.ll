@@ -14,11 +14,11 @@ target triple = "x86_64-apple-macosx10.14.0"
 
 ; Function Attrs: nounwind ssp uwtable
 define i32 @msleep(i32) local_unnamed_addr #0 {
-  %2 = tail call i32 @"usleep"(i32 10) #3
+  %2 = tail call i32 @"\01_usleep"(i32 10) #3
   ret i32 0
 }
 
-declare i32 @"usleep"(i32) local_unnamed_addr #1
+declare i32 @"\01_usleep"(i32) local_unnamed_addr #1
 
 ; Function Attrs: nounwind ssp uwtable
 define i32 @printnum(i32) local_unnamed_addr #0 {
@@ -31,7 +31,7 @@ declare i32 @printf(i8* nocapture readonly, ...) local_unnamed_addr #2
 
 ; Function Attrs: nounwind ssp uwtable
 define i32 @usclock() local_unnamed_addr #0 {
-  %1 = tail call i64 @"clock"() #3
+  %1 = tail call i64 @"\01_clock"() #3
   %2 = uitofp i64 %1 to double
   %3 = fmul double %2, 1.000000e+06
   %4 = fdiv double %3, 1.000000e+06
@@ -39,11 +39,11 @@ define i32 @usclock() local_unnamed_addr #0 {
   ret i32 %5
 }
 
-declare i64 @"clock"() local_unnamed_addr #1
+declare i64 @"\01_clock"() local_unnamed_addr #1
 
 ; Function Attrs: nounwind ssp uwtable
 define i32 @MapGPIO() local_unnamed_addr #0 {
-  %1 = tail call i32 (i8*, i32, ...) @"open"(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @.str.1, i64 0, i64 0), i32 130) #3
+  %1 = tail call i32 (i8*, i32, ...) @"\01_open"(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @.str.1, i64 0, i64 0), i32 130) #3
   store i32 %1, i32* getelementptr inbounds (%struct.rpi_gpio, %struct.rpi_gpio* @gpio, i64 0, i32 1), align 8, !tbaa !3
   %2 = icmp slt i32 %1, 0
   br i1 %2, label %3, label %4
@@ -54,7 +54,7 @@ define i32 @MapGPIO() local_unnamed_addr #0 {
 
 ; <label>:4:                                      ; preds = %0
   %5 = load i64, i64* getelementptr inbounds (%struct.rpi_gpio, %struct.rpi_gpio* @gpio, i64 0, i32 0), align 8, !tbaa !10
-  %6 = tail call i8* @"mmap"(i8* null, i64 4096, i32 3, i32 1, i32 %1, i64 %5) #3
+  %6 = tail call i8* @"\01_mmap"(i8* null, i64 4096, i32 3, i32 1, i32 %1, i64 %5) #3
   store i8* %6, i8** getelementptr inbounds (%struct.rpi_gpio, %struct.rpi_gpio* @gpio, i64 0, i32 2), align 8, !tbaa !11
   %7 = icmp eq i8* %6, inttoptr (i64 -1 to i8*)
   br i1 %7, label %8, label %9
@@ -72,25 +72,25 @@ define i32 @MapGPIO() local_unnamed_addr #0 {
   ret i32 %11
 }
 
-declare i32 @"open"(i8*, i32, ...) local_unnamed_addr #1
+declare i32 @"\01_open"(i8*, i32, ...) local_unnamed_addr #1
 
 ; Function Attrs: nounwind
 declare void @perror(i8* nocapture readonly) local_unnamed_addr #2
 
-declare i8* @"mmap"(i8*, i64, i32, i32, i32, i64) local_unnamed_addr #1
+declare i8* @"\01_mmap"(i8*, i64, i32, i32, i32, i64) local_unnamed_addr #1
 
 ; Function Attrs: nounwind ssp uwtable
 define void @GPIOclear() local_unnamed_addr #0 {
   %1 = load i8*, i8** getelementptr inbounds (%struct.rpi_gpio, %struct.rpi_gpio* @gpio, i64 0, i32 2), align 8, !tbaa !11
-  %2 = tail call i32 @"munmap"(i8* %1, i64 4096) #3
+  %2 = tail call i32 @"\01_munmap"(i8* %1, i64 4096) #3
   %3 = load i32, i32* getelementptr inbounds (%struct.rpi_gpio, %struct.rpi_gpio* @gpio, i64 0, i32 1), align 8, !tbaa !3
-  %4 = tail call i32 @"close"(i32 %3) #3
+  %4 = tail call i32 @"\01_close"(i32 %3) #3
   ret void
 }
 
-declare i32 @"munmap"(i8*, i64) local_unnamed_addr #1
+declare i32 @"\01_munmap"(i8*, i64) local_unnamed_addr #1
 
-declare i32 @"close"(i32) local_unnamed_addr #1
+declare i32 @"\01_close"(i32) local_unnamed_addr #1
 
 ; Function Attrs: nounwind ssp uwtable
 define void @BlinkLED(i32) local_unnamed_addr #0 {
@@ -105,35 +105,35 @@ define void @BlinkLED(i32) local_unnamed_addr #0 {
   %9 = shl i32 1, %0
   %10 = getelementptr inbounds i32, i32* %5, i64 7
   store volatile i32 %9, i32* %10, align 4, !tbaa !13
-  %11 = tail call i32 @"usleep"(i32 500000) #3
+  %11 = tail call i32 @"\01_usleep"(i32 500000) #3
   %12 = load i32*, i32** getelementptr inbounds (%struct.rpi_gpio, %struct.rpi_gpio* @gpio, i64 0, i32 3), align 8, !tbaa !12
   %13 = getelementptr inbounds i32, i32* %12, i64 10
   store volatile i32 %9, i32* %13, align 4, !tbaa !13
-  %14 = tail call i32 @"usleep"(i32 500000) #3
+  %14 = tail call i32 @"\01_usleep"(i32 500000) #3
   %15 = load i32*, i32** getelementptr inbounds (%struct.rpi_gpio, %struct.rpi_gpio* @gpio, i64 0, i32 3), align 8, !tbaa !12
   %16 = getelementptr inbounds i32, i32* %15, i64 7
   store volatile i32 %9, i32* %16, align 4, !tbaa !13
-  %17 = tail call i32 @"usleep"(i32 500000) #3
+  %17 = tail call i32 @"\01_usleep"(i32 500000) #3
   %18 = load i32*, i32** getelementptr inbounds (%struct.rpi_gpio, %struct.rpi_gpio* @gpio, i64 0, i32 3), align 8, !tbaa !12
   %19 = getelementptr inbounds i32, i32* %18, i64 10
   store volatile i32 %9, i32* %19, align 4, !tbaa !13
-  %20 = tail call i32 @"usleep"(i32 500000) #3
+  %20 = tail call i32 @"\01_usleep"(i32 500000) #3
   %21 = load i32*, i32** getelementptr inbounds (%struct.rpi_gpio, %struct.rpi_gpio* @gpio, i64 0, i32 3), align 8, !tbaa !12
   %22 = getelementptr inbounds i32, i32* %21, i64 7
   store volatile i32 %9, i32* %22, align 4, !tbaa !13
-  %23 = tail call i32 @"usleep"(i32 500000) #3
+  %23 = tail call i32 @"\01_usleep"(i32 500000) #3
   %24 = load i32*, i32** getelementptr inbounds (%struct.rpi_gpio, %struct.rpi_gpio* @gpio, i64 0, i32 3), align 8, !tbaa !12
   %25 = getelementptr inbounds i32, i32* %24, i64 10
   store volatile i32 %9, i32* %25, align 4, !tbaa !13
-  %26 = tail call i32 @"usleep"(i32 500000) #3
+  %26 = tail call i32 @"\01_usleep"(i32 500000) #3
   %27 = load i32*, i32** getelementptr inbounds (%struct.rpi_gpio, %struct.rpi_gpio* @gpio, i64 0, i32 3), align 8, !tbaa !12
   %28 = getelementptr inbounds i32, i32* %27, i64 7
   store volatile i32 %9, i32* %28, align 4, !tbaa !13
-  %29 = tail call i32 @"usleep"(i32 500000) #3
+  %29 = tail call i32 @"\01_usleep"(i32 500000) #3
   %30 = load i32*, i32** getelementptr inbounds (%struct.rpi_gpio, %struct.rpi_gpio* @gpio, i64 0, i32 3), align 8, !tbaa !12
   %31 = getelementptr inbounds i32, i32* %30, i64 10
   store volatile i32 %9, i32* %31, align 4, !tbaa !13
-  %32 = tail call i32 @"usleep"(i32 500000) #3
+  %32 = tail call i32 @"\01_usleep"(i32 500000) #3
   %33 = load i32*, i32** getelementptr inbounds (%struct.rpi_gpio, %struct.rpi_gpio* @gpio, i64 0, i32 3), align 8, !tbaa !12
   %34 = getelementptr inbounds i32, i32* %33, i64 %7
   store volatile i32 0, i32* %34, align 4, !tbaa !13
@@ -142,7 +142,7 @@ define void @BlinkLED(i32) local_unnamed_addr #0 {
 
 ; Function Attrs: nounwind ssp uwtable
 define i32 @GPIOsetup() local_unnamed_addr #0 {
-  %1 = tail call i32 (i8*, i32, ...) @"open"(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @.str.1, i64 0, i64 0), i32 130) #3
+  %1 = tail call i32 (i8*, i32, ...) @"\01_open"(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @.str.1, i64 0, i64 0), i32 130) #3
   store i32 %1, i32* getelementptr inbounds (%struct.rpi_gpio, %struct.rpi_gpio* @gpio, i64 0, i32 1), align 8, !tbaa !3
   %2 = icmp slt i32 %1, 0
   br i1 %2, label %3, label %4
@@ -153,7 +153,7 @@ define i32 @GPIOsetup() local_unnamed_addr #0 {
 
 ; <label>:4:                                      ; preds = %0
   %5 = load i64, i64* getelementptr inbounds (%struct.rpi_gpio, %struct.rpi_gpio* @gpio, i64 0, i32 0), align 8, !tbaa !10
-  %6 = tail call i8* @"mmap"(i8* null, i64 4096, i32 3, i32 1, i32 %1, i64 %5) #3
+  %6 = tail call i8* @"\01_mmap"(i8* null, i64 4096, i32 3, i32 1, i32 %1, i64 %5) #3
   store i8* %6, i8** getelementptr inbounds (%struct.rpi_gpio, %struct.rpi_gpio* @gpio, i64 0, i32 2), align 8, !tbaa !11
   %7 = icmp eq i8* %6, inttoptr (i64 -1 to i8*)
   br i1 %7, label %8, label %9

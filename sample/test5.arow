@@ -1,3 +1,5 @@
+import stdlib.arow
+
 int main() {
 	bool k = true;
 	int a = 32;
