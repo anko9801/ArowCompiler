@@ -51,6 +51,9 @@ typedef class Parser{
 			}
 			return NULL;
 		}
+		void ErrLog(std::string err) {
+			fprintf(stderr, err.c_str());
+		}
 
 		void addLib(TranslationUnitAST* TU,
 				Types ReturnType, std::string FuncName,

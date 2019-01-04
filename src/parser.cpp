@@ -739,7 +739,7 @@ BaseAST *Parser::visitMatchExpression() {
 	Tokens->getNextToken();
 
 	if (Debbug) fprintf(stderr, "%d:%d: %s\n", Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
-	return match_expr;
+	return if_expr;
 }
 
 
@@ -750,14 +750,17 @@ IfExprAST *Parser::visitPatternExpression(BaseAST *Eval) {
 
 	BaseAST *eval = visitExpression(NULL, Types(Type_all));
 	if (!eval) {
+		fprintf(stderr, "%d:%d: error: expected eval but %s\n", Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
 		Tokens->applyTokenIndex(bkup);
 		return NULL;
 	}
 	if (llvm::isa<PlaceholderAST>(eval)) end = true;
 
-	IfExprAST *if_expr = new IfExprAST(new BinaryExprAST("==", Eval, eval, Types(Type_bool)));
+	IfExprAST *if_expr;
+	if_expr = new IfExprAST(new BinaryExprAST("==", Eval, eval, Types(Type_bool)));
 
 	if (!isExpectedToken("=>")) {
+		fprintf(stderr, "%d:%d: error: expected '=>' but %s\n", Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
 		Tokens->applyTokenIndex(bkup);
 		return NULL;
 	}
@@ -765,6 +768,7 @@ IfExprAST *Parser::visitPatternExpression(BaseAST *Eval) {
 
 	StatementsAST *stmts = visitStatements(NULL);
 	if (!stmts || !stmts->getSize()) {
+		fprintf(stderr, "%d:%d: error: statement is nothing\n", Tokens->getLine(), __LINE__);
 		Tokens->applyTokenIndex(bkup);
 		return NULL;
 	}
@@ -772,13 +776,13 @@ IfExprAST *Parser::visitPatternExpression(BaseAST *Eval) {
 		if (!stmts->getStatement(i)) break;
 		else if_expr->addThen(stmts->getStatement(i));
 
-	if (!isExpectedToken(",")) {
-		Tokens->applyTokenIndex(bkup);
-		return NULL;
-	}
-	Tokens->getNextToken();
-
 	if (!end) {
+		if (!isExpectedToken(",")) {
+			fprintf(stderr, "%d:%d: error: expected ',' but %s\n", Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
+			Tokens->applyTokenIndex(bkup);
+			return NULL;
+		}
+		Tokens->getNextToken();
 		IfExprAST *pattern = visitPatternExpression(Eval);
 		if (!pattern) {
 			Tokens->applyTokenIndex(bkup);
@@ -1257,6 +1261,7 @@ BaseAST *Parser::visitPrimaryExpression() {
 		Tokens->getNextToken();
 		return new ValueAST(0, Types(Type_all));
 	}else if (isExpectedToken("_")) {
+		Tokens->getNextToken();
 		return new PlaceholderAST();
 	//VARIABLE_IDENTIFIER
 	}else if (isExpectedToken(TOK_IDENTIFIER)) {

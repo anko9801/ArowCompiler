@@ -175,6 +175,8 @@ void BaseAST::printAST(int nest = 0){
 	}
 	else if(llvm::isa<ValueAST>(this))
 		fprintf(stderr, "Value(%s)\n", llvm::dyn_cast<ValueAST>(this)->getType().printType().c_str());
+	else if(llvm::isa<PlaceholderAST>(this))
+		fprintf(stderr, "Placeholder\n");
 	else
 		fprintf(stderr, "unknown\n");
 }

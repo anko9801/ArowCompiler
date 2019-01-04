@@ -547,6 +547,9 @@ Value *CodeGen::generateCondition(BaseAST* Cond) {
 
 	}else if (isa<BinaryExprAST>(Cond)) {
 		auto CondBinary = dyn_cast<BinaryExprAST>(Cond);
+		if (isa<PlaceholderAST>(CondBinary->getLHS()) || isa<PlaceholderAST>(CondBinary->getRHS())) {
+			return ConstantInt::get(Type::getInt1Ty(GlobalContext), true, false);
+		}
 		Value *lhs_v = generateExpression(CondBinary->getLHS());
 		Value *rhs_v = generateExpression(CondBinary->getRHS());
 
