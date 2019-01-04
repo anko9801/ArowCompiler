@@ -39,6 +39,19 @@ typedef class Parser{
 		bool doParse();
 		TranslationUnitAST &getAST();
 
+		PrototypeAST *getPrototype(size_t i) {
+			if (i < PrototypeTable.size()) {
+				return PrototypeTable[i];
+			}
+			return NULL;
+		}
+		FunctionAST *getFunction(size_t i) {
+			if (i < FunctionTable.size()) {
+				return FunctionTable[i];
+			}
+			return NULL;
+		}
+
 		void addLib(TranslationUnitAST* TU,
 				Types ReturnType, std::string FuncName,
 				std::initializer_list<Types> param_type) {
@@ -115,6 +128,7 @@ typedef class Parser{
 		BaseAST *visitIfExpression();
 		BaseAST *visitWhileExpression();
 		BaseAST *visitMatchExpression();
+		IfExprAST *visitPatternExpression(BaseAST *Eval);
 		BaseAST *visitAssignmentExpression(Types type);
 		BaseAST *visitExpression(BaseAST *lhs, Types type);
 		BaseAST *visitAdditiveExpression(BaseAST *lhs, Types type);

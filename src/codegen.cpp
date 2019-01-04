@@ -282,11 +282,12 @@ Value *CodeGen::generateIfExpr(IfExprAST *if_expr) {
 
 	Builder->SetInsertPoint(ThenBB);
 	// if文がネストしたとき
-	//auto lastThenBB = Builder->GetInsertBlock();
+	auto lastThenBB = Builder->GetInsertBlock();
+	// thenBBs.push_back(BB_Value(lastThenBB, thenValue));
 
 	ThenBB = Builder->GetInsertBlock();
 	for (int i = 0;;i++)
-		if (if_expr->getThen(i)) break;
+		if (!if_expr->getThen(i)) break;
 		else generateStatement(if_expr->getThen(i));
 	Builder->CreateBr(MergeBB);
 
@@ -334,6 +335,24 @@ Value *CodeGen::generateWhileExpr(WhileExprAST *while_expr) {
 	Builder->SetInsertPoint(AfterBB);
 
 	return CondV;
+}
+
+
+/**
+  * Match文生成メソッド
+  * @param MatchExprAST
+  * @return 生成したValueのポインタ
+  */
+Value *CodeGen::generateMatchExpr(MatchExprAST *match_expr) {
+	if (llvmDebbug) fprintf(stderr, "%d: %s\n", __LINE__, __func__);
+	
+// SwitchInst* CreateSwitch (
+// Value * 		V,
+// BasicBlock * Dest,
+// unsigned 	NumCases = 10,
+// MDNode * 	BranchWeights = nullptr,
+// MDNode * 	Unpredictable = nullptr
+// )	
 }
 
 
@@ -486,10 +505,12 @@ Value *CodeGen::generateStatement(BaseAST *stmt){
 		return generateCallExpression(dyn_cast<CallExprAST>(stmt));
 	else if(isa<JumpStmtAST>(stmt))
 		return generateJumpStatement(dyn_cast<JumpStmtAST>(stmt));
-	else if(isa<WhileExprAST>(stmt))
-		return generateWhileExpr(dyn_cast<WhileExprAST>(stmt));
 	else if(isa<IfExprAST>(stmt))
 		return generateIfExpr(dyn_cast<IfExprAST>(stmt));
+	else if(isa<WhileExprAST>(stmt))
+		return generateWhileExpr(dyn_cast<WhileExprAST>(stmt));
+	else if(isa<MatchExprAST>(stmt))
+		return generateMatchExpr(dyn_cast<MatchExprAST>(stmt));
 	return NULL;
 }
 

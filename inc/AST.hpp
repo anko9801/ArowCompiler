@@ -320,7 +320,7 @@ class BinaryExprAST : public BaseAST{
 	~BinaryExprAST();
 	static inline bool classof(BinaryExprAST const*){return true;}
 	static inline bool classof(BaseAST const* base){
-		return base->getValueID()==BinaryExprID;
+		return base->getValueID() == BinaryExprID;
 	}
 
 	bool setType(Types type){Type = type;return true;}

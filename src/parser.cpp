@@ -549,7 +549,7 @@ VariableDeclAST *Parser::visitVariableDeclaration() {
 		Tokens->getNextToken();
 		return new VariableDeclAST(type, name);
 	//'='
-	}else if (isExpectedToken("=")) {
+	}else if (isExpectedToken("=") || isExpectedToken(",")) {
 		return new VariableDeclAST(type, name);
 	}else{
 		Tokens->applyTokenIndex(bkup);
@@ -724,35 +724,11 @@ BaseAST *Parser::visitMatchExpression() {
 	}
 	Tokens->getNextToken();
 
-	BaseAST *eval;
-	StatementsAST *stmts;
-	while (true) {
-		eval = visitExpression(NULL, Types(Type_all));
-		if (!eval) {
-			Tokens->applyTokenIndex(bkup);
-			return NULL;
-		}
-		match_expr->addEval(eval);
-
-		if (!isExpectedToken("=>")) {
-			Tokens->applyTokenIndex(bkup);
-			return NULL;
-		}
-		Tokens->getNextToken();
-
-		stmts = visitStatements(NULL);
-		if (!stmts || !stmts->getSize()) {
-			Tokens->applyTokenIndex(bkup);
-			return NULL;
-		}
-		match_expr->addStmts(stmts);
-
-		if (isExpectedToken(",")) {
-			Tokens->getNextToken();
-			continue;
-		}else{
-			break;
-		}
+	IfExprAST *if_expr = visitPatternExpression(Eval);
+	if (!if_expr) {
+		fprintf(stderr, "%d:%d: expected pattern but %s\n", Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
+		Tokens->applyTokenIndex(bkup);
+		return NULL;
 	}
 
 	if (!isExpectedToken("}")) {
@@ -764,6 +740,53 @@ BaseAST *Parser::visitMatchExpression() {
 
 	if (Debbug) fprintf(stderr, "%d:%d: %s\n", Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
 	return match_expr;
+}
+
+
+
+IfExprAST *Parser::visitPatternExpression(BaseAST *Eval) {
+	int bkup = Tokens->getCurIndex();
+	bool end = false;
+
+	BaseAST *eval = visitExpression(NULL, Types(Type_all));
+	if (!eval) {
+		Tokens->applyTokenIndex(bkup);
+		return NULL;
+	}
+	if (llvm::isa<PlaceholderAST>(eval)) end = true;
+
+	IfExprAST *if_expr = new IfExprAST(new BinaryExprAST("==", Eval, eval, Types(Type_bool)));
+
+	if (!isExpectedToken("=>")) {
+		Tokens->applyTokenIndex(bkup);
+		return NULL;
+	}
+	Tokens->getNextToken();
+
+	StatementsAST *stmts = visitStatements(NULL);
+	if (!stmts || !stmts->getSize()) {
+		Tokens->applyTokenIndex(bkup);
+		return NULL;
+	}
+	for (int i = 0;;i++)
+		if (!stmts->getStatement(i)) break;
+		else if_expr->addThen(stmts->getStatement(i));
+
+	if (!isExpectedToken(",")) {
+		Tokens->applyTokenIndex(bkup);
+		return NULL;
+	}
+	Tokens->getNextToken();
+
+	if (!end) {
+		IfExprAST *pattern = visitPatternExpression(Eval);
+		if (!pattern) {
+			Tokens->applyTokenIndex(bkup);
+			return NULL;
+		}
+		if_expr->addElse(pattern);
+	}
+	return if_expr;
 }
 
 
@@ -793,7 +816,8 @@ BaseAST *Parser::visitAssignmentExpression(Types type) {
 
 					rhs = visitExpression(NULL, VariableTable[i]->getType());
 					if (rhs) {
-						Tokens->getNextToken();
+						if (!isExpectedToken(","))
+							Tokens->getNextToken();
 						return new BinaryExprAST("=", lhs, rhs, VariableTable[i]->getType());
 					}
 				}else{
@@ -1137,28 +1161,24 @@ BaseAST *Parser::visitPostfixExpression() {
 
 	//関数の名前の確認
 	PrototypeAST *proto;
-	for (int i = 0;i < PrototypeTable.size();i++) {
-		if (!PrototypeTable[i]) {
-			break;
-		}
-		if (PrototypeTable[i]->getName() == Callee) {
-			proto = PrototypeTable[i];
-			break;
-		}
+	for (int i = 0;;i++) {
+		proto = getPrototype(i);
+		if (!proto) break;
+		if (proto->getName() == Callee) break;
 	}
 	if (!proto) {
-		for (int j = 0;j < FunctionTable.size();j++) {
-			if (!FunctionTable[j]) {
-				fprintf(stderr, "%d:%d: error: undefined function %s\n", Tokens->getLine(), __LINE__, Callee.c_str());
-				break;
-			}
-			if (FunctionTable[j]->getName() == Callee) {
-				proto = FunctionTable[j]->getPrototype();
+		FunctionAST *func;
+		for (int j = 0;;j++) {
+			func = getFunction(j);
+			if (!func) break;
+			if (func->getName() == Callee) {
+				proto = func->getPrototype();
 				break;
 			}
 		}
 	}
 	if (!proto) {
+		fprintf(stderr, "%d:%d: error: undefined function %s\n", Tokens->getLine(), __LINE__, Callee.c_str());
 		Tokens->applyTokenIndex(bkup);
 		return NULL;
 	}
