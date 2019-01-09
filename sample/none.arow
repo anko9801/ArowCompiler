@@ -1,6 +1,6 @@
 import stdlib.arow
 
 int main() {
-	int a = None;
-	return None;
+	int a = null;
+	return null;
 }

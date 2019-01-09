@@ -26,7 +26,6 @@ class CallExprAST;
 class JumpStmtAST;
 class IfExprAST;
 class WhileExprAST;
-class MatchExprAST;
 class PlaceholderAST;
 class VariableAST;
 class CastExprAST;
@@ -45,7 +44,6 @@ enum AstID{
 	BinaryExprID,
 	IfExprID,
 	WhileExprID,
-	MatchExprID,
 	CallExprID,
 	JumpStmtID,
 	CastExprID,
@@ -374,30 +372,6 @@ class WhileExprAST : public BaseAST {
 	BaseAST *getCond(){return Cond;}
 	bool addLoop(BaseAST *stmt){LoopStmt->addStatement(stmt);return true;}
 	BaseAST *getLoop(size_t i){return LoopStmt->getStatement(i);}
-};
-
-
-/**
- * Match文を表すAST
- */
-class MatchExprAST : public BaseAST {
-	BaseAST *Eval;
-	std::vector<BaseAST*> EvalList;
-	std::vector<StatementsAST*> StmtsList;
-
-	public:
-	MatchExprAST(BaseAST *Eval) : BaseAST(MatchExprID), Eval(Eval){}
-	~MatchExprAST(){}
-	static inline bool classof(MatchExprAST const*){return true;}
-	static inline bool classof(BaseAST const* base){
-		return base->getValueID() == MatchExprID;
-	}
-
-	BaseAST *getEval(){return Eval;}
-	bool addEval(BaseAST *stmt){EvalList.push_back(stmt);return true;}
-	bool addStmts(StatementsAST *stmts){StmtsList.push_back(stmts);return true;}
-	BaseAST *getEval(size_t i){if (i < EvalList.size())return EvalList[i];else return NULL;}
-	StatementsAST *getStmts(size_t i){if (i < StmtsList.size())return StmtsList[i];else return NULL;}
 };
 
 

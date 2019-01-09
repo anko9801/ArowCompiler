@@ -57,7 +57,6 @@ class CodeGen{
 		Value *generateStatement(BaseAST *stmt);
 		Value *generateIfExpr(IfExprAST *if_expr);
 		Value *generateWhileExpr(WhileExprAST *while_expr);
-		Value *generateMatchExpr(MatchExprAST *match_expr);
 		Value *generateCondition(BaseAST *Cond);
 		Value *generateExpression(BaseAST *expr);
 		Value *generateBinaryExpression(BinaryExprAST *bin_expr);

@@ -166,6 +166,7 @@ FunctionAST *Parser::visitFunctionDefinition() {
 	}
 
 	VariableTable.clear();
+	FunctionTable.push_back(func);
 	FunctionStmtAST *func_stmt = visitFunctionStatement(proto);
 	if (func_stmt) {
 		if (Debbug) fprintf(stderr, "%d:%d: %s %s\n", Tokens->getLine(), __LINE__, __func__, Tokens->getCurString().c_str());
@@ -603,7 +604,7 @@ BaseAST *Parser::visitIfExpression() {
 	Tokens->getNextToken();
 	
 	if (!isExpectedToken("(")) {
-		fprintf(stderr, "%d:%d: expected '(' but %s\n", Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
+		fprintf(stderr, "%d:%d: error: expected '(' but %s\n", Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
 		Tokens->applyTokenIndex(bkup);
 		return NULL;
 	}
@@ -611,13 +612,14 @@ BaseAST *Parser::visitIfExpression() {
 
 	CondStmt = visitExpression(NULL, Types(Type_bool));
 	if (!CondStmt || CondStmt->getType() != Types(Type_bool, 1, true)) {
+		fprintf(stderr, "%d:%d: error: if condition is not bool\n", Tokens->getLine(), __LINE__);
 		Tokens->applyTokenIndex(bkup);
 		return NULL;
 	}
 	BaseAST *if_expr = new IfExprAST(CondStmt);
 
 	if (!isExpectedToken(")")) {
-		fprintf(stderr, "%d:%d: expected ')' but %s\n", Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
+		fprintf(stderr, "%d:%d: error: expected ')' but %s\n", Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
 		Tokens->applyTokenIndex(bkup);
 		return NULL;
 	}
@@ -770,7 +772,6 @@ IfExprAST *Parser::visitPatternExpression(BaseAST *Eval) {
 	for (int i = 0;;i++)
 		if (!stmts->getStatement(i)) break;
 		else if_expr->addThen(stmts->getStatement(i));
-
 	
 	if (!isExpectedToken(",")) {
 		if (!isExpectedToken("}")) {
@@ -781,6 +782,7 @@ IfExprAST *Parser::visitPatternExpression(BaseAST *Eval) {
 		return if_expr;
 	}
 	Tokens->getNextToken();
+	
 	IfExprAST *pattern = visitPatternExpression(Eval);
 	if (!pattern) {
 		Tokens->getNextToken();

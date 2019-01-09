@@ -339,24 +339,6 @@ Value *CodeGen::generateWhileExpr(WhileExprAST *while_expr) {
 
 
 /**
-  * Match文生成メソッド
-  * @param MatchExprAST
-  * @return 生成したValueのポインタ
-  */
-Value *CodeGen::generateMatchExpr(MatchExprAST *match_expr) {
-	if (llvmDebbug) fprintf(stderr, "%d: %s\n", __LINE__, __func__);
-	
-// SwitchInst* CreateSwitch (
-// Value * 		V,
-// BasicBlock * Dest,
-// unsigned 	NumCases = 10,
-// MDNode * 	BranchWeights = nullptr,
-// MDNode * 	Unpredictable = nullptr
-// )	
-}
-
-
-/**
   * 二項演算生成メソッド
   * @param  BinaryExprAST
   * @return 生成したValueのポインタ
@@ -509,8 +491,6 @@ Value *CodeGen::generateStatement(BaseAST *stmt){
 		return generateIfExpr(dyn_cast<IfExprAST>(stmt));
 	else if(isa<WhileExprAST>(stmt))
 		return generateWhileExpr(dyn_cast<WhileExprAST>(stmt));
-	else if(isa<MatchExprAST>(stmt))
-		return generateMatchExpr(dyn_cast<MatchExprAST>(stmt));
 	return NULL;
 }
 
@@ -683,7 +663,7 @@ Value *CodeGen::generateValue(ValueAST *val){
 	}else if (val->getType().getPrimType() == Type_char) {
 		return ConstantInt::get(type, val->getValue(), false);
 	}else if (val->getType().getPrimType() == Type_null) {
-		return ConstantInt::get(type, val->getValue(), true);
+		return Constant::getNullValue(type);
 	}else if (val->getType().getPrimType() == Type_all) {
 		return Constant::getNullValue(type);
 	}

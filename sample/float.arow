@@ -4,9 +4,9 @@ float main() {
 	float a = 3.3
 	float b = 4.4
 	// printnum(a as int)
-	printnum((a + b) as int)
-	printnum((a - b) as int)
-	printnum((a * b) as int)
-	printnum((a / b) as int)
+	printnum((a + b) as int?)
+	printnum((a - b) as int?)
+	printnum((a * b) as int?)
+	printnum((a / b) as int?)
 	return a + b
 }

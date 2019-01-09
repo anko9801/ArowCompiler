@@ -1,6 +1,6 @@
 import stdlib.arow
 
 int main() {
-	printnum(3.3 as int)
+	printnum(3.3 as int?)
 	return 0
 }

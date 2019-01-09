@@ -1,12 +1,12 @@
 import stdlib.arow
 
-int null(){
-	return None;
+int none(){
+	return null;
 }
 
 int main(){
-	int ab = null();
-	if (ab) {
+	int ab = none();
+	if (ab == null) {
 		printnum(1);
 		return ab;
 	}else{
