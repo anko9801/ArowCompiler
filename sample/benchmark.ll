@@ -182,21 +182,31 @@ declare i1 @sleep(i32)
 
 define i32 @main() {
 entry:
+  %array = alloca [2 x double]*, i32 2
+  %i = alloca i32
+  store i32 0, i32* %i
+  %start = alloca i32
   %call_tmp = call i32 @usclock()
-  %ifcond = icmp slt i32 0, 1000000
+  store i32 %call_tmp, i32* %start
+  %var_tmp = load i32, i32* %i
+  %ifcond = icmp slt i32 %var_tmp, 1000000
   br label %loop
 
 loop:                                             ; preds = %loop, %entry
-  %i.0 = phi i32 [ 0, %entry ], [ %add_tmp, %loop ]
-  %add_tmp = add i32 %i.0, 1
-  %call_tmp3 = call i32 @printnum(i32 %add_tmp)
+  %var_tmp1 = load i32, i32* %i
+  %add_tmp = add i32 %var_tmp1, 1
+  store i32 %add_tmp, i32* %i
+  %var_tmp2 = load i32, i32* %i
+  %call_tmp3 = call i32 @printnum(i32 %var_tmp2)
   br i1 %ifcond, label %loop, label %afterloop
 
 afterloop:                                        ; preds = %loop
   %call_tmp4 = call i32 @usclock()
-  %sub_tmp = sub i32 %call_tmp4, %call_tmp
+  %var_tmp5 = load i32, i32* %start
+  %sub_tmp = sub i32 %call_tmp4, %var_tmp5
   %call_tmp6 = call i32 @printnum(i32 %sub_tmp)
-  ret i32 %add_tmp
+  %var_tmp7 = load i32, i32* %i
+  ret i32 %var_tmp7
 }
 
 attributes #0 = { nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="true" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="penryn" "target-features"="+cx16,+fxsr,+mmx,+sahf,+sse,+sse2,+sse3,+sse4.1,+ssse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }

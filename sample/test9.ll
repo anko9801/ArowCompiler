@@ -182,17 +182,24 @@ declare i1 @sleep(i32)
 
 define i32 @main() {
 entry:
-  %ifcond = icmp slt i32 13, 20
+  %array = alloca [2 x double]*, i32 2
+  %cnt = alloca i32
+  store i32 13, i32* %cnt
+  %var_tmp = load i32, i32* %cnt
+  %ifcond = icmp slt i32 %var_tmp, 20
   br label %loop
 
 loop:                                             ; preds = %loop, %entry
-  %cnt.0 = phi i32 [ 13, %entry ], [ %add_tmp, %loop ]
-  %add_tmp = add i32 %cnt.0, 1
+  %var_tmp1 = load i32, i32* %cnt
+  %add_tmp = add i32 %var_tmp1, 1
+  store i32 %add_tmp, i32* %cnt
   br i1 %ifcond, label %loop, label %afterloop
 
 afterloop:                                        ; preds = %loop
-  %call_tmp = call i32 @printnum(i32 %add_tmp)
-  ret i32 %add_tmp
+  %var_tmp2 = load i32, i32* %cnt
+  %call_tmp = call i32 @printnum(i32 %var_tmp2)
+  %var_tmp3 = load i32, i32* %cnt
+  ret i32 %var_tmp3
 }
 
 attributes #0 = { nounwind ssp uwtable "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="true" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="penryn" "target-features"="+cx16,+fxsr,+mmx,+sahf,+sse,+sse2,+sse3,+sse4.1,+ssse3,+x87" "unsafe-fp-math"="false" "use-soft-float"="false" }

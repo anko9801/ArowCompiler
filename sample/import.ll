@@ -182,6 +182,7 @@ declare i1 @sleep(i32)
 
 define i32 @main() {
 entry:
+  %array = alloca [2 x double]*, i32 2
   ret i32 3
 }
 

@@ -182,7 +182,11 @@ declare i1 @sleep(i32)
 
 define float @main() {
 entry:
-  %0 = fpext half 0xH4600 to float
+  %array = alloca [2 x double]*, i32 2
+  %a = alloca half
+  store half 0xH4600, half* %a
+  %var_tmp = load half, half* %a
+  %0 = fpext half %var_tmp to float
   ret float %0
 }
 

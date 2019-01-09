@@ -1,3 +1,5 @@
+import stdlib.arow
+
 int test(int j){
 	int i;
 	i=j*10;

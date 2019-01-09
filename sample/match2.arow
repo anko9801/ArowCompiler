@@ -1,0 +1,9 @@
+import stdlib.arow
+
+int main() {
+	int a = 5
+	match (a) {
+		5 => printnum(a?)
+	}
+	return a
+}

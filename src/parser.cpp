@@ -19,7 +19,8 @@ bool Parser::doParse() {
 		fprintf(stderr, "error at lexer\n");
 		return false;
 	}else{
-		return visitTranslationUnit();
+		TU = new TranslationUnitAST();
+		return visitModule();
 	}
 }
 
@@ -37,14 +38,9 @@ TranslationUnitAST &Parser::getAST() {
 
 
 /**
-  * TranslationUnit用構文解析メソッド
+  * Module用構文解析メソッド
   * @return 解析成功：true　解析失敗：false
   */
-bool Parser::visitTranslationUnit() {
-	TU = new TranslationUnitAST();
-	return visitModule();
-}
-
 bool Parser::visitModule() {
 	//ExternalDecl
 	while (true) {
@@ -120,56 +116,6 @@ bool Parser::visitExternalDeclaration(TranslationUnitAST *tunit) {
 		return true;
 
 	return false;
-}
-
-
-/**
-  * Types用構文解析メソッド
-  * @return 解析成功：Types　解析失敗：Type_null
-  */
-Types Parser::visitTypes() {
-	int bkup = Tokens->getCurIndex();
-
-	int bits;prim_type Type;bool non_null = false;int ArraySize = 0;
-
-	// primary type
-	if (!isExpectedToken(TOK_TYPE)) {
-		Tokens->applyTokenIndex(bkup);
-		return Types(Type_null);
-	}
-	Type = str2Type(Tokens->getCurString());
-	Tokens->getNextToken();
-
-	// bit数
-	if (isExpectedToken(TOK_DIGIT)) {
-		bits = Tokens->getCurNumVal();
-		Tokens->getNextToken();
-	}else{
-		bits = 32;
-		if (Type == Type_bool)
-			bits = 1;
-	}
-
-	// non-null type
-	if (isExpectedToken("?")) {
-		non_null = true;
-		Tokens->getNextToken();
-	}
-
-	// array
-	if (isExpectedToken("[")) {
-		Tokens->getNextToken();
-		if (!isExpectedToken(TOK_DIGIT)) {
-			Tokens->applyTokenIndex(bkup);
-			return Types(Type_null);
-		}
-		ArraySize = Tokens->getCurNumVal();
-		Tokens->getNextToken();
-		return Types(Type, ArraySize, bits, non_null);
-	}else{
-		if (Debbug) fprintf(stderr, "%d:%d: %s\n", Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
-		return Types(Type, bits, non_null);
-	}
 }
 
 
@@ -435,6 +381,56 @@ StatementsAST *Parser::visitStatements(BaseAST* InsertPoint, int branch = 0) {
 		}
 	}
 	return stmts;
+}
+
+
+/**
+  * Types用構文解析メソッド
+  * @return 解析成功：Types　解析失敗：Type_null
+  */
+Types Parser::visitTypes() {
+	int bkup = Tokens->getCurIndex();
+
+	int bits;prim_type Type;bool non_null = false;int ArraySize = 0;
+
+	// primary type
+	if (!isExpectedToken(TOK_TYPE)) {
+		Tokens->applyTokenIndex(bkup);
+		return Types(Type_null);
+	}
+	Type = str2Type(Tokens->getCurString());
+	Tokens->getNextToken();
+
+	// bit数
+	if (isExpectedToken(TOK_DIGIT)) {
+		bits = Tokens->getCurNumVal();
+		Tokens->getNextToken();
+	}else{
+		bits = 32;
+		if (Type == Type_bool)
+			bits = 1;
+	}
+
+	// non-null type
+	if (isExpectedToken("?")) {
+		non_null = true;
+		Tokens->getNextToken();
+	}
+
+	// array
+	if (isExpectedToken("[")) {
+		Tokens->getNextToken();
+		if (!isExpectedToken(TOK_DIGIT)) {
+			Tokens->applyTokenIndex(bkup);
+			return Types(Type_null);
+		}
+		ArraySize = Tokens->getCurNumVal();
+		Tokens->getNextToken();
+		return Types(Type, ArraySize, bits, non_null);
+	}else{
+		if (Debbug) fprintf(stderr, "%d:%d: %s\n", Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
+		return Types(Type, bits, non_null);
+	}
 }
 
 
@@ -708,7 +704,6 @@ BaseAST *Parser::visitMatchExpression() {
 		Tokens->applyTokenIndex(bkup);
 		return NULL;
 	}
-	MatchExprAST *match_expr = new MatchExprAST(Eval);
 
 	if (!isExpectedToken(")")) {
 		fprintf(stderr, "%d:%d: expected ')' but %s\n", Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
@@ -776,20 +771,26 @@ IfExprAST *Parser::visitPatternExpression(BaseAST *Eval) {
 		if (!stmts->getStatement(i)) break;
 		else if_expr->addThen(stmts->getStatement(i));
 
-	if (!end) {
-		if (!isExpectedToken(",")) {
+	
+	if (!isExpectedToken(",")) {
+		if (!isExpectedToken("}")) {
 			fprintf(stderr, "%d:%d: error: expected ',' but %s\n", Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
 			Tokens->applyTokenIndex(bkup);
 			return NULL;
 		}
+		return if_expr;
+	}
+	Tokens->getNextToken();
+	IfExprAST *pattern = visitPatternExpression(Eval);
+	if (!pattern) {
 		Tokens->getNextToken();
-		IfExprAST *pattern = visitPatternExpression(Eval);
-		if (!pattern) {
+		if (!isExpectedToken("}")) {
 			Tokens->applyTokenIndex(bkup);
 			return NULL;
 		}
-		if_expr->addElse(pattern);
+		return if_expr;
 	}
+	if_expr->addElse(pattern);
 	return if_expr;
 }
 
@@ -1080,7 +1081,8 @@ BaseAST *Parser::visitImplicitCastNumber(BaseAST *src, Types impl_type) {
 
 	if (src_priority < impl_priority || src->getType().getBits() < impl_type.getBits()) {
 		return new CastExprAST(src,
-			Types(impl_type.getPrimType(),
+			Types(
+				impl_type.getPrimType(),
 				std::max(src->getType().getBits(), impl_type.getBits()),
 				std::min(src->getType().getNonNull(), impl_type.getNonNull())
 			)
@@ -1229,12 +1231,14 @@ BaseAST *Parser::visitPrimaryExpression() {
 		if (Debbug) fprintf(stderr, "%d:%d: integer\n", Tokens->getLine(), __LINE__);
 		Tokens->getNextToken();
 		return new ValueAST(val, Types(Type_int, 32, true));
+
 	//float
 	}else if (isExpectedToken(TOK_FLOAT)) {
 		float val = Tokens->getCurNumVal();
 		if (Debbug) fprintf(stderr, "%d:%d: float\n", Tokens->getLine(), __LINE__);
 		Tokens->getNextToken();
 		return new ValueAST(val, Types(Type_float, 32, true));
+
 	//負の数
 	}else if (isExpectedToken("-")) {
 		if (Debbug) fprintf(stderr, "%d:%d: integer\n", Tokens->getLine(), __LINE__);
@@ -1251,18 +1255,22 @@ BaseAST *Parser::visitPrimaryExpression() {
 			Tokens->applyTokenIndex(bkup);
 			return NULL;
 		}
+
 	// true / false
 	}else if (isExpectedToken(TOK_TRUTH)) {
 		if (Debbug) fprintf(stderr, "%d:%d: true\n", Tokens->getLine(), __LINE__);
 		Tokens->getNextToken();
 		return new ValueAST(Tokens->getCurBoolVal(), Types(Type_bool, 1, true));
-	}else if (isExpectedToken("None")) {
+
+	}else if (isExpectedToken("null")) {
 		if (Debbug) fprintf(stderr, "%d:%d: none\n", Tokens->getLine(), __LINE__);
 		Tokens->getNextToken();
 		return new ValueAST(0, Types(Type_all));
+
 	}else if (isExpectedToken("_")) {
 		Tokens->getNextToken();
 		return new PlaceholderAST();
+
 	//VARIABLE_IDENTIFIER
 	}else if (isExpectedToken(TOK_IDENTIFIER)) {
 		for (size_t i = 0;i < VariableTable.size();i++)
@@ -1271,10 +1279,10 @@ BaseAST *Parser::visitPrimaryExpression() {
 				Tokens->getNextToken();
 				return new VariableAST(VariableTable[i]);
 			}
+
 	// '(' expression ')'
 	}else if (isExpectedToken("(")) {
 		Tokens->getNextToken();
-
 		//expression
 		BaseAST *assign_expr = visitAssignmentExpression(Type_all);
 		if (!assign_expr) {
@@ -1289,8 +1297,8 @@ BaseAST *Parser::visitPrimaryExpression() {
 			Tokens->applyTokenIndex(bkup);
 			return NULL;
 		}
-
 		Tokens->getNextToken();
+		
 		return assign_expr;
 	}
 	return NULL;

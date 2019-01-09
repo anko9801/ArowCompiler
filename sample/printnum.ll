@@ -182,6 +182,7 @@ declare i1 @sleep(i32)
 
 define i32 @main() {
 entry:
+  %array = alloca [2 x double]*, i32 2
   %call_tmp = call i32 @printnum(i32 1)
   %call_tmp1 = call i32 @printnum(i32 3)
   %call_tmp2 = call i32 @printnum(i32 3)

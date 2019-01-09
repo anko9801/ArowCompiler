@@ -51,20 +51,6 @@ typedef class Parser{
 			}
 			return NULL;
 		}
-		void ErrLog(std::string err) {
-			fprintf(stderr, err.c_str());
-		}
-
-		void addLib(TranslationUnitAST* TU,
-				Types ReturnType, std::string FuncName,
-				std::initializer_list<Types> param_type) {
-			std::vector<Seq> param_list;
-			std::string arg_name = "i";
-			for (Types i : param_type) {arg_name.push_back('i');param_list.push_back(Seq(i, "i"));}
-			PrototypeAST *proto = new PrototypeAST(ReturnType, FuncName, param_list);
-			TU->addPrototype(proto);
-			PrototypeTable.push_back(proto);
-		}
 
 		bool SetInsertPoint(BaseAST* Block) {
 			InsertPoint = Block;
@@ -85,9 +71,6 @@ typedef class Parser{
 			}else if(llvm::isa<WhileExprAST>(InsertPoint)) {
 				llvm::dyn_cast<WhileExprAST>(InsertPoint)->addLoop(stmt);
 				return true;
-			// }else if(llvm::isa<MatchExprAST>(InsertPoint)) {
-			// 	llvm::dyn_cast<MatchExprAST>(InsertPoint)->addLoop(stmt);
-			// 	return true;
 			}else{
 				fprintf(stderr, "error: unknown InsertPoint\n");
 			}
