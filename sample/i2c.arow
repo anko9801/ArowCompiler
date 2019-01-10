@@ -1,0 +1,10 @@
+import gpio.arow
+
+uint8 read() {
+	gpioMode(2, 0)
+	gpioWrite(2, 1)
+	gpio
+}
+
+bool write(uint8 a) {
+}

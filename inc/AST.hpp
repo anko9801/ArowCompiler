@@ -24,8 +24,8 @@ class VariableDeclAST;
 class BinaryExprAST;
 class CallExprAST;
 class JumpStmtAST;
-class IfExprAST;
-class WhileExprAST;
+class IfStmtAST;
+class WhileStmtAST;
 class PlaceholderAST;
 class VariableAST;
 class CastExprAST;
@@ -42,8 +42,8 @@ enum AstID{
 	StatementsID,
 	VariableDeclID,
 	BinaryExprID,
-	IfExprID,
-	WhileExprID,
+	IfStmtID,
+	WhileStmtID,
 	CallExprID,
 	JumpStmtID,
 	CastExprID,
@@ -226,13 +226,17 @@ class FunctionAST{
 };
 
 
-class StatementsAST {
+class StatementsAST : BaseAST {
 	std::vector<BaseAST*> Statements;
 	std::vector<VariableDeclAST*> VarDecls;
 
 	public:
-	StatementsAST(){}
+	StatementsAST() : BaseAST(StatementsID) {}
 	~StatementsAST();
+	static inline bool classof(StatementsAST const*){return true;}
+	static inline bool classof(BaseAST const* base){
+		return base->getValueID() == StatementsID;
+	}
 
 	bool addStatement(BaseAST *stmt){
 		Statements.push_back(stmt);
@@ -333,17 +337,17 @@ class BinaryExprAST : public BaseAST{
 /**
  * If文を表すAST
  */
-class IfExprAST : public BaseAST {
+class IfStmtAST : public BaseAST {
 	BaseAST *Cond;
 	StatementsAST *ThenStmt = new StatementsAST();
 	StatementsAST *ElseStmt = new StatementsAST();
 
 	public:
-	IfExprAST(BaseAST *Cond) : BaseAST(IfExprID), Cond(Cond){}
-	~IfExprAST(){}
-	static inline bool classof(IfExprAST const*){return true;}
+	IfStmtAST(BaseAST *Cond) : BaseAST(IfStmtID), Cond(Cond){}
+	~IfStmtAST(){}
+	static inline bool classof(IfStmtAST const*){return true;}
 	static inline bool classof(BaseAST const* base){
-		return base->getValueID() == IfExprID;
+		return base->getValueID() == IfStmtID;
 	}
 
 	BaseAST* getCond(){return Cond;}
@@ -357,16 +361,16 @@ class IfExprAST : public BaseAST {
 /**
  * While文を表すAST
  */
-class WhileExprAST : public BaseAST {
+class WhileStmtAST : public BaseAST {
 	BaseAST *Cond;
 	StatementsAST *LoopStmt = new StatementsAST();
 
 	public:
-	WhileExprAST(BaseAST *Cond) : BaseAST(WhileExprID), Cond(Cond){}
-	~WhileExprAST(){}
-	static inline bool classof(WhileExprAST const*){return true;}
+	WhileStmtAST(BaseAST *Cond) : BaseAST(WhileStmtID), Cond(Cond){}
+	~WhileStmtAST(){}
+	static inline bool classof(WhileStmtAST const*){return true;}
 	static inline bool classof(BaseAST const* base){
-		return base->getValueID() == WhileExprID;
+		return base->getValueID() == WhileStmtID;
 	}
 
 	BaseAST *getCond(){return Cond;}

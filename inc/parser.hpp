@@ -23,8 +23,6 @@ typedef class Parser{
 		BaseAST *InsertPoint;
 		bool warning = false;
 		Types CurFuncType;
-		bool setFuncType(Types type){CurFuncType = type;return true;}
-		Types getFuncType(){return CurFuncType;}
 
 		// 意味解析用各種識別子表
 		std::vector<VariableDeclAST*> VariableTable;
@@ -38,6 +36,8 @@ typedef class Parser{
 		~Parser(){SAFE_DELETE(TU);SAFE_DELETE(Tokens);}
 		bool doParse();
 		TranslationUnitAST &getAST();
+		bool setFuncType(Types type){CurFuncType = type;return true;}
+		Types getFuncType(){return CurFuncType;}
 
 		PrototypeAST *getPrototype(size_t i) {
 			if (i < PrototypeTable.size()) {
@@ -58,18 +58,21 @@ typedef class Parser{
 		}
 
 		bool addStatement(BaseAST* stmt, int branch = 0) {
-			if (llvm::isa<FunctionStmtAST>(InsertPoint)) {
+			if (llvm::isa<StatementsAST>(InsertPoint)) {
+				llvm::dyn_cast<StatementsAST>(InsertPoint)->addStatement(stmt);
+				return true;
+			}else if (llvm::isa<FunctionStmtAST>(InsertPoint)) {
 				llvm::dyn_cast<FunctionStmtAST>(InsertPoint)->addStatement(stmt);
 				return true;
-			}else if(llvm::isa<IfExprAST>(InsertPoint)) {
+			}else if(llvm::isa<IfStmtAST>(InsertPoint)) {
 				if (branch == 0) {
-					llvm::dyn_cast<IfExprAST>(InsertPoint)->addThen(stmt);
+					llvm::dyn_cast<IfStmtAST>(InsertPoint)->addThen(stmt);
 				}else{
-					llvm::dyn_cast<IfExprAST>(InsertPoint)->addElse(stmt);
+					llvm::dyn_cast<IfStmtAST>(InsertPoint)->addElse(stmt);
 				}
 				return true;
-			}else if(llvm::isa<WhileExprAST>(InsertPoint)) {
-				llvm::dyn_cast<WhileExprAST>(InsertPoint)->addLoop(stmt);
+			}else if(llvm::isa<WhileStmtAST>(InsertPoint)) {
+				llvm::dyn_cast<WhileStmtAST>(InsertPoint)->addLoop(stmt);
 				return true;
 			}else{
 				fprintf(stderr, "error: unknown InsertPoint\n");
@@ -89,6 +92,8 @@ typedef class Parser{
 				return Type_bool;
 			else if(Type == "char")
 				return Type_char;
+			else if (Type == "void")
+				return Type_void;
 			else
 				return Type_null;
 		}
@@ -111,10 +116,10 @@ typedef class Parser{
 		StatementsAST *visitStatements(BaseAST *InsertPoint, int branch);
 		BaseAST *visitStatement();
 		BaseAST *visitJumpStatement();
-		BaseAST *visitIfExpression();
-		BaseAST *visitWhileExpression();
+		BaseAST *visitIfStatement();
+		BaseAST *visitWhileStatement();
 		BaseAST *visitMatchExpression();
-		IfExprAST *visitPatternExpression(BaseAST *Eval);
+		IfStmtAST *visitPatternExpression(BaseAST *Eval);
 		BaseAST *visitAssignmentExpression(Types type);
 		BaseAST *visitExpression(BaseAST *lhs, Types type);
 		BaseAST *visitAdditiveExpression(BaseAST *lhs, Types type);

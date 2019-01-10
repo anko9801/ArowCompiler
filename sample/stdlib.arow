@@ -3,6 +3,3 @@ import lib.ll
 bool? printnum(int32? i);
 bool? sleep(int32? i);
 int32? usclock();
-bool? BlinkLED(int32? i);
-bool? GPIOsetup();
-bool? GPIOclear();

@@ -67,6 +67,11 @@ TranslationUnitAST::~TranslationUnitAST(){
 		SAFE_DELETE(Functions[i]);
 	}
 	Functions.clear();
+
+	for(size_t i = 0;i < Imports.size(); i++){
+		SAFE_DELETE(Imports[i]);
+	}
+	Imports.clear();
 }
 
 
@@ -162,16 +167,16 @@ void BaseAST::printAST(int nest = 0){
 		llvm::dyn_cast<JumpStmtAST>(this)->getExpr()->printAST(nest+1);
 	}else if(llvm::isa<VariableAST>(this))
 		fprintf(stderr, "Variable(%s)\n", llvm::dyn_cast<VariableAST>(this)->getType().printType().c_str());
-	else if(llvm::isa<IfExprAST>(this)){
-		fprintf(stderr, "IfExpression\n");
-		llvm::dyn_cast<IfExprAST>(this)->getCond()->printAST(nest);
-		for (int i = 0;;i++)if (llvm::dyn_cast<IfExprAST>(this)->getThen(i))llvm::dyn_cast<IfExprAST>(this)->getThen(i)->printAST(nest+1);else break;
-		for (int i = 0;;i++)if (llvm::dyn_cast<IfExprAST>(this)->getElse(i))llvm::dyn_cast<IfExprAST>(this)->getElse(i)->printAST(nest+1);else break;
+	else if(llvm::isa<IfStmtAST>(this)){
+		fprintf(stderr, "IfStatement\n");
+		llvm::dyn_cast<IfStmtAST>(this)->getCond()->printAST(nest);
+		for (int i = 0;;i++)if (llvm::dyn_cast<IfStmtAST>(this)->getThen(i))llvm::dyn_cast<IfStmtAST>(this)->getThen(i)->printAST(nest+1);else break;
+		for (int i = 0;;i++)if (llvm::dyn_cast<IfStmtAST>(this)->getElse(i))llvm::dyn_cast<IfStmtAST>(this)->getElse(i)->printAST(nest+1);else break;
 	}
-	else if(llvm::isa<WhileExprAST>(this)) {
-		fprintf(stderr, "WhileExpression\n");
-		llvm::dyn_cast<WhileExprAST>(this)->getCond()->printAST(nest);
-		for (int i = 0;;i++)if (llvm::dyn_cast<WhileExprAST>(this)->getLoop(i))llvm::dyn_cast<WhileExprAST>(this)->getLoop(i)->printAST(nest+1);else break;
+	else if(llvm::isa<WhileStmtAST>(this)) {
+		fprintf(stderr, "WhileStatement\n");
+		llvm::dyn_cast<WhileStmtAST>(this)->getCond()->printAST(nest);
+		for (int i = 0;;i++)if (llvm::dyn_cast<WhileStmtAST>(this)->getLoop(i))llvm::dyn_cast<WhileStmtAST>(this)->getLoop(i)->printAST(nest+1);else break;
 	}
 	else if(llvm::isa<ValueAST>(this))
 		fprintf(stderr, "Value(%s)\n", llvm::dyn_cast<ValueAST>(this)->getType().printType().c_str());

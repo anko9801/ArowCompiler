@@ -18,9 +18,7 @@ CodeGen::~CodeGen() {
   * @return 成功時：true　失敗時:false
   */
 bool CodeGen::doCodeGen(TranslationUnitAST &tunit, std::string name, std::string link_file, bool with_jit=false){
-	if(!generateTranslationUnit(tunit, name)){
-		return false;
-	}
+	if(!generateTranslationUnit(tunit, name)) return false;
 
 	//LinkFileの指定があったらModuleをリンク
 	if(!link_file.empty() && !linkModule(Mod, link_file) )
@@ -41,9 +39,7 @@ bool CodeGen::doCodeGen(TranslationUnitAST &tunit, std::string name, std::string
 	return true;
 }
 
-/**
-  * Module取得
-  */
+
 Module &CodeGen::getModule(){
 	if(Mod)
 		return *Mod;
@@ -51,6 +47,10 @@ Module &CodeGen::getModule(){
 		return *(new Module("null", GlobalContext));
 }
 
+
+/**
+  * LLVM IRとリンク
+  */
 bool CodeGen::linkModule(Module *dest, std::string file_name){
 	if (llvmDebbug) fprintf(stderr, "%d: %s\n", __LINE__, __func__);
 	SMDiagnostic err;
@@ -265,10 +265,10 @@ Value *CodeGen::generateArray() {
 
 /**
   * If文生成メソッド
-  * @param IfExprAST
+  * @param IfStmtAST
   * @return 生成したValueのポインタ
   */
-Value *CodeGen::generateIfExpr(IfExprAST *if_expr) {
+Value *CodeGen::genereateIfStmt(IfStmtAST *if_expr) {
 	if (llvmDebbug) fprintf(stderr, "%d: %s\n", __LINE__, __func__);
 
 	Value *CondV = generateCondition(if_expr->getCond());
@@ -308,10 +308,10 @@ Value *CodeGen::generateIfExpr(IfExprAST *if_expr) {
 
 /**
   * While文生成メソッド
-  * @param WhileExprAST
+  * @param WhileStmtAST
   * @return 生成したValueのポインタ
   */
-Value *CodeGen::generateWhileExpr(WhileExprAST *while_expr) {
+Value *CodeGen::genereateWhileStmt(WhileStmtAST *while_expr) {
 	if (llvmDebbug) fprintf(stderr, "%d: %s\n", __LINE__, __func__);
 	Value *CondV = generateCondition(while_expr->getCond());
 
@@ -487,10 +487,10 @@ Value *CodeGen::generateStatement(BaseAST *stmt){
 		return generateCallExpression(dyn_cast<CallExprAST>(stmt));
 	else if(isa<JumpStmtAST>(stmt))
 		return generateJumpStatement(dyn_cast<JumpStmtAST>(stmt));
-	else if(isa<IfExprAST>(stmt))
-		return generateIfExpr(dyn_cast<IfExprAST>(stmt));
-	else if(isa<WhileExprAST>(stmt))
-		return generateWhileExpr(dyn_cast<WhileExprAST>(stmt));
+	else if(isa<IfStmtAST>(stmt))
+		return genereateIfStmt(dyn_cast<IfStmtAST>(stmt));
+	else if(isa<WhileStmtAST>(stmt))
+		return genereateWhileStmt(dyn_cast<WhileStmtAST>(stmt));
 	return NULL;
 }
 
@@ -500,7 +500,7 @@ Value *CodeGen::generateStatement(BaseAST *stmt){
   * @param  BaseAST
   * @return 生成したValueのポインタ
   */
-Value *CodeGen::generateExpression(BaseAST *expr/*, Type *type = Type::getInt32Ty(GlobalContext)*/) {
+Value *CodeGen::generateExpression(BaseAST *expr) {
 	if(isa<BinaryExprAST>(expr))
 		return generateBinaryExpression(dyn_cast<BinaryExprAST>(expr));
 	else if(isa<CallExprAST>(expr))
@@ -598,8 +598,7 @@ Value *CodeGen::generateCastExpression(Value *src, Types SrcType, Types DestType
 	Type *DestTy = generateType(DestType);
 
 	if (SrcType.getNonNull() < DestType.getNonNull()) {
-		// Value *CondV = Builder->CreateICmpNE(src, 0, "ifcond");
-		// Builder->CreateCondBr(CondV, ThenBB, ElseBB);
+		return src;
 	}
 
 	if (SrcType.getPrimType() == Type_int || SrcType.getPrimType() == Type_uint) {

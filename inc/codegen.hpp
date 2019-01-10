@@ -55,8 +55,8 @@ class CodeGen{
 		Value *generateVariableDeclaration(VariableDeclAST *vdecl);
 		Value *generateArray();
 		Value *generateStatement(BaseAST *stmt);
-		Value *generateIfExpr(IfExprAST *if_expr);
-		Value *generateWhileExpr(WhileExprAST *while_expr);
+		Value *genereateIfStmt(IfStmtAST *if_expr);
+		Value *genereateWhileStmt(WhileStmtAST *while_expr);
 		Value *generateCondition(BaseAST *Cond);
 		Value *generateExpression(BaseAST *expr);
 		Value *generateBinaryExpression(BinaryExprAST *bin_expr);

@@ -1,8 +1,16 @@
 import stdlib.arow
+import gpio.arow
 
 int main() {
-	GPIOsetup();
-	BlinkLED(23);
-	GPIOclear();
-	return 0;
+	gpioMode(23, 1)
+	int i = 0
+	while (i < 5) {
+		i = i + 1
+		gpioWrite(23, 1)
+		sleep(1)
+		gpioWrite(23, 0)
+		sleep(1)
+	}
+	gpioClear(23)
+	return 0
 }

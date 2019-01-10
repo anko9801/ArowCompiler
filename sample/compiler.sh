@@ -19,10 +19,9 @@ if [ -e $FILE.ll ]; then
 	if [ -z $2 ]; then
 		llc -o $FILE.s $FILE.ll -filetype=asm
 		gcc -o $FILE $FILE.s
+		rm $FILE.s
 	else
-		llc -o $FILE-diffarch.o $FILE.ll -filetype=obj -mtriple=$2-unknown-linux-gnueabihf
-		gcc -c $FILE-diffarch.o ../lib/blink.o -o $FILE.o
+		llc -o $FILE-diffarch.s $FILE.ll -filetype=asm -mtriple=$2-unknown-linux-gnueabihf
+		scp ./$FILE-diffarch.s pi@raspberrypi.local:~/GPIO/
 	fi
-
-	rm $FILE.s
 fi

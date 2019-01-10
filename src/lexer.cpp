@@ -51,7 +51,7 @@ TokenStream *LexicalAnalysis(std::string input_filename){
 				token_str += next_char;
 				if(index < length) {
 					next_char = cur_line.at(index++);
-					while(isalnum(next_char)){
+					while(isalnum(next_char) || next_char == '_'){
 						token_str += next_char;
 						if(index == length){index++;break;}
 						next_char = cur_line.at(index++);
@@ -63,7 +63,7 @@ TokenStream *LexicalAnalysis(std::string input_filename){
 
 				// switch使いてぇええ
 				// 予約語と識別子
-				if(token_str == "int" || token_str == "bool" || token_str == "float" || token_str == "uint"){
+				if(token_str == "int" || token_str == "bool" || token_str == "float" || token_str == "uint" || token_str == "void"){
 					next_token = new Token(token_str, TOK_TYPE, line_num);
 				}else if(token_str == "if") {
 					next_token = new Token(token_str, TOK_IF, line_num);
