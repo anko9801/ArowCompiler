@@ -941,6 +941,57 @@ BaseAST *Parser::visitAdditiveExpression(BaseAST *lhs, Types type = Types(Type_a
 			fprintf(stderr, "%d:%d: error: rhs of minus is nothing\n", Tokens->getLine(), __LINE__);
 			return NULL;
 		}
+
+	// ||
+	}else if (isExpectedToken("||")) {
+		Tokens->getNextToken();
+		rhs = visitCastExpression();
+		if (rhs) {
+			// 暗黙の型変換
+			lhs = visitImplicitCastNumber(lhs, Types(Type_bool));
+			rhs = visitImplicitCastNumber(rhs, Types(Type_bool));
+			type = lhs->getType();
+			return visitMultiplicativeExpression(new BinaryExprAST("||", lhs, rhs, type), type);
+		}else{
+			SAFE_DELETE(lhs);
+			Tokens->applyTokenIndex(bkup);
+			fprintf(stderr, "%d:%d: error: rhs of  is nothing\n", Tokens->getLine(), __LINE__);
+			return NULL;
+		}
+
+	// |
+	}else if (isExpectedToken("|")) {
+		Tokens->getNextToken();
+		rhs = visitCastExpression();
+		if (rhs) {
+			// 暗黙の型変換
+			lhs = visitImplicitCastNumber(lhs, rhs->getType());
+			rhs = visitImplicitCastNumber(rhs, lhs->getType());
+			type = lhs->getType();
+			return visitMultiplicativeExpression(new BinaryExprAST("|", lhs, rhs, type), type);
+		}else{
+			SAFE_DELETE(lhs);
+			Tokens->applyTokenIndex(bkup);
+			fprintf(stderr, "%d:%d: error: rhs of  is nothing\n", Tokens->getLine(), __LINE__);
+			return NULL;
+		}
+
+	// ^
+	}else if (isExpectedToken("^")) {
+		Tokens->getNextToken();
+		rhs = visitCastExpression();
+		if (rhs) {
+			// 暗黙の型変換
+			lhs = visitImplicitCastNumber(lhs, rhs->getType());
+			rhs = visitImplicitCastNumber(rhs, lhs->getType());
+			type = lhs->getType();
+			return visitMultiplicativeExpression(new BinaryExprAST("^", lhs, rhs, type), type);
+		}else{
+			SAFE_DELETE(lhs);
+			Tokens->applyTokenIndex(bkup);
+			fprintf(stderr, "%d:%d: error: rhs of  is nothing\n", Tokens->getLine(), __LINE__);
+			return NULL;
+		}
 	}
 	if (type == Types(Type_number) && lhs->getType() != type)
 		lhs = new CastExprAST(lhs, type);
@@ -1007,7 +1058,6 @@ BaseAST *Parser::visitMultiplicativeExpression(BaseAST *lhs, Types type = Types(
 			// 暗黙の型変換
 			lhs = visitImplicitCastNumber(lhs, rhs->getType());
 			rhs = visitImplicitCastNumber(rhs, lhs->getType());
-			// 型変換が行われなかった時
 			type = lhs->getType();
 			return visitMultiplicativeExpression(new BinaryExprAST("%", lhs, rhs, type), type);
 		}else{
@@ -1016,7 +1066,76 @@ BaseAST *Parser::visitMultiplicativeExpression(BaseAST *lhs, Types type = Types(
 			fprintf(stderr, "%d:%d: error: rhs of divide is nothing\n", Tokens->getLine(), __LINE__);
 			return NULL;
 		}
+
+	// <<
+	}else if (isExpectedToken("<<")) {
+		Tokens->getNextToken();
+		rhs = visitCastExpression();
+		if (rhs) {
+			// 暗黙の型変換
+			lhs = visitImplicitCastNumber(lhs, rhs->getType());
+			rhs = visitImplicitCastNumber(rhs, lhs->getType());
+			type = lhs->getType();
+			return visitMultiplicativeExpression(new BinaryExprAST("<<", lhs, rhs, type), type);
+		}else{
+			SAFE_DELETE(lhs);
+			Tokens->applyTokenIndex(bkup);
+			fprintf(stderr, "%d:%d: error: rhs of << is nothing\n", Tokens->getLine(), __LINE__);
+			return NULL;
+		}
+
+	// >>
+	}else if (isExpectedToken(">>")) {
+		Tokens->getNextToken();
+		rhs = visitCastExpression();
+		if (rhs) {
+			// 暗黙の型変換
+			lhs = visitImplicitCastNumber(lhs, rhs->getType());
+			rhs = visitImplicitCastNumber(rhs, lhs->getType());
+			type = lhs->getType();
+			return visitMultiplicativeExpression(new BinaryExprAST(">>", lhs, rhs, type), type);
+		}else{
+			SAFE_DELETE(lhs);
+			Tokens->applyTokenIndex(bkup);
+			fprintf(stderr, "%d:%d: error: rhs of >> is nothing\n", Tokens->getLine(), __LINE__);
+			return NULL;
+		}
+	
+	// &
+	}else if (isExpectedToken("&")) {
+		Tokens->getNextToken();
+		rhs = visitCastExpression();
+		if (rhs) {
+			// 暗黙の型変換
+			lhs = visitImplicitCastNumber(lhs, rhs->getType());
+			rhs = visitImplicitCastNumber(rhs, lhs->getType());
+			type = lhs->getType();
+			return visitMultiplicativeExpression(new BinaryExprAST("&", lhs, rhs, type), type);
+		}else{
+			SAFE_DELETE(lhs);
+			Tokens->applyTokenIndex(bkup);
+			fprintf(stderr, "%d:%d: error: rhs of  is nothing\n", Tokens->getLine(), __LINE__);
+			return NULL;
+		}
+
+	// &&
+	}else if (isExpectedToken("&&")) {
+		Tokens->getNextToken();
+		rhs = visitCastExpression();
+		if (rhs) {
+			// 暗黙の型変換
+			lhs = visitImplicitCastNumber(lhs, Types(Type_bool));
+			rhs = visitImplicitCastNumber(rhs, Types(Type_bool));
+			type = lhs->getType();
+			return visitMultiplicativeExpression(new BinaryExprAST("&&", lhs, rhs, type), type);
+		}else{
+			SAFE_DELETE(lhs);
+			Tokens->applyTokenIndex(bkup);
+			fprintf(stderr, "%d:%d: error: rhs of  is nothing\n", Tokens->getLine(), __LINE__);
+			return NULL;
+		}
 	}
+
 	return lhs;
 }
 

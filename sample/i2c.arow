@@ -1,11 +1,23 @@
 import gpio.arow
 
-uint8 read() {
-	gpioMode(2, 0)
-	gpioWrite(2, 1)
-	wait
-	gpio
+bool send(int gpio_num, uint8 size, uint8 a) {
+	uint8 i = 0
+	while (i < size) {
+		i = i + 1
+		if (a % 2 == 0) {
+			gpioWrite(gpio_num, 1)
+		}else{
+			gpioWrite(gpio_num, 0)
+		}
+		a = a / 2
+		wait(10)
+	}
+	return true
 }
 
-bool write(uint8 a) {
+uint8 read() {
+	gpioMode(2, 0)
+	send(2, 2, 2)
+	gpioWrite()
+	gpioWrite()
 }

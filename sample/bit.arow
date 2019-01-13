@@ -1,0 +1,7 @@
+import stdlib.arow
+
+int main() {
+	int a = 3 << 3
+	printnum(a?)
+	return 0
+}

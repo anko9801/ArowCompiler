@@ -385,8 +385,11 @@ Value *CodeGen::generateBinaryExpression(BinaryExprAST *bin_expr){
 	if (llvmDebbug) fprintf(stderr, "%d: lhs and rhs exist\n", __LINE__);
 
 	prim_type type;
-	if (lhs->getType().getPrimType() == rhs->getType().getPrimType())
+	if (lhs->getType().getPrimType() == rhs->getType().getPrimType()) {
 		type = lhs->getType().getPrimType();
+	}else{
+		return NULL;
+	}
 
 	if(bin_expr->getOp() == "="){
 		return Builder->CreateStore(rhs_v, lhs_v);
@@ -424,6 +427,21 @@ Value *CodeGen::generateBinaryExpression(BinaryExprAST *bin_expr){
 			return Builder->CreateSRem(lhs_v, rhs_v, "rem_tmp");
 		else if (type == Type_float)
 			return Builder->CreateFRem(lhs_v, rhs_v, "rem_tmp");
+	
+	}else if(bin_expr->getOp() == "<<"){
+		return Builder->CreateShl(lhs_v, rhs_v, "shl_tmp");
+	
+	}else if(bin_expr->getOp() == ">>"){
+		return Builder->CreateAShr(lhs_v, rhs_v, "ashr_tmp");
+
+	}else if(bin_expr->getOp() == "&"){
+		return Builder->CreateAnd(lhs_v, rhs_v, "and_tmp");
+
+	}else if(bin_expr->getOp() == "|"){
+		return Builder->CreateOr(lhs_v, rhs_v, "or_tmp");
+
+	}else if(bin_expr->getOp() == "^"){
+		return Builder->CreateXor(lhs_v, rhs_v, "xor_tmp");
 	}
 	return NULL;
 }

@@ -231,6 +231,9 @@ TokenStream *LexicalAnalysis(std::string input_filename){
 						if (next_char == '=') {
 							token_str += next_char;
 							next_token = new Token(token_str, TOK_SYMBOL, line_num);
+						}else if (next_char == '>') {
+							token_str += next_char;
+							next_token = new Token(token_str, TOK_SYMBOL, line_num);
 						}else{
 							index--;
 							next_token = new Token(token_str, TOK_SYMBOL, line_num);
@@ -241,6 +244,9 @@ TokenStream *LexicalAnalysis(std::string input_filename){
 						token_str += next_char;
 						next_char = cur_line.at(index++);
 						if (next_char == '=') {
+							token_str += next_char;
+							next_token = new Token(token_str, TOK_SYMBOL, line_num);
+						}else if (next_char == '<') {
 							token_str += next_char;
 							next_token = new Token(token_str, TOK_SYMBOL, line_num);
 						}else{
@@ -257,9 +263,7 @@ TokenStream *LexicalAnalysis(std::string input_filename){
 							next_token = new Token(token_str, TOK_SYMBOL, line_num);
 						}else{
 							index--;
-							fprintf(stderr, "unclear token : %s\n", token_str.c_str());
-							SAFE_DELETE(tokens);
-							return NULL;
+							next_token = new Token(token_str, TOK_SYMBOL, line_num);
 						}
 						break;
 
@@ -271,9 +275,7 @@ TokenStream *LexicalAnalysis(std::string input_filename){
 							next_token = new Token(token_str, TOK_SYMBOL, line_num);
 						}else{
 							index--;
-							fprintf(stderr, "unclear token : %s\n", token_str.c_str());
-							SAFE_DELETE(tokens);
-							return NULL;
+							next_token = new Token(token_str, TOK_SYMBOL, line_num);
 						}
 						break;
 
