@@ -94,13 +94,13 @@ Type *CodeGen::generateType(Types type) {
 		}else if (type.getBits() == 80) {
 			return Type::getX86_FP80Ty(GlobalContext);
 		}else{
-			fprintf(stderr, "Type is not found\n");
+			fprintf(stderr, "Type is not found '%s'\n", type.printType().c_str());
 			return Type::getFloatTy(GlobalContext);
 		}
 	}else if (type.getPrimType() == Type_bool) {
 		return Type::getInt1Ty(GlobalContext);
 	}else{
-		fprintf(stderr, "Type is not found\n");
+		fprintf(stderr, "Type is not found '%s'\n", type.printType().c_str());
 		return Type::getInt32Ty(GlobalContext);
 	}
 }
@@ -542,6 +542,35 @@ Value *CodeGen::generateExpression(BaseAST *expr) {
   * @return 生成したValueのポインタ
   */
 Value *CodeGen::generateCondition(BaseAST* Cond) {
+	if (isa<BinaryExprAST>(Cond)) {
+		auto CondBinary = dyn_cast<BinaryExprAST>(Cond);
+		if (CondBinary->getOp() == "&&") {
+			return Builder->CreateAnd(
+				generateCondition(CondBinary->getLHS()),
+				generateCondition(CondBinary->getRHS()),
+				"and_cond"
+				);
+		}else if (CondBinary->getOp() == "||") {
+			return Builder->CreateOr(
+				generateCondition(CondBinary->getLHS()),
+				generateCondition(CondBinary->getRHS()),
+				"or_cond"
+				);
+		}else{
+			return generateCompare(Cond);
+		}
+	}else{
+		return generateCompare(Cond);
+	}
+}
+
+
+/**
+  * 条件生成メソッド
+  * @param  BaseAST
+  * @return 生成したValueのポインタ
+  */
+Value *CodeGen::generateCompare(BaseAST* Cond) {
 	if(isa<ValueAST>(Cond)) {
 		return generateValue(dyn_cast<ValueAST>(Cond));
 

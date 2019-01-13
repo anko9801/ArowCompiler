@@ -121,6 +121,7 @@ typedef class Parser{
 		BaseAST *visitMatchExpression();
 		IfStmtAST *visitPatternExpression(BaseAST *Eval);
 		BaseAST *visitAssignmentExpression(Types type);
+		BaseAST *visitCondition(BaseAST *lhs, Types type);
 		BaseAST *visitExpression(BaseAST *lhs, Types type);
 		BaseAST *visitAdditiveExpression(BaseAST *lhs, Types type);
 		BaseAST *visitMultiplicativeExpression(BaseAST *lhs, Types type);

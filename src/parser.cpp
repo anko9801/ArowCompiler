@@ -612,7 +612,7 @@ BaseAST *Parser::visitIfStatement() {
 	}
 	Tokens->getNextToken();
 
-	CondStmt = visitExpression(NULL, Types(Type_bool));
+	CondStmt = visitCondition(NULL, Types(Type_bool));
 	if (!CondStmt || CondStmt->getType() != Types(Type_bool, 1, true)) {
 		fprintf(stderr, "%d:%d: error: if condition is not bool\n", Tokens->getLine(), __LINE__);
 		Tokens->applyTokenIndex(bkup);
@@ -661,7 +661,7 @@ BaseAST *Parser::visitWhileStatement() {
 	}
 	Tokens->getNextToken();
 
-	CondStmt = visitExpression(NULL, Types(Type_bool));
+	CondStmt = visitCondition(NULL, Types(Type_bool));
 	if (Debbug) fprintf(stderr, "%d:%d: %s\n", Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
 	if (!CondStmt || CondStmt->getType() != Types(Type_bool)) {
 		Tokens->applyTokenIndex(bkup);
@@ -842,13 +842,59 @@ BaseAST *Parser::visitAssignmentExpression(Types type) {
 	}
 
 	//additive_expression
-	lhs = visitExpression(NULL, Types(Type_all));
+	lhs = visitCondition(NULL, Types(Type_all));
 	if (!lhs)
 		return NULL;
 	
 	if (isExpectedToken(";") || isExpectedToken("\n")) {
 		Tokens->getNextToken();
 		return lhs;
+	}
+
+	return lhs;
+}
+
+
+
+BaseAST *Parser::visitCondition(BaseAST *lhs, Types type) {
+	int bkup = Tokens->getCurIndex();
+	if (!lhs)
+		lhs = visitExpression(NULL, type);
+	if (!lhs)
+		return NULL;
+	
+	BaseAST *rhs;
+
+	// ||
+	if (isExpectedToken("||")) {
+		Tokens->getNextToken();
+		rhs = visitExpression(NULL, Types(Type_bool));
+		if (rhs) {
+			// 暗黙の型変換
+			lhs = visitImplicitCastNumber(lhs, Types(Type_bool));
+			rhs = visitImplicitCastNumber(rhs, Types(Type_bool));
+			type = Types(Type_bool);
+			return visitExpression(new BinaryExprAST("||", lhs, rhs, type), type);
+		}else{
+			SAFE_DELETE(lhs);
+			Tokens->applyTokenIndex(bkup);
+			fprintf(stderr, "%d:%d: error: rhs of || is nothing\n", Tokens->getLine(), __LINE__);
+			return NULL;
+		}
+	// &&
+	}else if (isExpectedToken("&&")) {
+		Tokens->getNextToken();
+		rhs = visitExpression(NULL, Types(Type_bool));
+		if (rhs) {
+			// 暗黙の型変換
+			type = Types(Type_bool);
+			return visitExpression(new BinaryExprAST("&&", lhs, rhs, type), type);
+		}else{
+			SAFE_DELETE(lhs);
+			Tokens->applyTokenIndex(bkup);
+			fprintf(stderr, "%d:%d: error: rhs of && is nothing\n", Tokens->getLine(), __LINE__);
+			return NULL;
+		}
 	}
 
 	return lhs;
@@ -923,6 +969,7 @@ BaseAST *Parser::visitAdditiveExpression(BaseAST *lhs, Types type = Types(Type_a
 			fprintf(stderr, "%d:%d: error: rhs of plus is nothing\n", Tokens->getLine(), __LINE__);
 			return NULL;
 		}
+
 	//-
 	}else if (isExpectedToken("-")) {
 		Tokens->getNextToken();
@@ -942,23 +989,6 @@ BaseAST *Parser::visitAdditiveExpression(BaseAST *lhs, Types type = Types(Type_a
 			return NULL;
 		}
 
-	// ||
-	}else if (isExpectedToken("||")) {
-		Tokens->getNextToken();
-		rhs = visitCastExpression();
-		if (rhs) {
-			// 暗黙の型変換
-			lhs = visitImplicitCastNumber(lhs, Types(Type_bool));
-			rhs = visitImplicitCastNumber(rhs, Types(Type_bool));
-			type = lhs->getType();
-			return visitMultiplicativeExpression(new BinaryExprAST("||", lhs, rhs, type), type);
-		}else{
-			SAFE_DELETE(lhs);
-			Tokens->applyTokenIndex(bkup);
-			fprintf(stderr, "%d:%d: error: rhs of  is nothing\n", Tokens->getLine(), __LINE__);
-			return NULL;
-		}
-
 	// |
 	}else if (isExpectedToken("|")) {
 		Tokens->getNextToken();
@@ -972,7 +1002,7 @@ BaseAST *Parser::visitAdditiveExpression(BaseAST *lhs, Types type = Types(Type_a
 		}else{
 			SAFE_DELETE(lhs);
 			Tokens->applyTokenIndex(bkup);
-			fprintf(stderr, "%d:%d: error: rhs of  is nothing\n", Tokens->getLine(), __LINE__);
+			fprintf(stderr, "%d:%d: error: rhs of | is nothing\n", Tokens->getLine(), __LINE__);
 			return NULL;
 		}
 
@@ -989,7 +1019,7 @@ BaseAST *Parser::visitAdditiveExpression(BaseAST *lhs, Types type = Types(Type_a
 		}else{
 			SAFE_DELETE(lhs);
 			Tokens->applyTokenIndex(bkup);
-			fprintf(stderr, "%d:%d: error: rhs of  is nothing\n", Tokens->getLine(), __LINE__);
+			fprintf(stderr, "%d:%d: error: rhs of ^ is nothing\n", Tokens->getLine(), __LINE__);
 			return NULL;
 		}
 	}
@@ -1111,23 +1141,6 @@ BaseAST *Parser::visitMultiplicativeExpression(BaseAST *lhs, Types type = Types(
 			rhs = visitImplicitCastNumber(rhs, lhs->getType());
 			type = lhs->getType();
 			return visitMultiplicativeExpression(new BinaryExprAST("&", lhs, rhs, type), type);
-		}else{
-			SAFE_DELETE(lhs);
-			Tokens->applyTokenIndex(bkup);
-			fprintf(stderr, "%d:%d: error: rhs of  is nothing\n", Tokens->getLine(), __LINE__);
-			return NULL;
-		}
-
-	// &&
-	}else if (isExpectedToken("&&")) {
-		Tokens->getNextToken();
-		rhs = visitCastExpression();
-		if (rhs) {
-			// 暗黙の型変換
-			lhs = visitImplicitCastNumber(lhs, Types(Type_bool));
-			rhs = visitImplicitCastNumber(rhs, Types(Type_bool));
-			type = lhs->getType();
-			return visitMultiplicativeExpression(new BinaryExprAST("&&", lhs, rhs, type), type);
 		}else{
 			SAFE_DELETE(lhs);
 			Tokens->applyTokenIndex(bkup);

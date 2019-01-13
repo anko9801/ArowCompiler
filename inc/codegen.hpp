@@ -58,6 +58,7 @@ class CodeGen{
 		Value *genereateIfStmt(IfStmtAST *if_expr);
 		Value *genereateWhileStmt(WhileStmtAST *while_expr);
 		Value *generateCondition(BaseAST *Cond);
+		Value *generateCompare(BaseAST *Cond);
 		Value *generateExpression(BaseAST *expr);
 		Value *generateBinaryExpression(BinaryExprAST *bin_expr);
 		Value *generateCallExpression(CallExprAST *call_expr);

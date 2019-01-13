@@ -1,0 +1,9 @@
+import stdlib.arow
+
+int main() {
+	int i = 0
+	if (i < 5 && i > -1) {
+		printnum(i?)
+	}
+	return 0
+}
