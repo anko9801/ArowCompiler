@@ -145,7 +145,7 @@ PrototypeAST *Parser::visitFunctionDeclaration() {
   * @return 解析成功：FunctionAST　解析失敗：NULL
   */
 FunctionAST *Parser::visitFunctionDefinition() {
-	int bkup=Tokens->getCurIndex();
+	int bkup = Tokens->getCurIndex();
 
 	if (Debbug) fprintf(stderr, "%s\n", __func__);
 	PrototypeAST *proto = visitPrototype();
@@ -186,7 +186,7 @@ PrototypeAST *Parser::visitPrototype() {
 	Types var_type;
 
 	//bkup index
-	int bkup=Tokens->getCurIndex();
+	int bkup = Tokens->getCurIndex();
 
 	//type_specifier
 	func_type = visitTypes();
@@ -250,6 +250,7 @@ PrototypeAST *Parser::visitPrototype() {
 			//引数の変数名に被りがないか確認
 			for (size_t i = 0;i < param_list.size();i++) {
 				if (param_list[i].Name == Tokens->getCurString()) {
+					fprintf(stderr, "%d:%d: error: argument name is same\n", Tokens->getLine(), __LINE__);
 					Tokens->applyTokenIndex(bkup);
 					return NULL;
 				}
@@ -293,7 +294,7 @@ PrototypeAST *Parser::visitPrototype() {
   * @return 解析成功：FunctionSmtAST　解析失敗：NULL
   */
 FunctionStmtAST *Parser::visitFunctionStatement(PrototypeAST *proto) {
-	int bkup=Tokens->getCurIndex();
+	int bkup = Tokens->getCurIndex();
 
 	//create FunctionStatement
 	FunctionStmtAST *func_stmt = new FunctionStmtAST();
@@ -409,6 +410,8 @@ Types Parser::visitTypes() {
 		bits = 32;
 		if (Type == Type_bool)
 			bits = 1;
+		if (Type == Type_void)
+			bits = 0;
 	}
 
 	// non-null type
@@ -559,7 +562,7 @@ VariableDeclAST *Parser::visitVariableDeclaration() {
   * @return 解析成功：AST　解析失敗：NULL
   */
 BaseAST *Parser::visitJumpStatement() {
-	int bkup=Tokens->getCurIndex();
+	int bkup = Tokens->getCurIndex();
 	BaseAST *expr;
 
 	if (!isExpectedToken(TOK_RETURN))
@@ -895,7 +898,7 @@ BaseAST *Parser::visitExpression(BaseAST *lhs, Types type) {
  */
 BaseAST *Parser::visitAdditiveExpression(BaseAST *lhs, Types type = Types(Type_all)) {
 	//bkup index
-	int bkup=Tokens->getCurIndex();
+	int bkup = Tokens->getCurIndex();
 
 	if (!lhs)
 		lhs = visitMultiplicativeExpression(NULL, type);
@@ -952,7 +955,7 @@ BaseAST *Parser::visitAdditiveExpression(BaseAST *lhs, Types type = Types(Type_a
  */
 BaseAST *Parser::visitMultiplicativeExpression(BaseAST *lhs, Types type = Types(Type_all)) {
 	//bkup index
-	int bkup=Tokens->getCurIndex();
+	int bkup = Tokens->getCurIndex();
 
 	if (!lhs)
 		lhs = visitCastExpression();
@@ -981,7 +984,7 @@ BaseAST *Parser::visitMultiplicativeExpression(BaseAST *lhs, Types type = Types(
 	// /
 	}else if (isExpectedToken("/")) {
 		Tokens->getNextToken();
-		rhs=visitCastExpression();
+		rhs = visitCastExpression();
 		if (rhs) {
 			// 暗黙の型変換
 			lhs = visitImplicitCastNumber(lhs, rhs->getType());
@@ -1024,7 +1027,7 @@ BaseAST *Parser::visitMultiplicativeExpression(BaseAST *lhs, Types type = Types(
   */
 BaseAST *Parser::visitCastExpression() {
 	//bkup index
-	int bkup=Tokens->getCurIndex();
+	int bkup = Tokens->getCurIndex();
 	BaseAST *lhs = visitPostfixExpression();
 	if (!lhs)
 		return NULL;
@@ -1131,7 +1134,7 @@ BaseAST *Parser::visitImplicitCastBits(BaseAST *src, Types impl_type) {
   * @return 解析成功：AST　解析失敗：NULL
   */
 BaseAST *Parser::visitPostfixExpression() {
-	int bkup=Tokens->getCurIndex();
+	int bkup = Tokens->getCurIndex();
 
 	//primary_expression
 	BaseAST *prim_expr = visitPrimaryExpression();
@@ -1200,10 +1203,10 @@ BaseAST *Parser::visitPostfixExpression() {
 	for (size_t i = 0;i < args.size();i++) {
 		// 暗黙の型変換
 		args[i] = visitImplicitCastNumber(args[i], proto->getParamType(i));
-		if (args[i]->getType() != proto->getParamType(i) || args[i]->getType().getNonNull() <= proto->getParamType(i).getNonNull()) {
+		if (args[i]->getType() != proto->getParamType(i) || args[i]->getType().getNonNull() < proto->getParamType(i).getNonNull()) {
+			fprintf(stderr, "%d:%d: error: no match for function param found %s but %s in '%s'\n", Tokens->getLine(), __LINE__, proto->getParamType(i).printType().c_str(), args[i]->getType().printType().c_str(), Callee.c_str());
 			for (size_t j = 0;j < args.size();j++)
 				SAFE_DELETE(args[j]);
-			fprintf(stderr, "%d:%d: error: no match for function param '%s'\n", Tokens->getLine(), __LINE__, Callee.c_str());
 			Tokens->applyTokenIndex(bkup);
 			return NULL;
 		}
@@ -1228,7 +1231,7 @@ BaseAST *Parser::visitPostfixExpression() {
   * @return 解析成功時：AST　失敗時：NULL
   */
 BaseAST *Parser::visitPrimaryExpression() {
-	int bkup=Tokens->getCurIndex();
+	int bkup = Tokens->getCurIndex();
 
 	// 数値、真偽値、条件式、変数呼び出しなど
 	//integer

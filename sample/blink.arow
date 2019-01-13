@@ -2,15 +2,21 @@ import stdlib.arow
 import gpio.arow
 
 int main() {
+	printnum(2)
+	confirm()
+	printnum(2)
 	gpioMode(23, 1)
+	printnum(2)
 	int i = 0
-	while (i < 5) {
+	while (i != 5) {
+		printnum(i?)
 		i = i + 1
 		gpioWrite(23, 1)
-		sleep(1)
+		wait(1000000)
 		gpioWrite(23, 0)
-		sleep(1)
+		wait(1000000)
 	}
 	gpioClear(23)
+	Close()
 	return 0
 }

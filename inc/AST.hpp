@@ -73,9 +73,9 @@ struct Types {
 	int ArraySize = 0;
 
 	Types() : Type(prim_type::Type_null), bits(0){}
-	Types(prim_type type, int bits=32, bool non_null=false)
+	Types(prim_type type, int bits=32, bool non_null = false)
 		: Type(type), bits(bits), non_null(non_null){}
-	Types(prim_type type, int size, int bits=32, bool non_null=false)
+	Types(prim_type type, int size, int bits=32, bool non_null = false)
 		: Type(type), bits(bits), non_null(non_null), isArray(true), ArraySize(size){}
 
 	bool setNonNull(bool NonNull) {non_null = NonNull;return true;}
@@ -299,7 +299,7 @@ class VariableDeclAST: public BaseAST {
 		}
 		~VariableDeclAST(){}
 
-		bool setDeclType(DeclType type){Decltype=type;return true;};
+		bool setDeclType(DeclType type){Decltype = type;return true;};
 		bool setType(Types type){Type = type;return true;}
 
 		std::string getName(){return Name;}

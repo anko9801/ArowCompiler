@@ -69,7 +69,7 @@ typedef class Token{
 	std::string getTokenString(){return TokenString;};
 	int getNumberValue(){return Number;};
 	bool getBoolValue() {return Bool;}
-	bool setLine(int line){Line=line;return true;}
+	bool setLine(int line){Line = line;return true;}
 	int getLine(){return Line;}
 	
 }Token;
@@ -107,7 +107,7 @@ class TokenStream{
 		bool printTokens();
 		int getCurIndex(){return CurIndex;}
 		int getLine(){return Tokens[CurIndex]->getLine()+1;}
-		bool applyTokenIndex(int index){CurIndex=index;return true;}
+		bool applyTokenIndex(int index){CurIndex = index;return true;}
 
 	private:
 

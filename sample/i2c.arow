@@ -3,6 +3,7 @@ import gpio.arow
 uint8 read() {
 	gpioMode(2, 0)
 	gpioWrite(2, 1)
+	wait
 	gpio
 }
 

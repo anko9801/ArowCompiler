@@ -6,8 +6,8 @@ target triple = "x86_64-apple-macosx10.14.0"
 @.str = private unnamed_addr constant [4 x i8] c"%d\0A\00", align 1
 
 ; Function Attrs: nounwind ssp uwtable
-define i32 @msleep(i32) local_unnamed_addr #0 {
-  %2 = tail call i32 @"\01_usleep"(i32 10) #3
+define i32 @wait(i32) local_unnamed_addr #0 {
+  %2 = tail call i32 @"\01_usleep"(i32 %0) #3
   ret i32 0
 }
 
@@ -33,8 +33,6 @@ define i32 @usclock() local_unnamed_addr #0 {
 }
 
 declare i64 @"\01_clock"() local_unnamed_addr #1
-
-declare i1 @sleep(i32)
 
 define float @main() {
 entry:

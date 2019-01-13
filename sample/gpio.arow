@@ -1,5 +1,6 @@
-//import gpio.ll
-
-void gpioMode(int gpio_num, int mode);
-void gpioWrite(int gpio_num, int mode);
-void gpioClear(int gpio_num);
+bool confirm();
+bool Close();
+bool gpioMode(int gpio_num, int mode);
+bool gpioWrite(int gpio_num, int mode);
+int8 gpioRead(int gpio_num)
+bool gpioClear(int gpio_num);

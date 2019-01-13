@@ -34,7 +34,7 @@ TokenStream *LexicalAnalysis(std::string input_filename){
 					|| (cur_line.at(index++) != '/') ){
 					continue;
 				}else{
-					iscomment=false;
+					iscomment = false;
 				}
 			}
 		
@@ -129,7 +129,7 @@ TokenStream *LexicalAnalysis(std::string input_filename){
 
 					//コメントの場合
 				}else if(next_char == '*'){
-					iscomment=true;
+					iscomment = true;
 					continue;
 
 				}else if(next_char == '='){
@@ -395,8 +395,8 @@ Token TokenStream::getToken(){
   * @return 成功時：true　失敗時：false
   */
 bool TokenStream::getNextToken(){
-	int size=Tokens.size();
-	if(--size==CurIndex){
+	int size = Tokens.size();
+	if(--size == CurIndex){
 		return false;
 	}else if( CurIndex < size ){
 		CurIndex++;

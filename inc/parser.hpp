@@ -132,7 +132,7 @@ typedef class Parser{
 		BaseAST *visitPrimaryExpression();
 
 		bool isExpectedToken(TokenType type) {
-			int bkup=Tokens->getCurIndex();
+			int bkup = Tokens->getCurIndex();
 			while (Tokens->getCurString() == "\n") {
 				if(Tokens->getCurType() == TOK_EOF) break;
 				if (Tokens->getCurType() == type) return true;
@@ -146,7 +146,7 @@ typedef class Parser{
 		}
 
 		bool isExpectedToken(std::string str) {
-			int bkup=Tokens->getCurIndex();
+			int bkup = Tokens->getCurIndex();
 			while (Tokens->getCurString() == "\n") {
 				if(Tokens->getCurType() == TOK_EOF) break;
 				if (Tokens->getCurString() == str) return true;

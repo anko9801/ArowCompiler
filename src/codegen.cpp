@@ -17,7 +17,7 @@ CodeGen::~CodeGen() {
   * @param  TranslationUnitAST　Module名(入力ファイル名)
   * @return 成功時：true　失敗時:false
   */
-bool CodeGen::doCodeGen(TranslationUnitAST &tunit, std::string name, std::string link_file, bool with_jit=false){
+bool CodeGen::doCodeGen(TranslationUnitAST &tunit, std::string name, std::string link_file, bool with_jit = false){
 	if(!generateTranslationUnit(tunit, name)) return false;
 
 	//LinkFileの指定があったらModuleをリンク
@@ -29,7 +29,7 @@ bool CodeGen::doCodeGen(TranslationUnitAST &tunit, std::string name, std::string
 		ExecutionEngine *EE = EngineBuilder().create();
 		EngineBuilder().create();
 			Function *F;
-		if(!(F=Mod->getFunction("main")))
+		if(!(F = Mod->getFunction("main")))
 			return false;
 
 		int (*fp)() = (int (*)())EE->getPointerToFunction(F);
@@ -225,7 +225,7 @@ Value *CodeGen::generateFunctionStatement(FunctionStmtAST *func_stmt){
 	generateArray();
 	for(int i=0; ; i++){
 		if (llvmDebbug) fprintf(stderr, "%d\n", i+1);
-		stmt=func_stmt->getStatement(i);
+		stmt = func_stmt->getStatement(i);
 		if(!stmt)
 			break;
 		v = generateStatement(stmt);
@@ -313,7 +313,6 @@ Value *CodeGen::genereateIfStmt(IfStmtAST *if_expr) {
   */
 Value *CodeGen::genereateWhileStmt(WhileStmtAST *while_expr) {
 	if (llvmDebbug) fprintf(stderr, "%d: %s\n", __LINE__, __func__);
-	Value *CondV = generateCondition(while_expr->getCond());
 
 	Function *function = Builder->GetInsertBlock()->getParent();
 
@@ -321,13 +320,16 @@ Value *CodeGen::genereateWhileStmt(WhileStmtAST *while_expr) {
 	BasicBlock *LoopBB = BasicBlock::Create(GlobalContext, "loop", function);
 	BasicBlock *AfterBB = BasicBlock::Create(GlobalContext, "afterloop");
 
-	Builder->CreateBr(LoopBB);
-	Builder->SetInsertPoint(LoopBB);
+	Value *CondV = generateCondition(while_expr->getCond());
+	Builder->CreateCondBr(CondV, LoopBB, AfterBB);
 
+	Builder->SetInsertPoint(LoopBB);
 	LoopBB = Builder->GetInsertBlock();
+	
 	for (int i = 0;;i++)
 		if (!while_expr->getLoop(i)) break;
 		else generateStatement(while_expr->getLoop(i));
+	CondV = generateCondition(while_expr->getCond());
 
 	Builder->CreateCondBr(CondV, LoopBB, AfterBB);
 
@@ -597,7 +599,7 @@ Value *CodeGen::generateCastExpression(Value *src, Types SrcType, Types DestType
 
 	Type *DestTy = generateType(DestType);
 
-	if (SrcType.getNonNull() < DestType.getNonNull()) {
+	if (SrcType.getPrimType() == SrcType.getPrimType() && SrcType.getNonNull() < DestType.getNonNull()) {
 		return src;
 	}
 

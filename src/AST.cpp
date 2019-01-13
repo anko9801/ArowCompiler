@@ -18,6 +18,8 @@ std::string Types::printType() {
 		type = "number";
 	else if(this->getPrimType() == Type_all)
 		type = "all";
+	else if(this->getPrimType() == Type_void)
+		type = "void";
 	else
 		type = "yannaiyo";
 	type += std::to_string(this->getBits());
