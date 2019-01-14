@@ -423,7 +423,7 @@ TokenStream *LexicalAnalysis(std::string input_filename) {
   * デストラクタ
   */
 TokenStream::~TokenStream() {
-	for(size_t i=0; i<Tokens.size(); i++) {
+	for (size_t i=0; i<Tokens.size(); i++) {
 		SAFE_DELETE(Tokens[i]);
 	}
 	Tokens.clear();

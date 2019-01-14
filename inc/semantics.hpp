@@ -19,7 +19,7 @@ typedef class Semantics {
 
 	public:
 		Semantics(Parser parser);
-		~Semantics(){SAFE_DELETE(TU);}
+		~Semantics() {SAFE_DELETE(TU);}
 		bool doAnalysis();
 		bool analysisStatement(BaseAST stmt);
 

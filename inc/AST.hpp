@@ -72,11 +72,11 @@ struct Types {
 	bool isArray = false;
 	int ArraySize = 0;
 
-	Types() : Type(prim_type::Type_null), bits(0){}
+	Types() : Type(prim_type::Type_null), bits(0) {}
 	Types(prim_type type, int bits=32, bool non_null = false)
-		: Type(type), bits(bits), non_null(non_null){}
+		: Type(type), bits(bits), non_null(non_null) {}
 	Types(prim_type type, int size, int bits=32, bool non_null = false)
-		: Type(type), bits(bits), non_null(non_null), isArray(true), ArraySize(size){}
+		: Type(type), bits(bits), non_null(non_null), isArray(true), ArraySize(size) {}
 
 	bool setNonNull(bool NonNull) {non_null = NonNull;return true;}
 	bool setArray(int size) {isArray = true;ArraySize = size;return true;}
@@ -93,7 +93,7 @@ struct Seq {
 	Types Type;
 	std::string Name;
 
-	Seq(Types type, std::string name) : Type(type), Name(name){}
+	Seq(Types type, std::string name) : Type(type), Name(name) {}
 	bool operator< (const Seq &rhs) const;
 	bool operator== (const Seq &rhs) const;
 };
@@ -107,8 +107,8 @@ class BaseAST{
 	AstID ID;
 
 	public:
-	BaseAST(AstID id):ID(id){}
-	virtual ~BaseAST(){}
+	BaseAST(AstID id):ID(id) {}
+	virtual ~BaseAST() {}
 	AstID getValueID() const {return ID;}
 	Types getType();
 	bool setType(Types type);
@@ -125,7 +125,7 @@ class TranslationUnitAST{
 	std::vector<ImportAST*> Imports;
 
 	public:
-		TranslationUnitAST(){}
+		TranslationUnitAST() {}
 		~TranslationUnitAST();
 
 		bool addPrototype(PrototypeAST *proto) {
@@ -141,26 +141,26 @@ class TranslationUnitAST{
 			return true;
 		}
 		bool empty() {
-			if(Prototypes.size()==0 && Functions.size()==0)
+			if (Prototypes.size()==0 && Functions.size()==0)
 				return true;
 			else
 				return false;
         }
 
-		PrototypeAST *getPrototype(size_t i){
-			if(i < Prototypes.size())
+		PrototypeAST *getPrototype(size_t i) {
+			if (i < Prototypes.size())
 				return Prototypes.at(i);
 			else
 			    return NULL;
 		}
-		FunctionAST *getFunction(size_t i){
-			if(i < Functions.size())
+		FunctionAST *getFunction(size_t i) {
+			if (i < Functions.size())
 				return Functions.at(i);
 			else
 				return NULL;
 		}
-		ImportAST *getImport(size_t i){
-			if(i < Imports.size())
+		ImportAST *getImport(size_t i) {
+			if (i < Imports.size())
 				return Imports.at(i);
 			else
 				return NULL;
@@ -172,10 +172,10 @@ class ImportAST : public BaseAST {
 	std::string filename;
 
 	public:
-	ImportAST(std::string filename) : BaseAST(ImportID), filename(filename){}
-	~ImportAST(){}
-	static inline bool classof(ImportAST const*){return true;}
-	static inline bool classof(BaseAST const* base){
+	ImportAST(std::string filename) : BaseAST(ImportID), filename(filename) {}
+	~ImportAST() {}
+	static inline bool classof(ImportAST const*) {return true;}
+	static inline bool classof(BaseAST const* base) {
 		return base->getValueID() == ImportID;
 	}
 
@@ -193,16 +193,16 @@ class PrototypeAST{
 
 	public:
 	PrototypeAST(const Types &type, const std::string &name, const std::vector<Seq> &params)
-		: Type(type), Name(name), Params(params){}
+		: Type(type), Name(name), Params(params) {}
 
-	bool setType(Types type){Type = type;return true;}
+	bool setType(Types type) {Type = type;return true;}
 
-	std::string getName(){return Name;}
-	Types getType(){return Type;}
-	std::string getParamName(size_t i){if(i<Params.size())return Params.at(i).Name;return NULL;}
-	Types getParamType(size_t i){if(i<Params.size())return Params.at(i).Type;return Types(Type_null);}
-	size_t getParamSize(){return Params.size();}
-	std::vector<Seq> getParam(){return Params;}
+	std::string getName() {return Name;}
+	Types getType() {return Type;}
+	std::string getParamName(size_t i) {if (i<Params.size())return Params.at(i).Name;return NULL;}
+	Types getParamType(size_t i) {if (i<Params.size())return Params.at(i).Type;return Types(Type_null);}
+	size_t getParamSize() {return Params.size();}
+	std::vector<Seq> getParam() {return Params;}
 };
 
 
@@ -214,15 +214,15 @@ class FunctionAST{
 	FunctionStmtAST *Body;
 
 	public:
-	FunctionAST(PrototypeAST *proto, FunctionStmtAST *body) : Proto(proto), Body(body){}
-	FunctionAST(PrototypeAST *proto) : Proto(proto){}
+	FunctionAST(PrototypeAST *proto, FunctionStmtAST *body) : Proto(proto), Body(body) {}
+	FunctionAST(PrototypeAST *proto) : Proto(proto) {}
 	~FunctionAST();
 
-	bool setType(Types type){Proto->setType(type);return true;}
-	Types getType(){return Proto->getType();}
-	std::string getName(){return Proto->getName();}
-	PrototypeAST *getPrototype(){return Proto;}
-	FunctionStmtAST *getBody(){return Body;}
+	bool setType(Types type) {Proto->setType(type);return true;}
+	Types getType() {return Proto->getType();}
+	std::string getName() {return Proto->getName();}
+	PrototypeAST *getPrototype() {return Proto;}
+	FunctionStmtAST *getBody() {return Body;}
 };
 
 
@@ -233,14 +233,14 @@ class StatementsAST : BaseAST {
 	public:
 	StatementsAST() : BaseAST(StatementsID) {}
 	~StatementsAST();
-	static inline bool classof(StatementsAST const*){return true;}
-	static inline bool classof(BaseAST const* base){
+	static inline bool classof(StatementsAST const*) {return true;}
+	static inline bool classof(BaseAST const* base) {
 		return base->getValueID() == StatementsID;
 	}
 
-	bool addStatement(BaseAST *stmt){
+	bool addStatement(BaseAST *stmt) {
 		Statements.push_back(stmt);
-		if(llvm::isa<VariableDeclAST>(stmt)) {
+		if (llvm::isa<VariableDeclAST>(stmt)) {
 			VarDecls.push_back(llvm::dyn_cast<VariableDeclAST>(stmt));
 		}
 		return true;
@@ -252,8 +252,8 @@ class StatementsAST : BaseAST {
 	}
 	size_t getSize() {return Statements.size();}
 	
-	BaseAST *getStatement(size_t i){if(i<Statements.size())return Statements.at(i);else return NULL;}
-	VariableDeclAST *getVarDecl(size_t i){if(i<VarDecls.size())return VarDecls.at(i);else return NULL;}
+	BaseAST *getStatement(size_t i) {if (i<Statements.size())return Statements.at(i);else return NULL;}
+	VariableDeclAST *getVarDecl(size_t i) {if (i<VarDecls.size())return VarDecls.at(i);else return NULL;}
 };
 
 
@@ -264,15 +264,15 @@ class FunctionStmtAST : public BaseAST {
 	StatementsAST *stmts = new StatementsAST();
 
 	public:
-	FunctionStmtAST() : BaseAST(FunctionStmtID){}
-	~FunctionStmtAST(){}
-	static inline bool classof(FunctionStmtAST const*){return true;}
-	static inline bool classof(BaseAST const* base){
+	FunctionStmtAST() : BaseAST(FunctionStmtID) {}
+	~FunctionStmtAST() {}
+	static inline bool classof(FunctionStmtAST const*) {return true;}
+	static inline bool classof(BaseAST const* base) {
 		return base->getValueID() == FunctionStmtID;
 	}
-	bool addStatement(BaseAST *stmt){stmts->addStatement(stmt);return true;}
+	bool addStatement(BaseAST *stmt) {stmts->addStatement(stmt);return true;}
 
-	BaseAST *getStatement(size_t i){return stmts->getStatement(i);}
+	BaseAST *getStatement(size_t i) {return stmts->getStatement(i);}
 };
 
 
@@ -292,19 +292,19 @@ class VariableDeclAST: public BaseAST {
 		DeclType Decltype;
 
 	public:
-		VariableDeclAST(const Types &type, const std::string &name) : BaseAST(VariableDeclID), Type(type), Name(name){}
-		static inline bool classof(VariableDeclAST const*){return true;}
-		static inline bool classof(BaseAST const* base){
+		VariableDeclAST(const Types &type, const std::string &name) : BaseAST(VariableDeclID), Type(type), Name(name) {}
+		static inline bool classof(VariableDeclAST const*) {return true;}
+		static inline bool classof(BaseAST const* base) {
 			return base->getValueID()==VariableDeclID;
 		}
-		~VariableDeclAST(){}
+		~VariableDeclAST() {}
 
-		bool setDeclType(DeclType type){Decltype = type;return true;};
-		bool setType(Types type){Type = type;return true;}
+		bool setDeclType(DeclType type) {Decltype = type;return true;};
+		bool setType(Types type) {Type = type;return true;}
 
-		std::string getName(){return Name;}
-		Types getType(){return Type;}
-		DeclType getDeclType(){return Decltype;}
+		std::string getName() {return Name;}
+		Types getType() {return Type;}
+		DeclType getDeclType() {return Decltype;}
 };
 
 
@@ -318,19 +318,19 @@ class BinaryExprAST : public BaseAST{
 
 	public:
 	BinaryExprAST(std::string op, BaseAST *lhs, BaseAST *rhs, Types type)
-		: BaseAST(BinaryExprID), Type(type), Op(op), LHS(lhs), RHS(rhs){}
+		: BaseAST(BinaryExprID), Type(type), Op(op), LHS(lhs), RHS(rhs) {}
 	~BinaryExprAST();
-	static inline bool classof(BinaryExprAST const*){return true;}
-	static inline bool classof(BaseAST const* base){
+	static inline bool classof(BinaryExprAST const*) {return true;}
+	static inline bool classof(BaseAST const* base) {
 		return base->getValueID() == BinaryExprID;
 	}
 
-	bool setType(Types type){Type = type;return true;}
+	bool setType(Types type) {Type = type;return true;}
 
-	Types getType(){return Type;}
-	std::string getOp(){return Op;}
-	BaseAST *getLHS(){return LHS;}
-	BaseAST *getRHS(){return RHS;}
+	Types getType() {return Type;}
+	std::string getOp() {return Op;}
+	BaseAST *getLHS() {return LHS;}
+	BaseAST *getRHS() {return RHS;}
 };
 
 
@@ -343,18 +343,18 @@ class IfStmtAST : public BaseAST {
 	StatementsAST *ElseStmt = new StatementsAST();
 
 	public:
-	IfStmtAST(BaseAST *Cond) : BaseAST(IfStmtID), Cond(Cond){}
-	~IfStmtAST(){}
-	static inline bool classof(IfStmtAST const*){return true;}
-	static inline bool classof(BaseAST const* base){
+	IfStmtAST(BaseAST *Cond) : BaseAST(IfStmtID), Cond(Cond) {}
+	~IfStmtAST() {}
+	static inline bool classof(IfStmtAST const*) {return true;}
+	static inline bool classof(BaseAST const* base) {
 		return base->getValueID() == IfStmtID;
 	}
 
-	BaseAST* getCond(){return Cond;}
-	bool addThen(BaseAST *stmt){ThenStmt->addStatement(stmt);return true;}
-	BaseAST *getThen(size_t i){return ThenStmt->getStatement(i);}
-	bool addElse(BaseAST *stmt){ElseStmt->addStatement(stmt);return true;}
-	BaseAST *getElse(size_t i){return ElseStmt->getStatement(i);}
+	BaseAST* getCond() {return Cond;}
+	bool addThen(BaseAST *stmt) {ThenStmt->addStatement(stmt);return true;}
+	BaseAST *getThen(size_t i) {return ThenStmt->getStatement(i);}
+	bool addElse(BaseAST *stmt) {ElseStmt->addStatement(stmt);return true;}
+	BaseAST *getElse(size_t i) {return ElseStmt->getStatement(i);}
 };
 
 
@@ -366,16 +366,16 @@ class WhileStmtAST : public BaseAST {
 	StatementsAST *LoopStmt = new StatementsAST();
 
 	public:
-	WhileStmtAST(BaseAST *Cond) : BaseAST(WhileStmtID), Cond(Cond){}
-	~WhileStmtAST(){}
-	static inline bool classof(WhileStmtAST const*){return true;}
-	static inline bool classof(BaseAST const* base){
+	WhileStmtAST(BaseAST *Cond) : BaseAST(WhileStmtID), Cond(Cond) {}
+	~WhileStmtAST() {}
+	static inline bool classof(WhileStmtAST const*) {return true;}
+	static inline bool classof(BaseAST const* base) {
 		return base->getValueID() == WhileStmtID;
 	}
 
-	BaseAST *getCond(){return Cond;}
-	bool addLoop(BaseAST *stmt){LoopStmt->addStatement(stmt);return true;}
-	BaseAST *getLoop(size_t i){return LoopStmt->getStatement(i);}
+	BaseAST *getCond() {return Cond;}
+	bool addLoop(BaseAST *stmt) {LoopStmt->addStatement(stmt);return true;}
+	BaseAST *getLoop(size_t i) {return LoopStmt->getStatement(i);}
 };
 
 
@@ -390,19 +390,19 @@ class CallExprAST : public BaseAST{
 
 	public:
 	CallExprAST(const Types &type, const std::string &callee, std::vector<BaseAST*> &args, PrototypeAST *proto)
-		: BaseAST(CallExprID), Type(type), Callee(callee), Args(args), proto(proto){}
-	~CallExprAST(){}
-	static inline bool classof(CallExprAST const*){return true;}
-	static inline bool classof(BaseAST const* base){
+		: BaseAST(CallExprID), Type(type), Callee(callee), Args(args), proto(proto) {}
+	~CallExprAST() {}
+	static inline bool classof(CallExprAST const*) {return true;}
+	static inline bool classof(BaseAST const* base) {
 		return base->getValueID() == CallExprID;
 	}
 
-	bool setType(Types type){Type = type;return true;}
+	bool setType(Types type) {Type = type;return true;}
 
-	std::string getCallee(){return Callee;}
-	BaseAST *getArgs(size_t i){if(i<Args.size())return Args.at(i);else return NULL;}
-	Types getType(){return Type;}
-	PrototypeAST *getProto(){return proto;}
+	std::string getCallee() {return Callee;}
+	BaseAST *getArgs(size_t i) {if (i<Args.size())return Args.at(i);else return NULL;}
+	Types getType() {return Type;}
+	PrototypeAST *getProto() {return proto;}
 };
 
 
@@ -413,15 +413,15 @@ class JumpStmtAST : public BaseAST{
 	BaseAST *Expr;
 
 	public:
-	JumpStmtAST(BaseAST *expr) : BaseAST(JumpStmtID), Expr(expr){}
-	~JumpStmtAST(){}
-	static inline bool classof(JumpStmtAST const*){return true;}
-	static inline bool classof(BaseAST const* base){
+	JumpStmtAST(BaseAST *expr) : BaseAST(JumpStmtID), Expr(expr) {}
+	~JumpStmtAST() {}
+	static inline bool classof(JumpStmtAST const*) {return true;}
+	static inline bool classof(BaseAST const* base) {
 		return base->getValueID() == JumpStmtID;
 	}
 
-	BaseAST *getExpr(){return Expr;}
-	Types getType(){return Expr->getType();}
+	BaseAST *getExpr() {return Expr;}
+	Types getType() {return Expr->getType();}
 };
 
 
@@ -433,19 +433,19 @@ class VariableAST : public BaseAST{
 	int Index;
 
 	public:
-	VariableAST(VariableDeclAST* var_decl, const int &index = 0) : BaseAST(VariableID), Var(var_decl), Index(index){}
-	~VariableAST(){}
+	VariableAST(VariableDeclAST* var_decl, const int &index = 0) : BaseAST(VariableID), Var(var_decl), Index(index) {}
+	~VariableAST() {}
 
-	static inline bool classof(VariableAST const*){return true;}
-	static inline bool classof(BaseAST const* base){
+	static inline bool classof(VariableAST const*) {return true;}
+	static inline bool classof(BaseAST const* base) {
 		return base->getValueID() == VariableID;
 	}
 
-	bool setType(Types type){Var->setType(type);return true;}
+	bool setType(Types type) {Var->setType(type);return true;}
 
-	Types getType(){return Var->getType();}
-	std::string getName(){return Var->getName();}
-	int getIndex(){return Index;}
+	Types getType() {return Var->getType();}
+	std::string getName() {return Var->getName();}
+	int getIndex() {return Index;}
 };
 
 
@@ -458,28 +458,28 @@ class CastExprAST : public BaseAST {
 	bool Nestin;
 
 	public:
-	CastExprAST(BaseAST* source, Types DestType, bool Nestin = false) : BaseAST(CastExprID), Source(source), DestType(DestType), Nestin(Nestin){}
-	~CastExprAST(){}
+	CastExprAST(BaseAST* source, Types DestType, bool Nestin = false) : BaseAST(CastExprID), Source(source), DestType(DestType), Nestin(Nestin) {}
+	~CastExprAST() {}
 
-	static inline bool classof(CastExprAST const*){return true;}
-	static inline bool classof(BaseAST const* base){
+	static inline bool classof(CastExprAST const*) {return true;}
+	static inline bool classof(BaseAST const* base) {
 		return base->getValueID() == CastExprID;
 	}
 
-	bool setDestType(Types type){DestType = type;return true;}
+	bool setDestType(Types type) {DestType = type;return true;}
 
-	BaseAST *getSource(){return Source;}
-	Types getDestType(){return DestType;}
-	bool getNestin(){return Nestin;}
+	BaseAST *getSource() {return Source;}
+	Types getDestType() {return DestType;}
+	bool getNestin() {return Nestin;}
 };
 
 
 class PlaceholderAST : public BaseAST {
 	public:
-	PlaceholderAST() : BaseAST(PlaceholderID){};
-	~PlaceholderAST(){}
-	static inline bool classof(PlaceholderAST const*){return true;}
-	static inline bool classof(BaseAST const* base){
+	PlaceholderAST() : BaseAST(PlaceholderID) {};
+	~PlaceholderAST() {}
+	static inline bool classof(PlaceholderAST const*) {return true;}
+	static inline bool classof(BaseAST const* base) {
 		return base->getValueID() == PlaceholderID;
 	}
 };
@@ -492,16 +492,16 @@ class ValueAST : public BaseAST {
 	double Val;
 
 	public:
-	ValueAST(double val, Types Type) : BaseAST(ValueID), Type(Type), Val(val){};
-	~ValueAST(){}
-	static inline bool classof(ValueAST const*){return true;}
-	static inline bool classof(BaseAST const* base){
+	ValueAST(double val, Types Type) : BaseAST(ValueID), Type(Type), Val(val) {};
+	~ValueAST() {}
+	static inline bool classof(ValueAST const*) {return true;}
+	static inline bool classof(BaseAST const* base) {
 		return base->getValueID() == ValueID;
 	}
 
-	bool setType(Types type){Type = type;return true;}
-	Types getType(){return Type;}
-	double getValue(){return Val;}
+	bool setType(Types type) {Type = type;return true;}
+	Types getType() {return Type;}
+	double getValue() {return Val;}
 };
 
 

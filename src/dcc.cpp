@@ -30,20 +30,20 @@ class OptionParser {
 		char **Argv;
 
 	public:
-		OptionParser(int argc, char **argv) : WithJit(false), Argc(argc), Argv(argv){}
+		OptionParser(int argc, char **argv) : WithJit(false), Argc(argc), Argv(argv) {}
 		void printHelp();
-		std::string getInputFileName(){return InputFileName;} 		//入力ファイル名取得
-		std::string getOutputFileName(){return OutputFileName;} 	//出力ファイル名取得
-		std::string getLinkFileName(){return LinkFileName;} 	//リンク用ファイル名取得
-		bool getWithJit(){return WithJit;}		//JIT実行有無
-		bool getLazy(){return Lazy;}
+		std::string getInputFileName() {return InputFileName;} 		//入力ファイル名取得
+		std::string getOutputFileName() {return OutputFileName;} 	//出力ファイル名取得
+		std::string getLinkFileName() {return LinkFileName;} 	//リンク用ファイル名取得
+		bool getWithJit() {return WithJit;}		//JIT実行有無
+		bool getLazy() {return Lazy;}
 		bool parseOption();
 };
 
 /**
  * ヘルプ表示
  */
-void OptionParser::printHelp(){
+void OptionParser::printHelp() {
 	fprintf(stdout, "Compiler for Arow...\n" );
 	fprintf(stdout, "試作中なのでバグがあったらご報告を\n" );
 }
@@ -52,27 +52,27 @@ void OptionParser::printHelp(){
  * オプション切り出し
  * @return 成功時：true　失敗時：false
  */
-bool OptionParser::parseOption(){
-	if(Argc < 2){
+bool OptionParser::parseOption() {
+	if (Argc < 2) {
 		fprintf(stderr,"引数が足りません\n");
 		return false;
 	}
 
 	Lazy = true;
-	for(int i=1; i<Argc; i++){
-		if(Argv[i][0]=='-' && Argv[i][1] == 'o' && Argv[i][2] == '\0'){
+	for (int i=1; i<Argc; i++) {
+		if (Argv[i][0]=='-' && Argv[i][1] == 'o' && Argv[i][2] == '\0') {
 			//output filename
 			OutputFileName.assign(Argv[++i]);
-		}else if(Argv[i][0]=='-' && Argv[i][1] == 'h' && Argv[i][2] == '\0'){
+		}else if (Argv[i][0]=='-' && Argv[i][1] == 'h' && Argv[i][2] == '\0') {
 			printHelp();
 			return false;
-		}else if(Argv[i][0]=='-' && Argv[i][1] == 'l' && Argv[i][2] == '\0'){
+		}else if (Argv[i][0]=='-' && Argv[i][1] == 'l' && Argv[i][2] == '\0') {
 			LinkFileName.assign(Argv[++i]);
-		}else if(Argv[i][0]=='-' && Argv[i][1] == 'j' && Argv[i][2] == 'i' && Argv[i][3] == 't' && Argv[i][4] == '\0'){
+		}else if (Argv[i][0]=='-' && Argv[i][1] == 'j' && Argv[i][2] == 'i' && Argv[i][3] == 't' && Argv[i][4] == '\0') {
 			WithJit = true;
-		}else if(Argv[i][0]=='-' && Argv[i][1] == 'O' && Argv[i][2] == '\0'){
+		}else if (Argv[i][0]=='-' && Argv[i][1] == 'O' && Argv[i][2] == '\0') {
 			Lazy = false;
-		}else if(Argv[i][0]=='-'){
+		}else if (Argv[i][0]=='-') {
 			fprintf(stderr,"%s は不明なオプションです\n", Argv[i]);
 			return false;
 		}else{
@@ -87,7 +87,7 @@ bool OptionParser::parseOption(){
 		ifn[len-5] == '.' && ifn[len-4] == 'a' && ifn[len-3] == 'r' && ifn[len-2] == 'o' && ifn[len-1] == 'w') {
 		OutputFileName = std::string(ifn.begin(), ifn.end()-5); 
 		OutputFileName += ".ll";
-	} else if(OutputFileName.empty()){
+	} else if (OutputFileName.empty()) {
 		OutputFileName = ifn;
 		OutputFileName += ".ll";
 	}
@@ -95,9 +95,9 @@ bool OptionParser::parseOption(){
 }
 
 bool printASTs(TranslationUnitAST &tunit) {
-	for(int i=0; ; i++) {
+	for (int i=0; ; i++) {
 		FunctionAST *func = tunit.getFunction(i);
-		if(!func)
+		if (!func)
 			break;
 		PrototypeAST *proto = func->getPrototype();
 		fprintf(stderr, "%s(", proto->getName().c_str());
@@ -122,11 +122,11 @@ class Compile {
 		CodeGen *codegen;
 
 	public:
-		Compile(OptionParser opt) : opt(opt), filetext(opt.getInputFileName()), parser(), codegen(){}
+		Compile(OptionParser opt) : opt(opt), filetext(opt.getInputFileName()), parser(), codegen() {}
 		Parser *lex(std::string filetext);
 		TranslationUnitAST &parse();
 		CodeGen *LLVMGen();
-		OptionParser getOption(){return opt;}
+		OptionParser getOption() {return opt;}
 };
 
 Parser *Compile::lex(std::string filetext) {
@@ -152,7 +152,7 @@ TranslationUnitAST &Compile::parse() {
 CodeGen *Compile::LLVMGen() {
 	codegen = new CodeGen();
 	TranslationUnitAST &tunit = parser->getAST();
-	if (!codegen->doCodeGen(tunit, filetext, opt.getLinkFileName(), opt.getWithJit())){
+	if (!codegen->doCodeGen(tunit, filetext, opt.getLinkFileName(), opt.getWithJit())) {
 		fprintf(stderr, "err at codegen\n");
 		SAFE_DELETE(parser);
 		SAFE_DELETE(codegen);
@@ -185,13 +185,13 @@ int main(int argc, char **argv) {
 	llvm::EnableDebugBuffering = true;
 
 	OptionParser opt(argc, argv);
-	if(!opt.parseOption())
+	if (!opt.parseOption())
 		exit(1);
 
 	std::string filetext = opt.getInputFileName();
 	Compile compile(opt);
 	//check
-	if(filetext.length() == 0){
+	if (filetext.length() == 0) {
 		fprintf(stderr,"入力ファイル名が指定されていません\n");
 		exit(1);
 	}

@@ -34,11 +34,11 @@ typedef class Parser{
 
 	public:
 		Parser(std::string filename);
-		~Parser(){SAFE_DELETE(TU);SAFE_DELETE(Tokens);}
+		~Parser() {SAFE_DELETE(TU);SAFE_DELETE(Tokens);}
 		bool doParse();
 		TranslationUnitAST &getAST();
-		bool setFuncType(Types type){CurFuncType = type;return true;}
-		Types getFuncType(){return CurFuncType;}
+		bool setFuncType(Types type) {CurFuncType = type;return true;}
+		Types getFuncType() {return CurFuncType;}
 
 		PrototypeAST *getPrototype(size_t i) {
 			if (i < PrototypeTable.size()) {
@@ -65,14 +65,14 @@ typedef class Parser{
 			}else if (llvm::isa<FunctionStmtAST>(InsertPoint)) {
 				llvm::dyn_cast<FunctionStmtAST>(InsertPoint)->addStatement(stmt);
 				return true;
-			}else if(llvm::isa<IfStmtAST>(InsertPoint)) {
+			}else if (llvm::isa<IfStmtAST>(InsertPoint)) {
 				if (branch == 0) {
 					llvm::dyn_cast<IfStmtAST>(InsertPoint)->addThen(stmt);
 				}else{
 					llvm::dyn_cast<IfStmtAST>(InsertPoint)->addElse(stmt);
 				}
 				return true;
-			}else if(llvm::isa<WhileStmtAST>(InsertPoint)) {
+			}else if (llvm::isa<WhileStmtAST>(InsertPoint)) {
 				llvm::dyn_cast<WhileStmtAST>(InsertPoint)->addLoop(stmt);
 				return true;
 			}else{
@@ -83,15 +83,15 @@ typedef class Parser{
 
 
 		prim_type str2Type(std::string Type) {
-			if(Type == "int")
+			if (Type == "int")
 				return Type_int;
-			else if(Type == "uint")
+			else if (Type == "uint")
 				return Type_uint;
-			else if(Type == "float")
+			else if (Type == "float")
 				return Type_float;
-			else if(Type == "bool")
+			else if (Type == "bool")
 				return Type_bool;
-			else if(Type == "char")
+			else if (Type == "char")
 				return Type_char;
 			else if (Type == "void")
 				return Type_void;
@@ -136,7 +136,7 @@ typedef class Parser{
 		bool isExpectedToken(TokenType type) {
 			int bkup = Tokens->getCurIndex();
 			while (Tokens->getCurString() == "\n") {
-				if(Tokens->getCurType() == TOK_EOF) break;
+				if (Tokens->getCurType() == TOK_EOF) break;
 				if (Tokens->getCurType() == type) return true;
 				Tokens->getNextToken();
 			}
@@ -150,7 +150,7 @@ typedef class Parser{
 		bool isExpectedToken(std::string str) {
 			int bkup = Tokens->getCurIndex();
 			while (Tokens->getCurString() == "\n") {
-				if(Tokens->getCurType() == TOK_EOF) break;
+				if (Tokens->getCurType() == TOK_EOF) break;
 				if (Tokens->getCurString() == str) return true;
 				Tokens->getNextToken();
 			}

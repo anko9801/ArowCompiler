@@ -51,8 +51,8 @@ typedef class Token{
 
 	public:
 	Token(std::string string, TokenType type, int line) 
-		: TokenString(string), Type(type), Line(line){
-		if(type == TOK_DIGIT || type == TOK_FLOAT) {
+		: TokenString(string), Type(type), Line(line) {
+		if (type == TOK_DIGIT || type == TOK_FLOAT) {
 			if (string[0] == '0' && string[1] == 'b') {
 				string.erase(string.begin(), string.begin() + 2);
 				Number = strtol(string.c_str(), NULL, 2);
@@ -68,16 +68,16 @@ typedef class Token{
 		else
 			Bool = false;
 	};
-	~Token(){};
+	~Token() {};
 
 
-	TokenType getTokenType(){return Type;};
-	std::string getTokenDataType(){return DataType;};
-	std::string getTokenString(){return TokenString;};
-	int getNumberValue(){return Number;};
+	TokenType getTokenType() {return Type;};
+	std::string getTokenDataType() {return DataType;};
+	std::string getTokenString() {return TokenString;};
+	int getNumberValue() {return Number;};
 	bool getBoolValue() {return Bool;}
-	bool setLine(int line){Line = line;return true;}
-	int getLine(){return Line;}
+	bool setLine(int line) {Line = line;return true;}
+	int getLine() {return Line;}
 	
 }Token;
 
@@ -96,25 +96,25 @@ class TokenStream{
 	protected:
 
 	public:
-		TokenStream():CurIndex(0){}
+		TokenStream():CurIndex(0) {}
 		~TokenStream();
 
 		bool ungetToken(int Times=1);
 		bool getNextToken();
-		bool pushToken(Token *token){
+		bool pushToken(Token *token) {
 			Tokens.push_back(token);
 			return true;
 		}
 		Token getToken();
-		TokenType getCurType(){return Tokens[CurIndex]->getTokenType();}
-		std::string getCurDataType(){return Tokens[CurIndex]->getTokenDataType();}
-		std::string getCurString(){return Tokens[CurIndex]->getTokenString();}
-		int getCurNumVal(){return Tokens[CurIndex]->getNumberValue();}
+		TokenType getCurType() {return Tokens[CurIndex]->getTokenType();}
+		std::string getCurDataType() {return Tokens[CurIndex]->getTokenDataType();}
+		std::string getCurString() {return Tokens[CurIndex]->getTokenString();}
+		int getCurNumVal() {return Tokens[CurIndex]->getNumberValue();}
 		bool getCurBoolVal() {return Tokens[CurIndex]->getBoolValue();}
 		bool printTokens();
-		int getCurIndex(){return CurIndex;}
-		int getLine(){return Tokens[CurIndex]->getLine()+1;}
-		bool applyTokenIndex(int index){CurIndex = index;return true;}
+		int getCurIndex() {return CurIndex;}
+		int getLine() {return Tokens[CurIndex]->getLine()+1;}
+		bool applyTokenIndex(int index) {CurIndex = index;return true;}
 
 	private:
 

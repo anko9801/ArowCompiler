@@ -302,7 +302,7 @@ FunctionStmtAST *Parser::visitFunctionStatement(PrototypeAST *proto) {
 	//add parameter to FunctionStatement
 	VariableDeclAST *vdecl;
 	SetInsertPoint(func_stmt);
-	for(size_t i = 0;i < proto->getParamSize(); i++) {
+	for (size_t i = 0;i < proto->getParamSize(); i++) {
 		vdecl = new VariableDeclAST(proto->getParamType(i), proto->getParamName(i));
 		vdecl->setDeclType(VariableDeclAST::param);
 		addStatement(vdecl);
