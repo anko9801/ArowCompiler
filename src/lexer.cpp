@@ -6,7 +6,7 @@
  * @return 切り出したトークンを格納したTokenStream
  */
 TokenStream *LexicalAnalysis(std::string input_filename) {
-	bool printLex = true;
+	bool printLex = false;
 	TokenStream *tokens = new TokenStream();
 	std::ifstream ifs;
 	std::string cur_line;
@@ -41,7 +41,7 @@ TokenStream *LexicalAnalysis(std::string input_filename) {
 			//EOF
 			if (next_char == EOF) {
 				token_str = EOF;
-				next_token = new Token(token_str, TOK_EOF, line_num);
+				next_token = new Token(token_str, TOK_EOF, line_num, input_filename);
 		
 			}else if (isspace(next_char)) {
 				continue;
@@ -64,27 +64,27 @@ TokenStream *LexicalAnalysis(std::string input_filename) {
 				// switch使いてぇええ
 				// 予約語と識別子
 				if (token_str == "int" || token_str == "bool" || token_str == "float" || token_str == "uint" || token_str == "void") {
-					next_token = new Token(token_str, TOK_TYPE, line_num);
+					next_token = new Token(token_str, TOK_TYPE, line_num, input_filename);
 				}else if (token_str == "if") {
-					next_token = new Token(token_str, TOK_IF, line_num);
+					next_token = new Token(token_str, TOK_IF, line_num, input_filename);
 				}else if (token_str == "while") {
-					next_token = new Token(token_str, TOK_WHILE, line_num);
+					next_token = new Token(token_str, TOK_WHILE, line_num, input_filename);
 				}else if (token_str == "for") {
-					next_token = new Token(token_str, TOK_FOR, line_num);
+					next_token = new Token(token_str, TOK_FOR, line_num, input_filename);
 				}else if (token_str == "match") {
-					next_token = new Token(token_str, TOK_MATCH, line_num);
+					next_token = new Token(token_str, TOK_MATCH, line_num, input_filename);
 				}else if (token_str == "async") {
-					next_token = new Token(token_str, TOK_ASYNC, line_num);
+					next_token = new Token(token_str, TOK_ASYNC, line_num, input_filename);
 				}else if (token_str == "await") {
-					next_token = new Token(token_str, TOK_AWAIT, line_num);
+					next_token = new Token(token_str, TOK_AWAIT, line_num, input_filename);
 				}else if (token_str == "return") {
-					next_token = new Token(token_str, TOK_RETURN, line_num);
+					next_token = new Token(token_str, TOK_RETURN, line_num, input_filename);
 				}else if (token_str == "true" || token_str == "false") {
-					next_token = new Token(token_str, TOK_TRUTH, line_num);
+					next_token = new Token(token_str, TOK_TRUTH, line_num, input_filename);
 				}else if (token_str == "is" || token_str == "as") {
-					next_token = new Token(token_str, TOK_CAST, line_num);
+					next_token = new Token(token_str, TOK_CAST, line_num, input_filename);
 				}else{
-					next_token = new Token(token_str, TOK_IDENTIFIER, line_num);
+					next_token = new Token(token_str, TOK_IDENTIFIER, line_num, input_filename);
 				}
 		
 			//数字
@@ -105,7 +105,7 @@ TokenStream *LexicalAnalysis(std::string input_filename) {
 								}
 								index--;
 							}
-							next_token = new Token(token_str, TOK_DIGIT, line_num);
+							next_token = new Token(token_str, TOK_DIGIT, line_num, input_filename);
 						}else if (tolower(next_char) == 'x') {
 							token_str += next_char;
 							if (index < length) {
@@ -117,7 +117,7 @@ TokenStream *LexicalAnalysis(std::string input_filename) {
 								}
 								index--;
 							}
-							next_token = new Token(token_str, TOK_DIGIT, line_num);
+							next_token = new Token(token_str, TOK_DIGIT, line_num, input_filename);
 						}else if (next_char == '.') {
 							token_str += next_char;
 							index++;
@@ -128,12 +128,12 @@ TokenStream *LexicalAnalysis(std::string input_filename) {
 								next_char = cur_line.at(index++);
 							}
 							index--;
-							next_token = new Token(token_str, TOK_FLOAT, line_num);
+							next_token = new Token(token_str, TOK_FLOAT, line_num, input_filename);
 						}else{
-							next_token = new Token(token_str, TOK_DIGIT, line_num);
+							next_token = new Token(token_str, TOK_DIGIT, line_num, input_filename);
 						}
 					}else{
-						next_token = new Token(token_str, TOK_DIGIT, line_num);
+						next_token = new Token(token_str, TOK_DIGIT, line_num, input_filename);
 					}
 				}else{
 					token_str += next_char;
@@ -157,12 +157,12 @@ TokenStream *LexicalAnalysis(std::string input_filename) {
 								next_char = cur_line.at(index++);
 							}
 							index--;
-							next_token = new Token(token_str, TOK_FLOAT, line_num);
+							next_token = new Token(token_str, TOK_FLOAT, line_num, input_filename);
 						}else{
-							next_token = new Token(token_str, TOK_DIGIT, line_num);
+							next_token = new Token(token_str, TOK_DIGIT, line_num, input_filename);
 						}
 					}else{
-						next_token = new Token(token_str, TOK_DIGIT, line_num);
+						next_token = new Token(token_str, TOK_DIGIT, line_num, input_filename);
 					}
 				}
 
@@ -181,11 +181,11 @@ TokenStream *LexicalAnalysis(std::string input_filename) {
 
 				}else if (next_char == '=') {
 					token_str += next_char;
-					next_token = new Token(token_str, TOK_SYMBOL, line_num);
+					next_token = new Token(token_str, TOK_SYMBOL, line_num, input_filename);
 					//DIVIDER('/')
 				}else{
 					index--;
-					next_token = new Token(token_str, TOK_SYMBOL, line_num);
+					next_token = new Token(token_str, TOK_SYMBOL, line_num, input_filename);
 				}
 
 			//それ以外(記号)
@@ -196,13 +196,13 @@ TokenStream *LexicalAnalysis(std::string input_filename) {
 						next_char = cur_line.at(index++);
 						if (next_char == '=') {
 							token_str += next_char;
-							next_token = new Token(token_str, TOK_SYMBOL, line_num);
+							next_token = new Token(token_str, TOK_SYMBOL, line_num, input_filename);
 						}else if (next_char == '+') {
 							token_str += next_char;
-							next_token = new Token(token_str, TOK_SYMBOL, line_num);
+							next_token = new Token(token_str, TOK_SYMBOL, line_num, input_filename);
 						}else{
 							index--;
-							next_token = new Token(token_str, TOK_SYMBOL, line_num);
+							next_token = new Token(token_str, TOK_SYMBOL, line_num, input_filename);
 						}
 						break;
 
@@ -211,13 +211,13 @@ TokenStream *LexicalAnalysis(std::string input_filename) {
 						next_char = cur_line.at(index++);
 						if (next_char == '=') {
 							token_str += next_char;
-							next_token = new Token(token_str, TOK_SYMBOL, line_num);
+							next_token = new Token(token_str, TOK_SYMBOL, line_num, input_filename);
 						}else if (next_char == '-') {
 							token_str += next_char;
-							next_token = new Token(token_str, TOK_SYMBOL, line_num);
+							next_token = new Token(token_str, TOK_SYMBOL, line_num, input_filename);
 						}else{
 							index--;
-							next_token = new Token(token_str, TOK_SYMBOL, line_num);
+							next_token = new Token(token_str, TOK_SYMBOL, line_num, input_filename);
 						}
 						break;
 
@@ -226,10 +226,10 @@ TokenStream *LexicalAnalysis(std::string input_filename) {
 						next_char = cur_line.at(index++);
 						if (next_char == '=') {
 							token_str += next_char;
-							next_token = new Token(token_str, TOK_SYMBOL, line_num);
+							next_token = new Token(token_str, TOK_SYMBOL, line_num, input_filename);
 						}else{
 							index--;
-							next_token = new Token(token_str, TOK_SYMBOL, line_num);
+							next_token = new Token(token_str, TOK_SYMBOL, line_num, input_filename);
 						}
 						break;
 
@@ -238,10 +238,10 @@ TokenStream *LexicalAnalysis(std::string input_filename) {
 						next_char = cur_line.at(index++);
 						if (next_char == '=') {
 							token_str += next_char;
-							next_token = new Token(token_str, TOK_SYMBOL, line_num);
+							next_token = new Token(token_str, TOK_SYMBOL, line_num, input_filename);
 						}else{
 							index--;
-							next_token = new Token(token_str, TOK_SYMBOL, line_num);
+							next_token = new Token(token_str, TOK_SYMBOL, line_num, input_filename);
 						}
 						break;
 
@@ -250,13 +250,13 @@ TokenStream *LexicalAnalysis(std::string input_filename) {
 						next_char = cur_line.at(index++);
 						if (next_char == '=') {
 							token_str += next_char;
-							next_token = new Token(token_str, TOK_SYMBOL, line_num);
+							next_token = new Token(token_str, TOK_SYMBOL, line_num, input_filename);
 						}else if (next_char == '>') {
 							token_str += next_char;
-							next_token = new Token(token_str, TOK_SYMBOL, line_num);
+							next_token = new Token(token_str, TOK_SYMBOL, line_num, input_filename);
 						}else{
 							index--;
-							next_token = new Token(token_str, TOK_SYMBOL, line_num);
+							next_token = new Token(token_str, TOK_SYMBOL, line_num, input_filename);
 						}
 						break;
 
@@ -265,10 +265,10 @@ TokenStream *LexicalAnalysis(std::string input_filename) {
 						next_char = cur_line.at(index++);
 						if (next_char == '=') {
 							token_str += next_char;
-							next_token = new Token(token_str, TOK_SYMBOL, line_num);
+							next_token = new Token(token_str, TOK_SYMBOL, line_num, input_filename);
 						}else{
 							index--;
-							next_token = new Token(token_str, TOK_SYMBOL, line_num);
+							next_token = new Token(token_str, TOK_SYMBOL, line_num, input_filename);
 						}
 						break;
 
@@ -277,13 +277,13 @@ TokenStream *LexicalAnalysis(std::string input_filename) {
 						next_char = cur_line.at(index++);
 						if (next_char == '=') {
 							token_str += next_char;
-							next_token = new Token(token_str, TOK_SYMBOL, line_num);
+							next_token = new Token(token_str, TOK_SYMBOL, line_num, input_filename);
 						}else if (next_char == '>') {
 							token_str += next_char;
-							next_token = new Token(token_str, TOK_SYMBOL, line_num);
+							next_token = new Token(token_str, TOK_SYMBOL, line_num, input_filename);
 						}else{
 							index--;
-							next_token = new Token(token_str, TOK_SYMBOL, line_num);
+							next_token = new Token(token_str, TOK_SYMBOL, line_num, input_filename);
 						}
 						break;
 
@@ -292,13 +292,13 @@ TokenStream *LexicalAnalysis(std::string input_filename) {
 						next_char = cur_line.at(index++);
 						if (next_char == '=') {
 							token_str += next_char;
-							next_token = new Token(token_str, TOK_SYMBOL, line_num);
+							next_token = new Token(token_str, TOK_SYMBOL, line_num, input_filename);
 						}else if (next_char == '<') {
 							token_str += next_char;
-							next_token = new Token(token_str, TOK_SYMBOL, line_num);
+							next_token = new Token(token_str, TOK_SYMBOL, line_num, input_filename);
 						}else{
 							index--;
-							next_token = new Token(token_str, TOK_SYMBOL, line_num);
+							next_token = new Token(token_str, TOK_SYMBOL, line_num, input_filename);
 						}
 						break;
 
@@ -307,10 +307,10 @@ TokenStream *LexicalAnalysis(std::string input_filename) {
 						next_char = cur_line.at(index++);
 						if (next_char == '|') {
 							token_str += next_char;
-							next_token = new Token(token_str, TOK_SYMBOL, line_num);
+							next_token = new Token(token_str, TOK_SYMBOL, line_num, input_filename);
 						}else{
 							index--;
-							next_token = new Token(token_str, TOK_SYMBOL, line_num);
+							next_token = new Token(token_str, TOK_SYMBOL, line_num, input_filename);
 						}
 						break;
 
@@ -319,71 +319,71 @@ TokenStream *LexicalAnalysis(std::string input_filename) {
 						next_char = cur_line.at(index++);
 						if (next_char == '&') {
 							token_str += next_char;
-							next_token = new Token(token_str, TOK_SYMBOL, line_num);
+							next_token = new Token(token_str, TOK_SYMBOL, line_num, input_filename);
 						}else{
 							index--;
-							next_token = new Token(token_str, TOK_SYMBOL, line_num);
+							next_token = new Token(token_str, TOK_SYMBOL, line_num, input_filename);
 						}
 						break;
 
 					case ';':
 						token_str += next_char;
-						next_token = new Token(token_str, TOK_SYMBOL, line_num);
+						next_token = new Token(token_str, TOK_SYMBOL, line_num, input_filename);
 						break;
 
 					case ',':
 						token_str += next_char;
-						next_token = new Token(token_str, TOK_SYMBOL, line_num);
+						next_token = new Token(token_str, TOK_SYMBOL, line_num, input_filename);
 						break;
 
 					case '(':
 						token_str += next_char;
-						next_token = new Token(token_str, TOK_SYMBOL, line_num);
+						next_token = new Token(token_str, TOK_SYMBOL, line_num, input_filename);
 						break;
 
 					case ')':
 						token_str += next_char;
-						next_token = new Token(token_str, TOK_SYMBOL, line_num);
+						next_token = new Token(token_str, TOK_SYMBOL, line_num, input_filename);
 						break;
 
 					case '{':
 						token_str += next_char;
-						next_token = new Token(token_str, TOK_SYMBOL, line_num);
+						next_token = new Token(token_str, TOK_SYMBOL, line_num, input_filename);
 						break;
 
 					case '}':
 						token_str += next_char;
-						next_token = new Token(token_str, TOK_SYMBOL, line_num);
+						next_token = new Token(token_str, TOK_SYMBOL, line_num, input_filename);
 						break;
 
 					case '[':
 						token_str += next_char;
-						next_token = new Token(token_str, TOK_SYMBOL, line_num);
+						next_token = new Token(token_str, TOK_SYMBOL, line_num, input_filename);
 						break;
 
 					case ']':
 						token_str += next_char;
-						next_token = new Token(token_str, TOK_SYMBOL, line_num);
+						next_token = new Token(token_str, TOK_SYMBOL, line_num, input_filename);
 						break;
 
 					case '$':
 						token_str += next_char;
-						next_token = new Token(token_str, TOK_SYMBOL, line_num);
+						next_token = new Token(token_str, TOK_SYMBOL, line_num, input_filename);
 						break;
 
 					case '?':
 						token_str += next_char;
-						next_token = new Token(token_str, TOK_SYMBOL, line_num);
+						next_token = new Token(token_str, TOK_SYMBOL, line_num, input_filename);
 						break;
 
 					case '.':
 						token_str += next_char;
-						next_token = new Token(token_str, TOK_SYMBOL, line_num);
+						next_token = new Token(token_str, TOK_SYMBOL, line_num, input_filename);
 						break;
 
 					case '_':
 						token_str += next_char;
-						next_token = new Token(token_str, TOK_SYMBOL, line_num);
+						next_token = new Token(token_str, TOK_SYMBOL, line_num, input_filename);
 						break;
 
 					default:
@@ -397,7 +397,7 @@ TokenStream *LexicalAnalysis(std::string input_filename) {
 			tokens->pushToken(next_token);
 			token_str.clear();
 		}
-		tokens->pushToken(new Token("\n", TOK_NL, line_num));
+		tokens->pushToken(new Token("\n", TOK_NL, line_num, input_filename));
 
 		token_str.clear();
 		line_num++;
@@ -407,7 +407,7 @@ TokenStream *LexicalAnalysis(std::string input_filename) {
 	//EOFの確認
 	if (ifs.eof()) {
 		tokens->pushToken(
-				new Token(token_str, TOK_EOF, line_num)
+				new Token(token_str, TOK_EOF, line_num, input_filename)
 				);
 	}
 

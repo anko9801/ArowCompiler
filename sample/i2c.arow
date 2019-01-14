@@ -1,7 +1,7 @@
 import stdlib.arow
 import gpio.arow
 
-bool send(int gpio_num, uint8 size, uint8 data) {
+bool send(int gpio_num, uint3 size, uint8 data) {
 	uint8 i = size
 	while (i > 0) {
 		i = i - 1
@@ -15,9 +15,19 @@ bool send(int gpio_num, uint8 size, uint8 data) {
 	return true
 }
 
-uint8 read() {
+uint8 i2cWrite(uint7 slave, uint8 register, uint8 data) {
 	gpioMode(2, 0)
-	send(2, 2, 2)
+	send(2, 3, 0b100)
+	send(2, 7, slave)
 	send(2, 1, 0)
+	wait(10)
+	send(2, 8, register)
+	wait(10)
+	send(2, 8, data)
+	wait(10)
+	send(2, 3, 0b011)
 	return 0
 }
+
+//uint8 i2cRead(uint7 slave, uint8 register) {
+	
