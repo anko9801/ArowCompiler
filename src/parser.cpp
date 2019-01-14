@@ -51,10 +51,11 @@ bool Parser::visitModule() {
 }
 
 bool Parser::visitImportFile() {
-	if (Debbug) fprintf(stderr, "%s:%d:%d: %s %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, __func__, Tokens->getCurString().c_str());
 	if (!isExpectedToken("import"))
 		return false;
 	Tokens->getNextToken();
+
+	if (Debbug) fprintf(stderr, "%s:%d:%d: %s %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, __func__, Tokens->getCurString().c_str());
 
 	if (!isExpectedToken(TOK_IDENTIFIER))
 		return false;
@@ -122,7 +123,6 @@ bool Parser::visitExternalDeclaration(TranslationUnitAST *tunit) {
 PrototypeAST *Parser::visitFunctionDeclaration() {
 	int bkup = Tokens->getCurIndex();
 
-	if (Debbug) fprintf(stderr, "%s\n", __func__);
 	PrototypeAST *proto = visitPrototype();
 	if (!proto)
 		return NULL;
@@ -147,7 +147,6 @@ PrototypeAST *Parser::visitFunctionDeclaration() {
 FunctionAST *Parser::visitFunctionDefinition() {
 	int bkup = Tokens->getCurIndex();
 
-	if (Debbug) fprintf(stderr, "%s\n", __func__);
 	PrototypeAST *proto = visitPrototype();
 	if (!proto)
 		return NULL;
@@ -165,7 +164,6 @@ FunctionAST *Parser::visitFunctionDefinition() {
 	FunctionTable.push_back(func);
 	FunctionStmtAST *func_stmt = visitFunctionStatement(proto);
 	if (func_stmt) {
-		if (Debbug) fprintf(stderr, "%s:%d:%d: %s %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, __func__, Tokens->getCurString().c_str());
 		return new FunctionAST(proto, func_stmt);
 	}else{
 		SAFE_DELETE(proto);
@@ -180,7 +178,6 @@ FunctionAST *Parser::visitFunctionDefinition() {
   * @return 解析成功：PrototypeAST　解析失敗：NULL
   */
 PrototypeAST *Parser::visitPrototype() {
-	if (Debbug) fprintf(stderr, "%s\n", __func__);
 	Types func_type;
 	std::string func_name;
 	Types var_type;
@@ -596,12 +593,12 @@ BaseAST *Parser::visitIfStatement() {
 	}
 	Tokens->getNextToken();
 	
-	if (!isExpectedToken("(")) {
-		fprintf(stderr, "%s:%d:%d: error: expected '(' but %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
-		Tokens->applyTokenIndex(bkup);
-		return NULL;
-	}
-	Tokens->getNextToken();
+	// if (!isExpectedToken("(")) {
+	// 	fprintf(stderr, "%s:%d:%d: error: expected '(' but %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
+	// 	Tokens->applyTokenIndex(bkup);
+	// 	return NULL;
+	// }
+	// Tokens->getNextToken();
 
 	CondStmt = visitCondition(NULL, Types(Type_bool));
 	if (!CondStmt || CondStmt->getType() != Types(Type_bool, 1, true)) {
@@ -611,12 +608,12 @@ BaseAST *Parser::visitIfStatement() {
 	}
 	BaseAST *if_expr = new IfStmtAST(CondStmt);
 
-	if (!isExpectedToken(")")) {
-		fprintf(stderr, "%s:%d:%d: error: expected ')' but %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
-		Tokens->applyTokenIndex(bkup);
-		return NULL;
-	}
-	Tokens->getNextToken();
+	// if (!isExpectedToken(")")) {
+	// 	fprintf(stderr, "%s:%d:%d: error: expected ')' but %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
+	// 	Tokens->applyTokenIndex(bkup);
+	// 	return NULL;
+	// }
+	// Tokens->getNextToken();
 
 	visitStatements(if_expr, 0);
 
@@ -645,12 +642,12 @@ BaseAST *Parser::visitWhileStatement() {
 	}
 	Tokens->getNextToken();
 
-	if (!isExpectedToken("(")) {
-		fprintf(stderr, "%s:%d:%d: expected '(' but %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
-		Tokens->applyTokenIndex(bkup);
-		return NULL;
-	}
-	Tokens->getNextToken();
+	// if (!isExpectedToken("(")) {
+	// 	fprintf(stderr, "%s:%d:%d: expected '(' but %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
+	// 	Tokens->applyTokenIndex(bkup);
+	// 	return NULL;
+	// }
+	// Tokens->getNextToken();
 
 	CondStmt = visitCondition(NULL, Types(Type_bool));
 	if (Debbug) fprintf(stderr, "%s:%d:%d: %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
@@ -660,12 +657,12 @@ BaseAST *Parser::visitWhileStatement() {
 	}
 	BaseAST *while_expr = new WhileStmtAST(CondStmt);
 
-	if (!isExpectedToken(")")) {
-		fprintf(stderr, "%s:%d:%d: expected ')' but %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
-		Tokens->applyTokenIndex(bkup);
-		return NULL;
-	}
-	Tokens->getNextToken();
+	// if (!isExpectedToken(")")) {
+	// 	fprintf(stderr, "%s:%d:%d: expected ')' but %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
+	// 	Tokens->applyTokenIndex(bkup);
+	// 	return NULL;
+	// }
+	// Tokens->getNextToken();
 
 	visitStatements(while_expr);
 	if (Debbug) fprintf(stderr, "%s:%d:%d: %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
@@ -687,12 +684,12 @@ BaseAST *Parser::visitMatchExpression() {
 	}
 	Tokens->getNextToken();
 
-	if (!isExpectedToken("(")) {
-		fprintf(stderr, "%s:%d:%d: expected '(' but %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
-		Tokens->applyTokenIndex(bkup);
-		return NULL;
-	}
-	Tokens->getNextToken();
+	// if (!isExpectedToken("(")) {
+	// 	fprintf(stderr, "%s:%d:%d: expected '(' but %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
+	// 	Tokens->applyTokenIndex(bkup);
+	// 	return NULL;
+	// }
+	// Tokens->getNextToken();
 
 	BaseAST *Eval = visitAssignmentExpression(Types(Type_all));
 	if (!Eval) {
@@ -700,12 +697,12 @@ BaseAST *Parser::visitMatchExpression() {
 		return NULL;
 	}
 
-	if (!isExpectedToken(")")) {
-		fprintf(stderr, "%s:%d:%d: expected ')' but %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
-		Tokens->applyTokenIndex(bkup);
-		return NULL;
-	}
-	Tokens->getNextToken();
+	// if (!isExpectedToken(")")) {
+	// 	fprintf(stderr, "%s:%d:%d: expected ')' but %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
+	// 	Tokens->applyTokenIndex(bkup);
+	// 	return NULL;
+	// }
+	// Tokens->getNextToken();
 
 	if (!isExpectedToken("{")) {
 		fprintf(stderr, "%s:%d:%d: expected '{' but %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
@@ -848,7 +845,10 @@ BaseAST *Parser::visitAssignmentExpression(Types type) {
 }
 
 
-
+/**
+  * Condition用構文解析メソッド
+  * @return 解析成功：AST　解析失敗：NULL
+  */
 BaseAST *Parser::visitCondition(BaseAST *lhs, Types type) {
 	int bkup = Tokens->getCurIndex();
 	if (!lhs)

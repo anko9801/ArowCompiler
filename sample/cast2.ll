@@ -9,7 +9,6 @@ declare i32 @usclock()
 
 define i32 @main() {
 entry:
-  %array = alloca [2 x double]*, i32 2
   %call_tmp = call i1 @printnum(i32 3)
   ret i32 0
 }

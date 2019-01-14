@@ -1,33 +1,83 @@
 import stdlib.arow
 import gpio.arow
 
+
 bool send(int gpio_num, uint3 size, uint8 data) {
 	uint8 i = size
 	while (i > 0) {
 		i = i - 1
+		gpioWrite(3, 0)
 		if (data & (1 << i) == 0) {
 			gpioWrite(gpio_num, 0)
 		}else{
 			gpioWrite(gpio_num, 1)
 		}
+		gpioWrite(3, 1)
 		wait(10)
 	}
 	return true
 }
 
+
+uint8 read(int gpio_num, uint3 size) {
+	uint4 i = 0
+	uint8 data
+	while (i < size) {
+		wait(10)
+		data = data << 1 + gpioRead(gpio_num)
+		i = i + 1
+	}
+	return data
+}
+
+
+uint8 i2cStart(uint7 slave, uint8 register, bool RW) {
+	// Start Condition
+	send(2, 3, 0b100)
+	// スレーブアドレス
+	send(2, 7, slave)
+	// Write: 0 Read: 1
+	send(2, 1, RW)
+	// ACK
+	if (read(2, 1) == 0) {
+	}
+	// Write
+	if (!RW) {
+		// レジスタアドレス
+		send(2, 8, register)
+		// ACK
+		wait(10)
+	}
+}
+
+
 uint8 i2cWrite(uint7 slave, uint8 register, uint8 data) {
 	gpioMode(2, 0)
-	send(2, 3, 0b100)
-	send(2, 7, slave)
-	send(2, 1, 0)
-	wait(10)
-	send(2, 8, register)
-	wait(10)
+	gpioMode(3, 0)
+	i2cStart(slave, register, 0)
+	// データ送信
 	send(2, 8, data)
-	wait(10)
+	// ACK
+	if (read(2, 1) == 0) {
+	}
+	// Stop Condition
 	send(2, 3, 0b011)
 	return 0
 }
 
-//uint8 i2cRead(uint7 slave, uint8 register) {
-	
+
+uint8 i2cRead(uint7 slave, uint8 register) {
+	gpioMode(2, 0)
+	gpioMode(3, 0)
+	i2cStart(slave, register, 0)
+	i2cStart(slave, register, 1)
+	// データ
+	wait(80)
+	// NACK
+	send(2, 1, 1)
+	// Stop Condition
+	send(2, 3, 0b011)
+}
+
+
+

@@ -9,21 +9,26 @@ declare i32 @usclock()
 
 define i32 @main() {
 entry:
-  %array = alloca [2 x double]*, i32 2
-  %k = alloca i1
-  store i1 false, i1* %k
-  %a = alloca i32
-  store i32 32, i32* %a
-  br i1 false, label %then, label %else
+  %ifcond = icmp ne i32 32, 0
+  br i1 %ifcond, label %then, label %else
 
 then:                                             ; preds = %entry
-  %var_tmp = load i32, i32* %a
-  %call_tmp = call i1 @printnum(i32 %var_tmp)
   br label %ifcont
 
 else:                                             ; preds = %entry
+  ret i32 0
   br label %ifcont
 
 ifcont:                                           ; preds = %else, %then
+  br i1 false, label %then1, label %else3
+
+then1:                                            ; preds = %ifcont
+  %call_tmp = call i1 @printnum(i32 32)
+  br label %ifcont4
+
+else3:                                            ; preds = %ifcont
+  br label %ifcont4
+
+ifcont4:                                          ; preds = %else3, %then1
   ret i32 0
 }
