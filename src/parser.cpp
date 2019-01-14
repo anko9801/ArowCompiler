@@ -1,6 +1,6 @@
 #include "parser.hpp"
 
-bool Debbug = true;
+bool Debbug = false;
 
 Parser::Parser(std::string filename) {
 	Tokens = LexicalAnalysis(filename);
@@ -576,16 +576,7 @@ BaseAST *Parser::visitJumpStatement() {
 		return NULL;
 	}
 	// 暗黙の型変換
-	if (expr->getType() != getFuncType()) {
-		if (expr->getType().getPrimType() == Type_number && getFuncType().getPrimType() == Type_number) {
-			expr = new CastExprAST(expr, getFuncType());
-			expr->setType(getFuncType());
-		}
-	}
-	if (expr->getType().getBits() != getFuncType().getBits()) {
-		expr = new CastExprAST(expr, getFuncType());
-		expr->setType(getFuncType());
-	}
+	expr = visitImplicitCastNumber(expr, getFuncType());
 	return new JumpStmtAST(expr);
 }
 
@@ -825,6 +816,8 @@ BaseAST *Parser::visitAssignmentExpression(Types type) {
 
 					rhs = visitExpression(NULL, VariableTable[i]->getType());
 					if (rhs) {
+						rhs = visitImplicitCastNumber(rhs, lhs->getType());
+						lhs = visitImplicitCastNumber(lhs, rhs->getType());
 						if (!isExpectedToken(","))
 							Tokens->getNextToken();
 						return new BinaryExprAST("=", lhs, rhs, VariableTable[i]->getType());
@@ -924,7 +917,9 @@ BaseAST *Parser::visitExpression(BaseAST *lhs, Types type) {
 
 			Tokens->getNextToken();
 			rhs = visitAdditiveExpression(NULL, Types(Type_number));
-			if (rhs && rhs->getType() == Types(Type_number)) {
+			if (rhs) {
+				lhs = visitImplicitCastNumber(lhs, rhs->getType());
+				rhs = visitImplicitCastNumber(rhs, lhs->getType());
 				return new BinaryExprAST(op, lhs, rhs, Types(Type_bool));
 			}else{
 				SAFE_DELETE(lhs);
@@ -1172,11 +1167,6 @@ BaseAST *Parser::visitCastExpression() {
 			Tokens->applyTokenIndex(bkup);
 			return NULL;
 		}
-		// if (lhs->getType().getNonNull() < DestType.getNonNull()) {
-		// 	IfStmtAST *nonif_stmt = new IfStmtAST(new BinaryExprAST("!=", lhs, new ValueAST(0, lhs->getType()), Types(Type_bool)));
-		// 	nonif_stmt->addElse(new JumpStmtAST(new ValueAST(0, getFuncType())));
-		// 	addStatement(nonif_stmt);
-		// }
 		return new CastExprAST(lhs, DestType, false);
 
 	}else if (isExpectedToken("is")) {
@@ -1193,6 +1183,11 @@ BaseAST *Parser::visitCastExpression() {
 		if (Debbug) fprintf(stderr, "%d:%d: non-null\n", Tokens->getLine(), __LINE__);
 		lhs->getType().setNonNull(true);
 		Tokens->getNextToken();
+		if (!lhs->getType().getNonNull()) {
+			IfStmtAST *nonif_stmt = new IfStmtAST(new BinaryExprAST("!=", lhs, new ValueAST(0, lhs->getType()), Types(Type_bool)));
+			nonif_stmt->addElse(new JumpStmtAST(new ValueAST(0, getFuncType())));
+			addStatement(nonif_stmt);
+		}
 		return new CastExprAST(lhs,
 			Types(lhs->getType().getPrimType(), lhs->getType().getBits(), true),
 			false);
@@ -1206,12 +1201,23 @@ BaseAST *Parser::visitCastExpression() {
   * @return 解析成功：AST　解析失敗：NULL
   */
 BaseAST *Parser::visitImplicitCastNumber(BaseAST *src, Types impl_type) {
+	if (src->getType().getPrimType() == Type_number) {
+		src->setType(impl_type);
+		return src;
+	}
+
+	if (impl_type.getPrimType() == Type_number)
+		return src;
+
 	if (src->getType() == impl_type && src->getType().getBits() == impl_type.getBits())
 		return src;
 
+	if (src->getType() == impl_type)
+		return visitImplicitCastBits(src, impl_type);
+
 	int src_priority;
 	int impl_priority;
-
+	
 	if (impl_type.getPrimType() == Type_float) impl_priority = 2;
 	if (impl_type.getPrimType() == Type_int) impl_priority = 1;
 	if (impl_type.getPrimType() == Type_uint) impl_priority = 0;
@@ -1371,7 +1377,7 @@ BaseAST *Parser::visitPrimaryExpression() {
 		int val = Tokens->getCurNumVal();
 		if (Debbug) fprintf(stderr, "%d:%d: integer\n", Tokens->getLine(), __LINE__);
 		Tokens->getNextToken();
-		return new ValueAST(val, Types(Type_int, 32, true));
+		return new ValueAST(val, Types(Type_number, 32, true));
 
 	//float
 	}else if (isExpectedToken(TOK_FLOAT)) {
@@ -1387,7 +1393,7 @@ BaseAST *Parser::visitPrimaryExpression() {
 		if (isExpectedToken(TOK_DIGIT)) {
 			int val = Tokens->getCurNumVal();
 			Tokens->getNextToken();
-			return new ValueAST(-val, Types(Type_int, 32, true));
+			return new ValueAST(-val, Types(Type_number, 32, true));
 		}else if (isExpectedToken(TOK_FLOAT)) {
 			float val = Tokens->getCurNumVal();
 			Tokens->getNextToken();

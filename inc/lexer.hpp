@@ -52,9 +52,16 @@ typedef class Token{
 	public:
 	Token(std::string string, TokenType type, int line) 
 		: TokenString(string), Type(type), Line(line){
-		if(type == TOK_DIGIT || type == TOK_FLOAT)
-			Number = atoi(string.c_str());
-		else
+		if(type == TOK_DIGIT || type == TOK_FLOAT) {
+			if (string[0] == '0' && string[1] == 'b') {
+				string.erase(string.begin(), string.begin() + 2);
+				Number = strtol(string.c_str(), NULL, 2);
+				fprintf(stderr, "binary%d <- ", Number);
+			}else{
+				Number = atof(string.c_str());
+				fprintf(stderr, "%d <- ", Number);
+			}
+		}else
 			Number = 0x7fffffff;
 		if (type == TOK_TRUTH)
 			Bool = true;

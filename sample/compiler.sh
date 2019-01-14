@@ -13,7 +13,7 @@ if [ -e $FILE ]; then
 	rm $FILE
 fi
 
-../bin/dcc -o $FILE.ll $FILE.arow -n
+../bin/dcc -o $FILE.ll $FILE.arow -O
 
 if [ -e $FILE.ll ]; then
 	if [ -z $2 ]; then

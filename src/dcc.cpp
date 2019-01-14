@@ -58,6 +58,7 @@ bool OptionParser::parseOption(){
 		return false;
 	}
 
+	Lazy = true;
 	for(int i=1; i<Argc; i++){
 		if(Argv[i][0]=='-' && Argv[i][1] == 'o' && Argv[i][2] == '\0'){
 			//output filename
@@ -69,8 +70,8 @@ bool OptionParser::parseOption(){
 			LinkFileName.assign(Argv[++i]);
 		}else if(Argv[i][0]=='-' && Argv[i][1] == 'j' && Argv[i][2] == 'i' && Argv[i][3] == 't' && Argv[i][4] == '\0'){
 			WithJit = true;
-		}else if(Argv[i][0]=='-' && Argv[i][1] == 'n' && Argv[i][2] == '\0'){
-			Lazy = true;
+		}else if(Argv[i][0]=='-' && Argv[i][1] == 'O' && Argv[i][2] == '\0'){
+			Lazy = false;
 		}else if(Argv[i][0]=='-'){
 			fprintf(stderr,"%s は不明なオプションです\n", Argv[i]);
 			return false;

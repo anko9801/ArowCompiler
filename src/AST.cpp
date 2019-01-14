@@ -151,32 +151,32 @@ void BaseAST::printAST(int nest = 0){
 	}else if(llvm::isa<VariableDeclAST>(this))
 		fprintf(stderr, "VariableDeclaration(%s)\n", llvm::dyn_cast<VariableDeclAST>(this)->getType().printType().c_str());
 	else if(llvm::isa<CastExprAST>(this)){
-		fprintf(stderr, "CastExpression(%s -> %s)\n", llvm::dyn_cast<CastExprAST>(this)->getSource()->getType().printType().c_str(), llvm::dyn_cast<CastExprAST>(this)->getDestType().printType().c_str());
+		fprintf(stderr, "Cast(%s -> %s)\n", llvm::dyn_cast<CastExprAST>(this)->getSource()->getType().printType().c_str(), llvm::dyn_cast<CastExprAST>(this)->getDestType().printType().c_str());
 		llvm::dyn_cast<CastExprAST>(this)->getSource()->printAST(nest+1);
 	}else if(llvm::isa<BinaryExprAST>(this)){
-		fprintf(stderr, "BinaryExpression(%s)\n", llvm::dyn_cast<BinaryExprAST>(this)->getType().printType().c_str());
+		fprintf(stderr, "Binary %s(%s)\n", llvm::dyn_cast<BinaryExprAST>(this)->getOp().c_str(), llvm::dyn_cast<BinaryExprAST>(this)->getType().printType().c_str());
 		llvm::dyn_cast<BinaryExprAST>(this)->getLHS()->printAST(nest+1);
 		llvm::dyn_cast<BinaryExprAST>(this)->getRHS()->printAST(nest+1);
 	}else if(llvm::isa<CallExprAST>(this)){
-		fprintf(stderr, "CallExpression(");
+		fprintf(stderr, "CallFunction(");
 		for (int i = 0; ;i++)
 			if (llvm::dyn_cast<CallExprAST>(this)->getProto()->getParamType(i) == Types(Type_null)) break;
 			else fprintf(stderr, "%s -> ", llvm::dyn_cast<CallExprAST>(this)->getProto()->getParamType(i).printType().c_str()); 
 		fprintf(stderr, "%s)\n", llvm::dyn_cast<CallExprAST>(this)->getProto()->getType().printType().c_str());
 		for (int i = 0;;i++)if (llvm::dyn_cast<CallExprAST>(this)->getArgs(i))llvm::dyn_cast<CallExprAST>(this)->getArgs(i)->printAST(nest+1);else break;
 	}else if(llvm::isa<JumpStmtAST>(this)){
-		fprintf(stderr, "JumpStatement(%s)\n", llvm::dyn_cast<JumpStmtAST>(this)->getType().printType().c_str());
+		fprintf(stderr, "Return(%s)\n", llvm::dyn_cast<JumpStmtAST>(this)->getType().printType().c_str());
 		llvm::dyn_cast<JumpStmtAST>(this)->getExpr()->printAST(nest+1);
 	}else if(llvm::isa<VariableAST>(this))
 		fprintf(stderr, "Variable(%s)\n", llvm::dyn_cast<VariableAST>(this)->getType().printType().c_str());
 	else if(llvm::isa<IfStmtAST>(this)){
-		fprintf(stderr, "IfStatement\n");
-		llvm::dyn_cast<IfStmtAST>(this)->getCond()->printAST(nest);
+		fprintf(stderr, "If ");
+		llvm::dyn_cast<IfStmtAST>(this)->getCond()->printAST(0);
 		for (int i = 0;;i++)if (llvm::dyn_cast<IfStmtAST>(this)->getThen(i))llvm::dyn_cast<IfStmtAST>(this)->getThen(i)->printAST(nest+1);else break;
 		for (int i = 0;;i++)if (llvm::dyn_cast<IfStmtAST>(this)->getElse(i))llvm::dyn_cast<IfStmtAST>(this)->getElse(i)->printAST(nest+1);else break;
 	}
 	else if(llvm::isa<WhileStmtAST>(this)) {
-		fprintf(stderr, "WhileStatement\n");
+		fprintf(stderr, "While\n");
 		llvm::dyn_cast<WhileStmtAST>(this)->getCond()->printAST(nest);
 		for (int i = 0;;i++)if (llvm::dyn_cast<WhileStmtAST>(this)->getLoop(i))llvm::dyn_cast<WhileStmtAST>(this)->getLoop(i)->printAST(nest+1);else break;
 	}

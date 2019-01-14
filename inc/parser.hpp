@@ -22,6 +22,7 @@ typedef class Parser{
 		TranslationUnitAST *TU;
 		BaseAST *InsertPoint;
 		bool warning = false;
+		std::string error;
 		Types CurFuncType;
 
 		// 意味解析用各種識別子表

@@ -13,7 +13,7 @@ entry:
   %i = alloca i32
   store i32 0, i32* %i
   %var_tmp = load i32, i32* %i
-  %ifcond = icmp slt i32 %var_tmp, 5
+  %ifcond = icmp eq i32 %var_tmp, 5
   %var_tmp1 = load i32, i32* %i
   %ifcond2 = icmp sgt i32 %var_tmp1, -1
   %and_cond = and i1 %ifcond, %ifcond2
