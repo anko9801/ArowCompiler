@@ -1,53 +1,55 @@
 import stdlib.arow
 import gpio.arow
 
-
 bool send(int gpio_num, uint3 size, uint8 data) {
 	uint8 i = size
-	while (i > 0) {
+	while i > 0 {
 		i = i - 1
 		gpioWrite(3, 0)
-		if (data & (1 << i) == 0) {
+		if data & (1 << i) == 0 {
 			gpioWrite(gpio_num, 0)
 		}else{
 			gpioWrite(gpio_num, 1)
 		}
+		wait(5)
 		gpioWrite(3, 1)
-		wait(10)
+		wait(5)
 	}
 	return true
 }
 
 
-uint8 read(int gpio_num, uint3 size) {
-	uint4 i = 0
-	uint8 data
-	while (i < size) {
-		wait(10)
-		data = data << 1 + gpioRead(gpio_num)
-		i = i + 1
-	}
-	return data
-}
-
-
 uint8 i2cStart(uint7 slave, uint8 register, bool RW) {
 	// Start Condition
-	send(2, 3, 0b100)
+	gpioWrite(2, 0)
 	// スレーブアドレス
 	send(2, 7, slave)
 	// Write: 0 Read: 1
 	send(2, 1, RW)
 	// ACK
-	if (read(2, 1) == 0) {
+	printnum(gpioRead(2)?)
+	gpioWrite(3, 0)
+	wait(5)
+	printnum(gpioRead(2)?)
+	if gpioRead(2) == 0 {
+		printnum(123351)
+		return 0
 	}
+	gpioWrite(3, 1)
+	wait(5)
 	// Write
-	if (!RW) {
+	if !RW {
 		// レジスタアドレス
 		send(2, 8, register)
 		// ACK
-		wait(10)
+		wait(5)
+		if gpioRead(2) == 0 {
+			printnum(123352)
+			return 0
+		}
+		wait(5)
 	}
+	return 0
 }
 
 
@@ -58,10 +60,17 @@ uint8 i2cWrite(uint7 slave, uint8 register, uint8 data) {
 	// データ送信
 	send(2, 8, data)
 	// ACK
-	if (read(2, 1) == 0) {
+	wait(5)
+	if gpioRead(2) == 0 {
+		printnum(99999999)
+		return 0
 	}
+	wait(5)
 	// Stop Condition
-	send(2, 3, 0b011)
+	gpioWrite(3, 1)
+	gpioWrite(2, 1)
+	gpioClear(2)
+	gpioClear(3)
 	return 0
 }
 
@@ -72,11 +81,39 @@ uint8 i2cRead(uint7 slave, uint8 register) {
 	i2cStart(slave, register, 0)
 	i2cStart(slave, register, 1)
 	// データ
-	wait(80)
-	// NACK
-	send(2, 1, 1)
+	uint5 i = 0
+	uint8 data
+	uint3 byte = 2
+	uint transmission = 0
+
+	while transmission < byte {
+		while i < 8 {
+			gpioWrite(3, 0)
+			wait(5)
+			printnum(data?)
+			data = data << 1 + gpioRead(2)
+			printnum(data?)
+			gpioWrite(3, 1)
+			wait(5)
+			i = i + 1
+		}
+		transmission = transmission + 1
+		// 最後だけNACK
+		if transmission != byte {
+			// ACK
+			send(2, 1, 0)
+		}else{
+			// NACK
+			send(2, 1, 1)
+		}
+	}
+
 	// Stop Condition
-	send(2, 3, 0b011)
+	gpioWrite(3, 1)
+	gpioWrite(2, 1)
+	gpioClear(2)
+	gpioClear(3)
+	return data
 }
 
 

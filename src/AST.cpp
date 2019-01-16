@@ -30,8 +30,8 @@ std::string Types::printType() {
 bool Types::operator== (const Types &rhs) const {
 	if (Type == Type_all || rhs.Type == Type_all) return true;
 	if (Type == Type_none || rhs.Type == Type_none) return true;
-	if (Type == Type_number && (rhs.Type == Type_int || rhs.Type == Type_uint || rhs.Type == Type_float)) return true;
-	if ((Type == Type_int || Type == Type_uint || Type == Type_float) && rhs.Type == Type_number) return true;
+	if (Type == Type_number && (rhs.Type == Type_int || rhs.Type == Type_uint || rhs.Type == Type_float || rhs.Type == Type_bool)) return true;
+	if ((Type == Type_int || Type == Type_uint || Type == Type_float || Type == Type_bool) && rhs.Type == Type_number) return true;
 	if (Type == rhs.Type) return true;
 	else return false;
 }
@@ -110,6 +110,8 @@ Types BaseAST::getType() {
 		return llvm::dyn_cast<JumpStmtAST>(this)->getType();
 	}else if (llvm::isa<BinaryExprAST>(this)) {
 		return llvm::dyn_cast<BinaryExprAST>(this)->getType();
+	}else if (llvm::isa<SingleExprAST>(this)) {
+		return llvm::dyn_cast<SingleExprAST>(this)->getType();
 	}else if (llvm::isa<CallExprAST>(this)) {
 		return llvm::dyn_cast<CallExprAST>(this)->getType();
 	}else if (llvm::isa<VariableAST>(this)) {
@@ -130,6 +132,8 @@ bool BaseAST::setType(Types type) {
 		return llvm::dyn_cast<JumpStmtAST>(this)->setType(type);
 	}else if (llvm::isa<BinaryExprAST>(this)) {
 		return llvm::dyn_cast<BinaryExprAST>(this)->setType(type);
+	}else if (llvm::isa<SingleExprAST>(this)) {
+		return llvm::dyn_cast<SingleExprAST>(this)->setType(type);
 	}else if (llvm::isa<CallExprAST>(this)) {
 		return llvm::dyn_cast<CallExprAST>(this)->setType(type);
 	}else if (llvm::isa<VariableAST>(this)) {
@@ -157,6 +161,9 @@ void BaseAST::printAST(int nest = 0) {
 		fprintf(stderr, "Binary %s(%s)\n", llvm::dyn_cast<BinaryExprAST>(this)->getOp().c_str(), llvm::dyn_cast<BinaryExprAST>(this)->getType().printType().c_str());
 		llvm::dyn_cast<BinaryExprAST>(this)->getLHS()->printAST(nest+1);
 		llvm::dyn_cast<BinaryExprAST>(this)->getRHS()->printAST(nest+1);
+	}else if (llvm::isa<SingleExprAST>(this)) {
+		fprintf(stderr, "Single %s(%s)\n", llvm::dyn_cast<SingleExprAST>(this)->getOp().c_str(), llvm::dyn_cast<SingleExprAST>(this)->getType().printType().c_str());
+		llvm::dyn_cast<SingleExprAST>(this)->getLHS()->printAST(nest+1);
 	}else if (llvm::isa<CallExprAST>(this)) {
 		fprintf(stderr, "CallFunction(");
 		for (int i = 0; ;i++)
@@ -171,13 +178,13 @@ void BaseAST::printAST(int nest = 0) {
 		fprintf(stderr, "Variable(%s)\n", llvm::dyn_cast<VariableAST>(this)->getType().printType().c_str());
 	else if (llvm::isa<IfStmtAST>(this)) {
 		fprintf(stderr, "If ");
-		llvm::dyn_cast<IfStmtAST>(this)->getCond()->printAST(0);
+		llvm::dyn_cast<IfStmtAST>(this)->getCond()->printAST(nest-1);
 		for (int i = 0;;i++)if (llvm::dyn_cast<IfStmtAST>(this)->getThen(i))llvm::dyn_cast<IfStmtAST>(this)->getThen(i)->printAST(nest+1);else break;
 		for (int i = 0;;i++)if (llvm::dyn_cast<IfStmtAST>(this)->getElse(i))llvm::dyn_cast<IfStmtAST>(this)->getElse(i)->printAST(nest+1);else break;
 	}
 	else if (llvm::isa<WhileStmtAST>(this)) {
-		fprintf(stderr, "While\n");
-		llvm::dyn_cast<WhileStmtAST>(this)->getCond()->printAST(nest);
+		fprintf(stderr, "While ");
+		llvm::dyn_cast<WhileStmtAST>(this)->getCond()->printAST(nest-1);
 		for (int i = 0;;i++)if (llvm::dyn_cast<WhileStmtAST>(this)->getLoop(i))llvm::dyn_cast<WhileStmtAST>(this)->getLoop(i)->printAST(nest+1);else break;
 	}
 	else if (llvm::isa<ValueAST>(this))

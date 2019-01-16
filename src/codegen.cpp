@@ -68,20 +68,13 @@ bool CodeGen::linkModule(Module *dest, std::string file_name) {
 Type *CodeGen::generateType(Types type) {
 	if (type.getPrimType() == Type_void) {
 		return Type::getVoidTy(GlobalContext);
-	}else if (type.getPrimType() == Type_int || type.getPrimType() == Type_uint) {
-		if (type.getBits() == 1) {
-			return Type::getInt1Ty(GlobalContext);
-		}else if (type.getBits() == 8) {
-			return Type::getInt8Ty(GlobalContext);
-		}else if (type.getBits() == 16) {
-			return Type::getInt16Ty(GlobalContext);
-		}else if (type.getBits() == 32) {
-			return Type::getInt32Ty(GlobalContext);
-		}else if (type.getBits() == 64) {
-			return Type::getInt64Ty(GlobalContext);
-		}else{
-			return Type::getIntNTy(GlobalContext, type.getBits());
-		}
+
+	}else if (type.getPrimType() == Type_int) {
+		return Type::getIntNTy(GlobalContext, type.getBits());
+	
+	}else if (type.getPrimType() == Type_uint) {
+		return Type::getIntNTy(GlobalContext, type.getBits() + 1);
+
 	}else if (type.getPrimType() == Type_float) {
 		if (type.getBits() == 16) {
 			return Type::getHalfTy(GlobalContext);
@@ -268,7 +261,7 @@ Value *CodeGen::generateArray() {
   * @param IfStmtAST
   * @return 生成したValueのポインタ
   */
-Value *CodeGen::genereateIfStmt(IfStmtAST *if_expr) {
+Value *CodeGen::generateIfStmt(IfStmtAST *if_expr) {
 	if (llvmDebbug) fprintf(stderr, "%d: %s\n", __LINE__, __func__);
 
 	Value *CondV = generateCondition(if_expr->getCond());
@@ -311,7 +304,7 @@ Value *CodeGen::genereateIfStmt(IfStmtAST *if_expr) {
   * @param WhileStmtAST
   * @return 生成したValueのポインタ
   */
-Value *CodeGen::genereateWhileStmt(WhileStmtAST *while_expr) {
+Value *CodeGen::generateWhileStmt(WhileStmtAST *while_expr) {
 	if (llvmDebbug) fprintf(stderr, "%d: %s\n", __LINE__, __func__);
 
 	Function *function = Builder->GetInsertBlock()->getParent();
@@ -383,49 +376,43 @@ Value *CodeGen::generateBinaryExpression(BinaryExprAST *bin_expr) {
 	}
 
 	if (llvmDebbug) fprintf(stderr, "%d: lhs and rhs exist\n", __LINE__);
-
-	prim_type type;
-	if (lhs->getType().getPrimType() == rhs->getType().getPrimType()) {
-		type = lhs->getType().getPrimType();
-	}else{
-		return NULL;
-	}
+	Types type = bin_expr->getType();
 
 	if (bin_expr->getOp() == "=") {
 		return Builder->CreateStore(rhs_v, lhs_v);
 
 	}else if (bin_expr->getOp() == "+") {
-		if (type == Type_int || type == Type_uint)
+		if (type.getPrimType() == Type_int || type.getPrimType() == Type_uint)
 			return Builder->CreateAdd(lhs_v, rhs_v, "add_tmp");
-		if (type == Type_float)
+		if (type.getPrimType() == Type_float)
 			return Builder->CreateFAdd(lhs_v, rhs_v, "add_tmp");
 
 	}else if (bin_expr->getOp() == "-") {
-		if (type == Type_int || type == Type_uint)
+		if (type.getPrimType() == Type_int || type.getPrimType() == Type_uint)
 			return Builder->CreateSub(lhs_v, rhs_v, "sub_tmp");
-		if (type == Type_float)
+		if (type.getPrimType() == Type_float)
 			return Builder->CreateFSub(lhs_v, rhs_v, "sub_tmp");
 
 	}else if (bin_expr->getOp() == "*") {
-		if (type == Type_int || type == Type_uint)
+		if (type.getPrimType() == Type_int || type.getPrimType() == Type_uint)
 			return Builder->CreateMul(lhs_v, rhs_v, "mul_tmp");
-		if (type == Type_float)
+		if (type.getPrimType() == Type_float)
 			return Builder->CreateFMul(lhs_v, rhs_v, "mul_tmp");
 
 	}else if (bin_expr->getOp() == "/") {
-		if (type == Type_int)
+		if (type.getPrimType() == Type_int)
 			return Builder->CreateSDiv(lhs_v, rhs_v, "div_tmp");
-		else if (type == Type_uint)
+		else if (type.getPrimType() == Type_uint)
 			return Builder->CreateUDiv(lhs_v, rhs_v, "div_tmp");
-		else if (type == Type_float)
+		else if (type.getPrimType() == Type_float)
 			return Builder->CreateFDiv(lhs_v, rhs_v, "div_tmp");
 
 	}else if (bin_expr->getOp() == "%") {
-		if (type == Type_uint)
+		if (type.getPrimType() == Type_uint)
 			return Builder->CreateURem(lhs_v, rhs_v, "rem_tmp");
-		else if (type == Type_int)
+		else if (type.getPrimType() == Type_int)
 			return Builder->CreateSRem(lhs_v, rhs_v, "rem_tmp");
-		else if (type == Type_float)
+		else if (type.getPrimType() == Type_float)
 			return Builder->CreateFRem(lhs_v, rhs_v, "rem_tmp");
 	
 	}else if (bin_expr->getOp() == "<<") {
@@ -443,7 +430,85 @@ Value *CodeGen::generateBinaryExpression(BinaryExprAST *bin_expr) {
 	}else if (bin_expr->getOp() == "^") {
 		return Builder->CreateXor(lhs_v, rhs_v, "xor_tmp");
 	}
+	if (type == Types(Type_bool)) {
+		if (isa<PlaceholderAST>(bin_expr->getLHS()) || isa<PlaceholderAST>(bin_expr->getRHS())) {
+			return ConstantInt::get(Type::getInt1Ty(GlobalContext), true, false);
+		}
+		Value *lhs_v = generateExpression(bin_expr->getLHS());
+		Value *rhs_v = generateExpression(bin_expr->getRHS());
+
+		Types type = Types(Type_null);
+
+		if (bin_expr->getLHS()->getType() == bin_expr->getRHS()->getType()) {
+				type = bin_expr->getLHS()->getType();
+		}
+
+		if (bin_expr->getOp() == "==")
+			if (type == Types(Type_int) || type == Types(Type_uint) || type == Types(Type_bool))
+				return Builder->CreateICmpEQ(lhs_v, rhs_v, "ifcond");
+			if (type == Types(Type_float))
+				return Builder->CreateFCmpOEQ(lhs_v, rhs_v, "ifcond");
+	
+		else if (bin_expr->getOp() == "!=")
+			if (type == Types(Type_int) || type == Types(Type_uint) || type == Types(Type_bool))
+				return Builder->CreateICmpNE(lhs_v, rhs_v, "ifcond");
+			if (type == Types(Type_float))
+				return Builder->CreateFCmpONE(lhs_v, rhs_v, "ifcond");
+		
+		else if (bin_expr->getOp() == ">")
+			if (type == Types(Type_int))
+				return Builder->CreateICmpSGT(lhs_v, rhs_v, "ifcond");
+			if (type == Types(Type_uint) || type == Types(Type_bool))
+				return Builder->CreateICmpUGT(lhs_v, rhs_v, "ifcond");
+			if (type == Types(Type_float))
+				return Builder->CreateFCmpOGT(lhs_v, rhs_v, "ifcond");
+
+		else if (bin_expr->getOp() == "<")
+			if (type == Types(Type_int))
+				return Builder->CreateICmpSLT(lhs_v, rhs_v, "ifcond");
+			if (type == Types(Type_uint) || type == Types(Type_bool))
+				return Builder->CreateICmpULT(lhs_v, rhs_v, "ifcond");
+			if (type == Types(Type_float))
+				return Builder->CreateFCmpOLT(lhs_v, rhs_v, "ifcond");
+
+		else if (bin_expr->getOp() == ">=")
+			if (type == Types(Type_int))
+				return Builder->CreateICmpSGE(lhs_v, rhs_v, "ifcond");
+			if (type == Types(Type_uint) || type == Types(Type_bool))
+				return Builder->CreateICmpUGE(lhs_v, rhs_v, "ifcond");
+			if (type == Types(Type_float))
+				return Builder->CreateFCmpOGE(lhs_v, rhs_v, "ifcond");
+
+		else if (bin_expr->getOp() == "<=")
+			if (type == Types(Type_int))
+				return Builder->CreateICmpSLE(lhs_v, rhs_v, "ifcond");
+			if (type == Types(Type_uint) || type == Types(Type_bool))
+				return Builder->CreateICmpULE(lhs_v, rhs_v, "ifcond");
+			if (type == Types(Type_float))
+				return Builder->CreateFCmpOLE(lhs_v, rhs_v, "ifcond");
+	}
+	
 	return NULL;
+}
+
+
+/**
+  * 演算生成メソッド
+  * @param  BinaryExprAST
+  * @return 生成したValueのポインタ
+  */
+Value *CodeGen::generateSingleExpression(SingleExprAST *sin_expr) {
+	if (llvmDebbug) fprintf(stderr, "%d: %s\n", __LINE__, __func__);
+	BaseAST *lhs = sin_expr->getLHS();
+	
+	Value *lhs_v = generateExpression(lhs);
+
+	if (sin_expr->getOp() == "!") {
+		Value *sint = generateValue(new ValueAST(true, Types(Type_bool)));
+		return Builder->CreateXor(sint, lhs_v, "xor_tmp");
+	}else{
+		return NULL;
+	}
 }
 
 
@@ -508,9 +573,9 @@ Value *CodeGen::generateStatement(BaseAST *stmt) {
 	else if (isa<JumpStmtAST>(stmt))
 		return generateJumpStatement(dyn_cast<JumpStmtAST>(stmt));
 	else if (isa<IfStmtAST>(stmt))
-		return genereateIfStmt(dyn_cast<IfStmtAST>(stmt));
+		return generateIfStmt(dyn_cast<IfStmtAST>(stmt));
 	else if (isa<WhileStmtAST>(stmt))
-		return genereateWhileStmt(dyn_cast<WhileStmtAST>(stmt));
+		return generateWhileStmt(dyn_cast<WhileStmtAST>(stmt));
 	return NULL;
 }
 
@@ -523,6 +588,8 @@ Value *CodeGen::generateStatement(BaseAST *stmt) {
 Value *CodeGen::generateExpression(BaseAST *expr) {
 	if (isa<BinaryExprAST>(expr))
 		return generateBinaryExpression(dyn_cast<BinaryExprAST>(expr));
+	else if (isa<SingleExprAST>(expr))
+		return generateSingleExpression(dyn_cast<SingleExprAST>(expr));
 	else if (isa<CallExprAST>(expr))
 		return generateCallExpression(dyn_cast<CallExprAST>(expr));
 	else if (isa<CastExprAST>(expr)) {
@@ -556,12 +623,9 @@ Value *CodeGen::generateCondition(BaseAST* Cond) {
 				generateCondition(CondBinary->getRHS()),
 				"or_cond"
 				);
-		}else{
-			return generateCompare(Cond);
 		}
-	}else{
-		return generateCompare(Cond);
 	}
+	return generateCompare(Cond);
 }
 
 
@@ -571,68 +635,11 @@ Value *CodeGen::generateCondition(BaseAST* Cond) {
   * @return 生成したValueのポインタ
   */
 Value *CodeGen::generateCompare(BaseAST* Cond) {
-	if (isa<ValueAST>(Cond)) {
-		return generateValue(dyn_cast<ValueAST>(Cond));
-
-	}else if (isa<BinaryExprAST>(Cond)) {
-		auto CondBinary = dyn_cast<BinaryExprAST>(Cond);
-		if (isa<PlaceholderAST>(CondBinary->getLHS()) || isa<PlaceholderAST>(CondBinary->getRHS())) {
-			return ConstantInt::get(Type::getInt1Ty(GlobalContext), true, false);
-		}
-		Value *lhs_v = generateExpression(CondBinary->getLHS());
-		Value *rhs_v = generateExpression(CondBinary->getRHS());
-
-		Types type = Types(Type_null);
-
-		if (CondBinary->getLHS()->getType() == CondBinary->getRHS()->getType()) {
-				type = CondBinary->getLHS()->getType();
-		}
-
-		if (CondBinary->getOp() == "==")
-			if (type == Types(Type_int) || type == Types(Type_uint))
-				return Builder->CreateICmpEQ(lhs_v, rhs_v, "ifcond");
-			if (type == Types(Type_float))
-				return Builder->CreateFCmpOEQ(lhs_v, rhs_v, "ifcond");
-	
-		else if (CondBinary->getOp() == "!=")
-			if (type == Types(Type_int) || type == Types(Type_uint))
-				return Builder->CreateICmpNE(lhs_v, rhs_v, "ifcond");
-			if (type == Types(Type_float))
-				return Builder->CreateFCmpONE(lhs_v, rhs_v, "ifcond");
-		
-		else if (CondBinary->getOp() == ">")
-			if (type == Types(Type_int))
-				return Builder->CreateICmpSGT(lhs_v, rhs_v, "ifcond");
-			if (type == Types(Type_uint))
-				return Builder->CreateICmpUGT(lhs_v, rhs_v, "ifcond");
-			if (type == Types(Type_float))
-				return Builder->CreateFCmpOGT(lhs_v, rhs_v, "ifcond");
-
-		else if (CondBinary->getOp() == "<")
-			if (type == Types(Type_int))
-				return Builder->CreateICmpSLT(lhs_v, rhs_v, "ifcond");
-			if (type == Types(Type_uint))
-				return Builder->CreateICmpULT(lhs_v, rhs_v, "ifcond");
-			if (type == Types(Type_float))
-				return Builder->CreateFCmpOLT(lhs_v, rhs_v, "ifcond");
-
-		else if (CondBinary->getOp() == ">=")
-			if (type == Types(Type_int))
-				return Builder->CreateICmpSGE(lhs_v, rhs_v, "ifcond");
-			if (type == Types(Type_uint))
-				return Builder->CreateICmpUGE(lhs_v, rhs_v, "ifcond");
-			if (type == Types(Type_float))
-				return Builder->CreateFCmpOGE(lhs_v, rhs_v, "ifcond");
-
-		else if (CondBinary->getOp() == "<=")
-			if (type == Types(Type_int))
-				return Builder->CreateICmpSLE(lhs_v, rhs_v, "ifcond");
-			if (type == Types(Type_uint))
-				return Builder->CreateICmpULE(lhs_v, rhs_v, "ifcond");
-			if (type == Types(Type_float))
-				return Builder->CreateFCmpOLE(lhs_v, rhs_v, "ifcond");
+	if (isa<BinaryExprAST>(Cond)) {
+		return generateBinaryExpression(dyn_cast<BinaryExprAST>(Cond));
+	}else{
+		return generateExpression(Cond);
 	}
-	return NULL;
 }
 
 
@@ -646,12 +653,12 @@ Value *CodeGen::generateCastExpression(Value *src, Types SrcType, Types DestType
 
 	Type *DestTy = generateType(DestType);
 
-	if (SrcType.getPrimType() == SrcType.getPrimType() && SrcType.getNonNull() < DestType.getNonNull()) {
+	if (SrcType.getPrimType() == DestType.getPrimType() && SrcType.getBits() == DestType.getBits() && SrcType.getNonNull() < DestType.getNonNull()) {
 		return src;
 	}
 
-	if (SrcType.getPrimType() == Type_int || SrcType.getPrimType() == Type_uint) {
-		if (DestType.getPrimType() == Type_int || DestType.getPrimType() == Type_uint) {
+	if (SrcType.getPrimType() == Type_int || SrcType.getPrimType() == Type_uint || SrcType.getPrimType() == Type_bool) {
+		if (DestType.getPrimType() == Type_int || DestType.getPrimType() == Type_uint || SrcType.getPrimType() == Type_bool) {
 			if (SrcType.getBits() > DestType.getBits()) {
 				// bit数を小さくする
 				if (llvmDebbug) fprintf(stderr, "Trunc\n");
@@ -671,14 +678,16 @@ Value *CodeGen::generateCastExpression(Value *src, Types SrcType, Types DestType
 			// Floating Point to Signed Int
 			if (llvmDebbug) fprintf(stderr, "FPToSI\n");
 			return Builder->CreateFPToSI(src, DestTy);
-		}else if (DestType.getPrimType() == Type_uint) {
+		}else if (DestType.getPrimType() == Type_uint || SrcType.getPrimType() == Type_bool) {
 			// Floating Point to Unsigned Int
 			if (llvmDebbug) fprintf(stderr, "FPToUI\n");
 			return Builder->CreateFPToUI(src, DestTy);
 		}else if (DestType.getPrimType() == Type_float) {
+			if (llvmDebbug) fprintf(stderr, "FP\n");
 			return Builder->CreateFPCast(src, DestTy);
 		}
 	}
+	if (llvmDebbug) fprintf(stderr, "Cast\n");
 	return src;
 }
 
@@ -696,7 +705,11 @@ Value *CodeGen::generateVariable(VariableAST *var) {
 }
 
 
-// Value
+/**
+  * 値生成メソッド
+  * @param ValueAST
+  * @return  生成したValueのポインタ
+  */
 Value *CodeGen::generateValue(ValueAST *val) {
 	if (llvmDebbug) fprintf(stderr, "%d: %s\n", __LINE__, __func__);
 	Type *type = generateType(val->getType());

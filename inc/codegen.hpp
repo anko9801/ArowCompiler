@@ -55,12 +55,13 @@ class CodeGen{
 		Value *generateVariableDeclaration(VariableDeclAST *vdecl);
 		Value *generateArray();
 		Value *generateStatement(BaseAST *stmt);
-		Value *genereateIfStmt(IfStmtAST *if_expr);
-		Value *genereateWhileStmt(WhileStmtAST *while_expr);
+		Value *generateIfStmt(IfStmtAST *if_expr);
+		Value *generateWhileStmt(WhileStmtAST *while_expr);
 		Value *generateCondition(BaseAST *Cond);
 		Value *generateCompare(BaseAST *Cond);
 		Value *generateExpression(BaseAST *expr);
 		Value *generateBinaryExpression(BinaryExprAST *bin_expr);
+		Value *generateSingleExpression(SingleExprAST *sin_expr);
 		Value *generateCallExpression(CallExprAST *call_expr);
 		Value *generateJumpStatement(JumpStmtAST *jump_stmt);
 		Value *generateCastExpression(Value *src, Types SrcType, Types DestType);

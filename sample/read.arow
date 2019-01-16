@@ -1,0 +1,16 @@
+import stdlib.arow
+import gpio.arow
+
+int main() {
+	confirm()
+	gpioMode(23, 1)
+	int i = 0
+	while i < 100 {
+		i = i + 1
+		printnum(gpioRead(23)?)
+		wait(500000)
+	}
+	gpioClear(23)
+	Close()
+	return 0
+}

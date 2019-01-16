@@ -130,6 +130,7 @@ TokenStream *LexicalAnalysis(std::string input_filename) {
 							index--;
 							next_token = new Token(token_str, TOK_FLOAT, line_num, input_filename);
 						}else{
+							index--;
 							next_token = new Token(token_str, TOK_DIGIT, line_num, input_filename);
 						}
 					}else{
@@ -398,6 +399,7 @@ TokenStream *LexicalAnalysis(std::string input_filename) {
 			token_str.clear();
 		}
 		tokens->pushToken(new Token("\n", TOK_NL, line_num, input_filename));
+		if (printLex) fprintf(stderr, "\n");
 
 		token_str.clear();
 		line_num++;

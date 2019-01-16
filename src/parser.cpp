@@ -1,6 +1,6 @@
 #include "parser.hpp"
 
-bool Debbug = true;
+bool Debbug = false;
 
 Parser::Parser(std::string filename) {
 	Tokens = LexicalAnalysis(filename);
@@ -355,7 +355,6 @@ StatementsAST *Parser::visitStatements(BaseAST* InsertPoint, int branch = 0) {
 	Tokens->getNextToken();
 
 	while (true) {
-		if (Debbug) fprintf(stderr, "%s:%d:%d: %s %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, __func__, Tokens->getCurString().c_str());
 		if (isExpectedToken("}")) {
 			Tokens->getNextToken();
 			break;
@@ -592,28 +591,27 @@ BaseAST *Parser::visitIfStatement() {
 		return NULL;
 	}
 	Tokens->getNextToken();
-	
-	// if (!isExpectedToken("(")) {
-	// 	fprintf(stderr, "%s:%d:%d: error: expected '(' but %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
-	// 	Tokens->applyTokenIndex(bkup);
-	// 	return NULL;
-	// }
-	// Tokens->getNextToken();
 
-	CondStmt = visitCondition(NULL, Types(Type_bool));
+	CondStmt = visitCondition(NULL, Types(Type_all));
 	if (!CondStmt || CondStmt->getType() != Types(Type_bool, 1, true)) {
 		fprintf(stderr, "%s:%d:%d: error: if condition is not bool\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__);
 		Tokens->applyTokenIndex(bkup);
 		return NULL;
 	}
-	BaseAST *if_expr = new IfStmtAST(CondStmt);
+	IfStmtAST *if_expr = new IfStmtAST(CondStmt);
 
-	// if (!isExpectedToken(")")) {
-	// 	fprintf(stderr, "%s:%d:%d: error: expected ')' but %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
-	// 	Tokens->applyTokenIndex(bkup);
-	// 	return NULL;
-	// }
-	// Tokens->getNextToken();
+	// is キャストが働いた時
+	if (llvm::isa<CastExprAST>(CondStmt)) {
+		auto iscast = llvm::dyn_cast<CastExprAST>(CondStmt);
+		if (iscast->getNestin()) {
+			if (llvm::isa<VariableAST>(iscast->getSource())) {
+				auto source = llvm::dyn_cast<VariableAST>(iscast->getSource());
+				BaseAST *new_variable = new VariableDeclAST(iscast->getDestType(), source->getName());
+				if_expr->addThen(new_variable);
+				if_expr->addThen(new BinaryExprAST("=", new_variable, iscast->getSource(), iscast->getDestType()));
+			}
+		}
+	}
 
 	visitStatements(if_expr, 0);
 
@@ -623,6 +621,7 @@ BaseAST *Parser::visitIfStatement() {
 	Tokens->getNextToken();
 
 	visitStatements(if_expr, 1);
+
 	return if_expr;
 }
 
@@ -642,27 +641,13 @@ BaseAST *Parser::visitWhileStatement() {
 	}
 	Tokens->getNextToken();
 
-	// if (!isExpectedToken("(")) {
-	// 	fprintf(stderr, "%s:%d:%d: expected '(' but %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
-	// 	Tokens->applyTokenIndex(bkup);
-	// 	return NULL;
-	// }
-	// Tokens->getNextToken();
-
-	CondStmt = visitCondition(NULL, Types(Type_bool));
+	CondStmt = visitCondition(NULL, Types(Type_all));
 	if (Debbug) fprintf(stderr, "%s:%d:%d: %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
 	if (!CondStmt || CondStmt->getType() != Types(Type_bool)) {
 		Tokens->applyTokenIndex(bkup);
 		return NULL;
 	}
 	BaseAST *while_expr = new WhileStmtAST(CondStmt);
-
-	// if (!isExpectedToken(")")) {
-	// 	fprintf(stderr, "%s:%d:%d: expected ')' but %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
-	// 	Tokens->applyTokenIndex(bkup);
-	// 	return NULL;
-	// }
-	// Tokens->getNextToken();
 
 	visitStatements(while_expr);
 	if (Debbug) fprintf(stderr, "%s:%d:%d: %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
@@ -684,25 +669,11 @@ BaseAST *Parser::visitMatchExpression() {
 	}
 	Tokens->getNextToken();
 
-	// if (!isExpectedToken("(")) {
-	// 	fprintf(stderr, "%s:%d:%d: expected '(' but %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
-	// 	Tokens->applyTokenIndex(bkup);
-	// 	return NULL;
-	// }
-	// Tokens->getNextToken();
-
 	BaseAST *Eval = visitAssignmentExpression(Types(Type_all));
 	if (!Eval) {
 		Tokens->applyTokenIndex(bkup);
 		return NULL;
 	}
-
-	// if (!isExpectedToken(")")) {
-	// 	fprintf(stderr, "%s:%d:%d: expected ')' but %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
-	// 	Tokens->applyTokenIndex(bkup);
-	// 	return NULL;
-	// }
-	// Tokens->getNextToken();
 
 	if (!isExpectedToken("{")) {
 		fprintf(stderr, "%s:%d:%d: expected '{' but %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
@@ -733,7 +704,6 @@ BaseAST *Parser::visitMatchExpression() {
 
 IfStmtAST *Parser::visitPatternExpression(BaseAST *Eval) {
 	int bkup = Tokens->getCurIndex();
-	bool end = false;
 
 	BaseAST *eval = visitExpression(NULL, Types(Type_all));
 	if (!eval) {
@@ -741,7 +711,9 @@ IfStmtAST *Parser::visitPatternExpression(BaseAST *Eval) {
 		Tokens->applyTokenIndex(bkup);
 		return NULL;
 	}
-	if (llvm::isa<PlaceholderAST>(eval)) end = true;
+
+	Eval = visitImplicitCastNumber(Eval, eval->getType());
+	eval = visitImplicitCastNumber(eval, Eval->getType());
 
 	IfStmtAST *if_expr;
 	if_expr = new IfStmtAST(new BinaryExprAST("==", Eval, eval, Types(Type_bool)));
@@ -918,6 +890,7 @@ BaseAST *Parser::visitExpression(BaseAST *lhs, Types type) {
 			Tokens->getNextToken();
 			rhs = visitAdditiveExpression(NULL, Types(Type_number));
 			if (rhs) {
+				// uint8 number32
 				lhs = visitImplicitCastNumber(lhs, rhs->getType());
 				rhs = visitImplicitCastNumber(rhs, lhs->getType());
 				return new BinaryExprAST(op, lhs, rhs, Types(Type_bool));
@@ -1155,7 +1128,22 @@ BaseAST *Parser::visitMultiplicativeExpression(BaseAST *lhs, Types type = Types(
 BaseAST *Parser::visitCastExpression() {
 	//bkup index
 	int bkup = Tokens->getCurIndex();
-	BaseAST *lhs = visitPostfixExpression();
+
+	BaseAST *lhs;
+
+	if (isExpectedToken("!")) {
+		Tokens->getNextToken();
+		lhs = visitPostfixExpression();
+		if (lhs->getType() == Types(Type_bool)) {
+			return new SingleExprAST("!", lhs, Types(Type_bool));
+		}else{
+			fprintf(stderr, "%s:%d:%d: error: ! bool value is nothing\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__);
+			Tokens->applyTokenIndex(bkup);
+			return NULL;
+		}
+	}
+
+	lhs = visitPostfixExpression();
 	if (!lhs)
 		return NULL;
 
@@ -1177,16 +1165,20 @@ BaseAST *Parser::visitCastExpression() {
 			Tokens->applyTokenIndex(bkup);
 			return NULL;
 		}
-		return new CastExprAST(lhs, DestType, true);
+		if (lhs->getType() == DestType) {
+			return new ValueAST(true, Types(Type_bool));
+		}else{
+			return new ValueAST(false, Types(Type_bool));
+		}
 
 	}else if (isExpectedToken("?")) {
 		if (Debbug) fprintf(stderr, "%s:%d:%d: non-null\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__);
 		lhs->getType().setNonNull(true);
 		Tokens->getNextToken();
 		if (!lhs->getType().getNonNull()) {
-			IfStmtAST *nonif_stmt = new IfStmtAST(new BinaryExprAST("!=", lhs, new ValueAST(0, lhs->getType()), Types(Type_bool)));
-			nonif_stmt->addElse(new JumpStmtAST(new ValueAST(0, getFuncType())));
-			addStatement(nonif_stmt);
+			// IfStmtAST *nonif_stmt = new IfStmtAST(new BinaryExprAST("!=", lhs, new ValueAST(0, lhs->getType()), Types(Type_bool)));
+			// nonif_stmt->addElse(new JumpStmtAST(new ValueAST(0, getFuncType())));
+			// addStatement(nonif_stmt);
 		}
 		return new CastExprAST(lhs,
 			Types(lhs->getType().getPrimType(), lhs->getType().getBits(), true),
@@ -1212,8 +1204,13 @@ BaseAST *Parser::visitImplicitCastNumber(BaseAST *src, Types impl_type) {
 	if (src->getType() == impl_type && src->getType().getBits() == impl_type.getBits())
 		return src;
 
-	if (src->getType() == impl_type)
-		return visitImplicitCastBits(src, impl_type);
+	if (src->getType() == impl_type) {
+		if (src->getType().getBits() < impl_type.getBits()) {
+			return new CastExprAST(src, impl_type);
+		}else{
+			return src;
+		}
+	}
 
 	int src_priority;
 	int impl_priority;
@@ -1221,10 +1218,12 @@ BaseAST *Parser::visitImplicitCastNumber(BaseAST *src, Types impl_type) {
 	if (impl_type.getPrimType() == Type_float) impl_priority = 2;
 	if (impl_type.getPrimType() == Type_int) impl_priority = 1;
 	if (impl_type.getPrimType() == Type_uint) impl_priority = 0;
+	if (impl_type.getPrimType() == Type_bool) impl_priority = 0;
 
 	if (src->getType().getPrimType() == Type_float) src_priority = 2;
 	if (src->getType().getPrimType() == Type_int) src_priority = 1;
 	if (src->getType().getPrimType() == Type_uint) src_priority = 0;
+	if (src->getType().getPrimType() == Type_bool) src_priority = 0;
 
 	if (src_priority < impl_priority || src->getType().getBits() < impl_type.getBits()) {
 		return new CastExprAST(src,
@@ -1243,27 +1242,19 @@ BaseAST *Parser::visitImplicitCastNumber(BaseAST *src, Types impl_type) {
   * ImplicitCastNonNull用構文解析メソッド
   * @return 解析成功：AST　解析失敗：NULL
   */
-BaseAST *Parser::visitImplicitCastNonNull(BaseAST *src, Types impl_type) {
-	if (src->getType() == impl_type) {
-		if (src->getType().getNonNull() > impl_type.getNonNull()) {
-			return new CastExprAST(src, impl_type);
-		}
+BaseAST *Parser::visitCast(BaseAST *src, Types impl_type) {
+	if (src->getType().getPrimType() == Type_number) {
+		src->setType(impl_type);
+		return src;
 	}
-	return src;
-}
 
-
-/**
-  * ImplicitCastBits用構文解析メソッド
-  * @return 解析成功：AST　解析失敗：NULL
-  */
-BaseAST *Parser::visitImplicitCastBits(BaseAST *src, Types impl_type) {
-	if (src->getType() == impl_type) {
-		if (src->getType().getBits() < impl_type.getBits()) {
-			return new CastExprAST(src, impl_type);
-		}
+	if (impl_type.getPrimType() == Type_number)
+		return src;
+	
+	if (src->getType() == impl_type && src->getType().getBits() == impl_type.getBits() && src->getType().getNonNull() == impl_type.getNonNull()) {
+		return src;
 	}
-	return src;
+	return new CastExprAST(src, impl_type);
 }
 
 
@@ -1337,11 +1328,18 @@ BaseAST *Parser::visitPostfixExpression() {
 	}
 	Types func_type = proto->getType();
 
+	if (proto->getParamSize() != args.size()) {
+		fprintf(stderr, "%s:%d:%d: error: no match for function param size found %zu but %lu in '%s'\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, proto->getParamSize(), args.size(), Callee.c_str());
+		for (size_t j = 0;j < args.size();j++)
+			SAFE_DELETE(args[j]);
+		Tokens->applyTokenIndex(bkup);
+		return NULL;
+	}
 	// 引数の型の確認
-	for (size_t i = 0;i < args.size();i++) {
+	for (size_t i = 0;i < proto->getParamSize();i++) {
 		// 暗黙の型変換
-		args[i] = visitImplicitCastNumber(args[i], proto->getParamType(i));
-		if (args[i]->getType() != proto->getParamType(i) || args[i]->getType().getNonNull() < proto->getParamType(i).getNonNull()) {
+		args[i] = visitCast(args[i], proto->getParamType(i));
+		if (proto->getParamType(i) != args[i]->getType() || proto->getParamType(i).getBits() != args[i]->getType().getBits() || proto->getParamType(i).getNonNull() < args[i]->getType().getNonNull()) {
 			fprintf(stderr, "%s:%d:%d: error: no match for function param found %s but %s in '%s'\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, proto->getParamType(i).printType().c_str(), args[i]->getType().printType().c_str(), Callee.c_str());
 			for (size_t j = 0;j < args.size();j++)
 				SAFE_DELETE(args[j]);
@@ -1375,20 +1373,17 @@ BaseAST *Parser::visitPrimaryExpression() {
 	//integer
 	if (isExpectedToken(TOK_DIGIT)) {
 		int val = Tokens->getCurNumVal();
-		if (Debbug) fprintf(stderr, "%s:%d:%d: integer\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__);
 		Tokens->getNextToken();
 		return new ValueAST(val, Types(Type_number, 32, true));
 
 	//float
 	}else if (isExpectedToken(TOK_FLOAT)) {
 		float val = Tokens->getCurNumVal();
-		if (Debbug) fprintf(stderr, "%s:%d:%d: float\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__);
 		Tokens->getNextToken();
 		return new ValueAST(val, Types(Type_float, 32, true));
 
 	//負の数
 	}else if (isExpectedToken("-")) {
-		if (Debbug) fprintf(stderr, "%s:%d:%d: integer\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__);
 		Tokens->getNextToken();
 		if (isExpectedToken(TOK_DIGIT)) {
 			int val = Tokens->getCurNumVal();
@@ -1405,7 +1400,6 @@ BaseAST *Parser::visitPrimaryExpression() {
 
 	// true / false
 	}else if (isExpectedToken(TOK_TRUTH)) {
-		if (Debbug) fprintf(stderr, "%s:%d:%d: true\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__);
 		Tokens->getNextToken();
 		return new ValueAST(Tokens->getCurBoolVal(), Types(Type_bool, 1, true));
 

@@ -40,6 +40,12 @@ typedef class Parser{
 		bool setFuncType(Types type) {CurFuncType = type;return true;}
 		Types getFuncType() {return CurFuncType;}
 
+		VariableDeclAST *getVariable(size_t i) {
+			if (i < VariableTable.size()) {
+				return VariableTable[i];
+			}
+			return NULL;
+		}
 		PrototypeAST *getPrototype(size_t i) {
 			if (i < PrototypeTable.size()) {
 				return PrototypeTable[i];
@@ -79,6 +85,18 @@ typedef class Parser{
 				fprintf(stderr, "error: unknown InsertPoint\n");
 			}
 			return false;
+		}
+
+
+		bool addVariable(VariableDeclAST* var) {
+			VariableTable.push_back(var);
+		}
+		bool invalidVariable(VariableDeclAST* var) {
+			for (int i = 0;;i++) {
+				if (getVariable(i)) {
+					getVariable(i);
+				}
+			}
 		}
 
 
@@ -128,8 +146,7 @@ typedef class Parser{
 		BaseAST *visitMultiplicativeExpression(BaseAST *lhs, Types type);
 		BaseAST *visitCastExpression();
 		BaseAST *visitImplicitCastNumber(BaseAST *src, Types impl_type);
-		BaseAST *visitImplicitCastNonNull(BaseAST *src, Types impl_type);
-		BaseAST *visitImplicitCastBits(BaseAST *src, Types impl_type);
+		BaseAST *visitCast(BaseAST *src, Types impl_type);
 		BaseAST *visitPostfixExpression();
 		BaseAST *visitPrimaryExpression();
 

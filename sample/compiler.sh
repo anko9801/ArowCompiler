@@ -3,9 +3,6 @@
 FILE=$1
 FILE="${FILE%.*}"
 
-cat $FILE.arow
-echo
-
 if [ -e $FILE.ll ]; then
 	rm $FILE.ll
 fi
@@ -13,7 +10,7 @@ if [ -e $FILE ]; then
 	rm $FILE
 fi
 
-../bin/dcc -o $FILE.ll $FILE.arow -O
+../bin/dcc -o $FILE.ll $FILE.arow
 
 if [ -e $FILE.ll ]; then
 	if [ -z $2 ]; then

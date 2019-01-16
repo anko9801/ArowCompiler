@@ -16,18 +16,6 @@ entry:
 define i32 @main() {
 entry:
   %call_tmp = call i32 @test(i32 10)
-  %ifcond = icmp ne i32 %call_tmp, 0
-  br i1 %ifcond, label %then, label %else
-
-then:                                             ; preds = %entry
-  br label %ifcont
-
-else:                                             ; preds = %entry
-  ret i32 0
-  br label %ifcont
-
-ifcont:                                           ; preds = %else, %then
-  %call_tmp2 = call i32 @test(i32 10)
-  %call_tmp3 = call i1 @printnum(i32 %call_tmp2)
+  %call_tmp1 = call i1 @printnum(i32 %call_tmp)
   ret i32 0
 }

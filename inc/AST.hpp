@@ -22,6 +22,7 @@ class StatementsAST;
 class FunctionStmtAST;
 class VariableDeclAST;
 class BinaryExprAST;
+class SingleExprAST;
 class CallExprAST;
 class JumpStmtAST;
 class IfStmtAST;
@@ -41,6 +42,7 @@ enum AstID{
 	FunctionStmtID,
 	StatementsID,
 	VariableDeclID,
+	SingleExprID,
 	BinaryExprID,
 	IfStmtID,
 	WhileStmtID,
@@ -72,9 +74,9 @@ struct Types {
 	bool isArray = false;
 	int ArraySize = 0;
 
-	Types() : Type(prim_type::Type_null), bits(0) {}
+	Types() : Type(Type_null), bits(0) {}
 	Types(prim_type type, int bits=32, bool non_null = false)
-		: Type(type), bits(bits), non_null(non_null) {}
+		: Type(type), bits(bits), non_null(non_null) {if (type == Type_bool) bits = 1;}
 	Types(prim_type type, int size, int bits=32, bool non_null = false)
 		: Type(type), bits(bits), non_null(non_null), isArray(true), ArraySize(size) {}
 
@@ -471,6 +473,31 @@ class CastExprAST : public BaseAST {
 	BaseAST *getSource() {return Source;}
 	Types getDestType() {return DestType;}
 	bool getNestin() {return Nestin;}
+};
+
+
+/** 
+  * １つ演算を表すAST
+  */
+class SingleExprAST : public BaseAST {
+	Types Type;
+	std::string Op;
+	BaseAST *LHS;
+
+	public:
+	SingleExprAST(std::string op, BaseAST *lhs, Types type)
+		: BaseAST(SingleExprID), Type(type), Op(op), LHS(lhs) {}
+	~SingleExprAST() {};
+	static inline bool classof(SingleExprAST const*) {return true;}
+	static inline bool classof(BaseAST const* base) {
+		return base->getValueID() == SingleExprID;
+	}
+
+	bool setType(Types type) {Type = type;return true;}
+
+	Types getType() {return Type;}
+	std::string getOp() {return Op;}
+	BaseAST *getLHS() {return LHS;}
 };
 
 
