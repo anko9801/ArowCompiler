@@ -90,10 +90,15 @@ StatementsAST::~StatementsAST() {
 	}
 	Statements.clear();
 
-	for (size_t i=0; i<VarDecls.size(); i++) {
-		SAFE_DELETE(VarDecls[i]);
+	for (size_t i=0; i<OldVars.size(); i++) {
+		SAFE_DELETE(OldVars[i]);
 	}
-	VarDecls.clear();
+	OldVars.clear();
+
+	for (size_t i=0; i<NewVars.size(); i++) {
+		SAFE_DELETE(NewVars[i]);
+	}
+	NewVars.clear();
 }
 
 

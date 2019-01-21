@@ -1,6 +1,6 @@
 #include "parser.hpp"
 
-bool Debbug = false;
+bool Debbug = true;
 
 Parser::Parser(std::string filename) {
 	Tokens = LexicalAnalysis(filename);
@@ -112,6 +112,8 @@ bool Parser::visitExternalDeclaration(TranslationUnitAST *tunit) {
 	if (visitImportFile())
 		return true;
 
+	fprintf(stderr, "%s:%d:%d: error: unknown statement\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__);
+
 	return false;
 }
 
@@ -160,7 +162,7 @@ FunctionAST *Parser::visitFunctionDefinition() {
 		}
 	}
 
-	VariableTable.clear();
+	//VariableTable.clear();
 	FunctionTable.push_back(func);
 	FunctionStmtAST *func_stmt = visitFunctionStatement(proto);
 	if (func_stmt) {
@@ -298,17 +300,18 @@ FunctionStmtAST *Parser::visitFunctionStatement(PrototypeAST *proto) {
 
 	//add parameter to FunctionStatement
 	VariableDeclAST *vdecl;
-	SetInsertPoint(func_stmt);
+	SetInsertPoint(func_stmt->getStatements());
 	for (size_t i = 0;i < proto->getParamSize(); i++) {
 		vdecl = new VariableDeclAST(proto->getParamType(i), proto->getParamName(i));
-		vdecl->setDeclType(VariableDeclAST::param);
+		// vdecl->setDeclType(VariableDeclAST::param);
 		addStatement(vdecl);
-		VariableTable.push_back(vdecl);
+		// VariableTable.push_back(vdecl);
 	}
+	if (Debbug) fprintf(stderr, "%s:%d:%d: %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
 
 	setFuncType(proto->getType());
 
-	StatementsAST *stmts = visitStatements(func_stmt, 0);
+	StatementsAST *stmts = visitStatements(func_stmt->getStatements(), InsertPoint->getVars());
 	if (warning) return func_stmt;
 	BaseAST *last_stmt = stmts->getStatement(stmts->getSize()-1);
 
@@ -331,24 +334,25 @@ FunctionStmtAST *Parser::visitFunctionStatement(PrototypeAST *proto) {
   * Statements用構文解析メソッド
   * @return 解析成功：AST　解析失敗：NULL
   */
-StatementsAST *Parser::visitStatements(BaseAST* InsertPoint, int branch = 0) {
+StatementsAST *Parser::visitStatements(StatementsAST* insert, std::vector<VariableDeclAST*> vars) {
 	int bkup = Tokens->getCurIndex();
 	StatementsAST *stmts = new StatementsAST();
 	BaseAST *stmt;
+	if (Debbug) fprintf(stderr, "%s:%d:%d: %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
+	insert->setOldVars(vars);
+	SetInsertPoint(insert);
 
 	if (!isExpectedToken("{")) {
 		stmt = visitStatement();
 		if (stmt) {
-			if (InsertPoint) {
-				SetInsertPoint(InsertPoint);
-				addStatement(stmt, branch);
-			}
+			SetInsertPoint(insert);
+			addStatement(stmt);
 			stmts->addStatement(stmt);
 			return stmts;
 		}
 		if (!isExpectedToken("{")) {
 			Tokens->applyTokenIndex(bkup);
-			SAFE_DELETE(InsertPoint);
+			SAFE_DELETE(insert);
 			return stmts;
 		}
 	}
@@ -361,18 +365,16 @@ StatementsAST *Parser::visitStatements(BaseAST* InsertPoint, int branch = 0) {
 		}
 		stmt = visitStatement();
 		if (stmt) {
-			if (InsertPoint) {
-				SetInsertPoint(InsertPoint);
-				addStatement(stmt, branch);
-			}
+			SetInsertPoint(insert);
+			addStatement(stmt);
 			stmts->addStatement(stmt);
 			continue;
 		}else{
 			if (Debbug) fprintf(stderr, "%s:%d:%d: unknown %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
 			Tokens->applyTokenIndex(bkup);
 			stmts->clear();
-			if (InsertPoint)
-				SAFE_DELETE(InsertPoint);
+			if (insert)
+				SAFE_DELETE(insert);
 			warning = true;
 			return stmts;
 		}
@@ -531,8 +533,17 @@ VariableDeclAST *Parser::visitVariableDeclaration() {
 		Tokens->getNextToken();
 	}
 
-	for (size_t i = 0;i < VariableTable.size();i++) {
-		if (VariableTable[i]->getName() == name) {
+	for (size_t i = 0;;i++) {
+		if (!InsertPoint->getOldVar(i)) break;
+		if (InsertPoint->getOldVar(i)->getName() == name) {
+			fprintf(stderr, "%s:%d:%d: error: redefinition of '%s' with a different type: '%s' vs '%s'\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, VariableTable[i]->getType().printType().c_str(), VariableTable[i]->getType().printType().c_str(), type.printType().c_str());
+			return NULL;
+		}
+	}
+
+	for (size_t i = 0;;i++) {
+		if (!InsertPoint->getNewVar(i)) break;
+		if (InsertPoint->getNewVar(i)->getName() == name) {
 			fprintf(stderr, "%s:%d:%d: error: redefinition of '%s' with a different type: '%s' vs '%s'\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, VariableTable[i]->getType().printType().c_str(), VariableTable[i]->getType().printType().c_str(), type.printType().c_str());
 			return NULL;
 		}
@@ -613,14 +624,14 @@ BaseAST *Parser::visitIfStatement() {
 		}
 	}
 
-	visitStatements(if_expr, 0);
+	visitStatements(if_expr->getThens(), InsertPoint->getVars());
 
 	if (!isExpectedToken("else")) {
 		return if_expr;
 	}
 	Tokens->getNextToken();
 
-	visitStatements(if_expr, 1);
+	visitStatements(if_expr->getElses(), InsertPoint->getVars());
 
 	return if_expr;
 }
@@ -647,9 +658,9 @@ BaseAST *Parser::visitWhileStatement() {
 		Tokens->applyTokenIndex(bkup);
 		return NULL;
 	}
-	BaseAST *while_expr = new WhileStmtAST(CondStmt);
+	WhileStmtAST *while_expr = new WhileStmtAST(CondStmt);
 
-	visitStatements(while_expr);
+	visitStatements(while_expr->getLoops(), InsertPoint->getVars());
 	if (Debbug) fprintf(stderr, "%s:%d:%d: %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
 	return while_expr;
 }
@@ -725,7 +736,8 @@ IfStmtAST *Parser::visitPatternExpression(BaseAST *Eval) {
 	}
 	Tokens->getNextToken();
 
-	StatementsAST *stmts = visitStatements(NULL);
+	StatementsAST *stmts = new StatementsAST();
+	visitStatements(stmts, InsertPoint->getVars());
 	if (!stmts || !stmts->getSize()) {
 		fprintf(stderr, "%s:%d:%d: error: statement is nothing\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__);
 		Tokens->applyTokenIndex(bkup);
@@ -772,27 +784,56 @@ BaseAST *Parser::visitAssignmentExpression(Types type) {
 	if (isExpectedToken(TOK_IDENTIFIER)) {
 		//変数が宣言されているか確認
 		bool all_confirm = false;
-		for (size_t i = 0;i < VariableTable.size();i++) {
-			if (VariableTable[i]->getName() == Tokens->getCurString()) {
+		for (size_t i = 0;;i++) {
+			if (!InsertPoint->getNewVar(i)) break;
+			if (InsertPoint->getNewVar(i)->getName() == Tokens->getCurString()) {
 				Tokens->getNextToken();
 				all_confirm = true;
 
 				int Index = 0;
-				lhs = new VariableAST(VariableTable[i], Index);
+				lhs = new VariableAST(InsertPoint->getNewVar(i), Index);
 				BaseAST *rhs;
 				if (isExpectedToken("=")) {
 					Tokens->getNextToken();
 
-					rhs = visitExpression(NULL, VariableTable[i]->getType());
+					rhs = visitExpression(NULL, InsertPoint->getNewVar(i)->getType());
 					if (rhs) {
 						rhs = visitImplicitCastNumber(rhs, lhs->getType());
 						lhs = visitImplicitCastNumber(lhs, rhs->getType());
 						if (!isExpectedToken(","))
 							Tokens->getNextToken();
-						return new BinaryExprAST("=", lhs, rhs, VariableTable[i]->getType());
+						return new BinaryExprAST("=", lhs, rhs, InsertPoint->getNewVar(i)->getType());
+					}else{
+						Tokens->applyTokenIndex(bkup);
 					}
 				}else{
-					SAFE_DELETE(lhs);
+					Tokens->applyTokenIndex(bkup);
+				}
+			}
+		}
+		for (size_t i = 0;;i++) {
+			if (!InsertPoint->getOldVar(i)) break;
+			if (InsertPoint->getOldVar(i)->getName() == Tokens->getCurString()) {
+				Tokens->getNextToken();
+				all_confirm = true;
+
+				int Index = 0;
+				lhs = new VariableAST(InsertPoint->getOldVar(i), Index);
+				BaseAST *rhs;
+				if (isExpectedToken("=")) {
+					Tokens->getNextToken();
+
+					rhs = visitExpression(NULL, InsertPoint->getOldVar(i)->getType());
+					if (rhs) {
+						rhs = visitImplicitCastNumber(rhs, lhs->getType());
+						lhs = visitImplicitCastNumber(lhs, rhs->getType());
+						if (!isExpectedToken(","))
+							Tokens->getNextToken();
+						return new BinaryExprAST("=", lhs, rhs, InsertPoint->getOldVar(i)->getType());
+					}else{
+						Tokens->applyTokenIndex(bkup);
+					}
+				}else{
 					Tokens->applyTokenIndex(bkup);
 				}
 			}
@@ -890,7 +931,6 @@ BaseAST *Parser::visitExpression(BaseAST *lhs, Types type) {
 			Tokens->getNextToken();
 			rhs = visitAdditiveExpression(NULL, Types(Type_number));
 			if (rhs) {
-				// uint8 number32
 				lhs = visitImplicitCastNumber(lhs, rhs->getType());
 				rhs = visitImplicitCastNumber(rhs, lhs->getType());
 				return new BinaryExprAST(op, lhs, rhs, Types(Type_bool));
@@ -925,9 +965,15 @@ BaseAST *Parser::visitAdditiveExpression(BaseAST *lhs, Types type = Types(Type_a
 		Tokens->getNextToken();
 		rhs = visitMultiplicativeExpression(NULL, type);
 		if (rhs) {
-			// 暗黙の型変換
-			lhs = visitImplicitCastNumber(lhs, rhs->getType());
-			rhs = visitImplicitCastNumber(rhs, lhs->getType());
+			if (lhs->getType().getPrimType() == Type_number && rhs->getType().getPrimType() == Type_number) {
+				// 暗黙の型変換
+				lhs = visitImplicitCastNumber(lhs, Types(Type_int));
+				rhs = visitImplicitCastNumber(rhs, lhs->getType());
+			}else{
+				// 暗黙の型変換
+				lhs = visitImplicitCastNumber(lhs, rhs->getType());
+				rhs = visitImplicitCastNumber(rhs, lhs->getType());
+			}
 			// 型変換が行われなかった時
 			type = lhs->getType();
 			return visitAdditiveExpression(new BinaryExprAST("+", lhs, rhs, type), type);
@@ -1018,11 +1064,12 @@ BaseAST *Parser::visitMultiplicativeExpression(BaseAST *lhs, Types type = Types(
 		rhs = visitCastExpression();
 		if (rhs) {
 			// 暗黙の型変換
+			if (type.getPrimType() == Type_number) lhs = visitImplicitCastNumber(lhs, type);
 			lhs = visitImplicitCastNumber(lhs, rhs->getType());
 			rhs = visitImplicitCastNumber(rhs, lhs->getType());
 			// 型変換が行われなかった時
 			type = lhs->getType();
-			return visitMultiplicativeExpression(new BinaryExprAST("*", lhs, rhs, type));
+			return visitMultiplicativeExpression(new BinaryExprAST("*", lhs, rhs, type), type);
 		}else{
 			SAFE_DELETE(lhs);
 			Tokens->applyTokenIndex(bkup);
@@ -1040,7 +1087,7 @@ BaseAST *Parser::visitMultiplicativeExpression(BaseAST *lhs, Types type = Types(
 			rhs = visitImplicitCastNumber(rhs, lhs->getType());
 			// 型変換が行われなかった時
 			type = lhs->getType();
-			return visitMultiplicativeExpression(new BinaryExprAST("/", lhs, rhs, type));
+			return visitMultiplicativeExpression(new BinaryExprAST("/", lhs, rhs, type), type);
 		}else{
 			SAFE_DELETE(lhs);
 			Tokens->applyTokenIndex(bkup);
@@ -1155,6 +1202,11 @@ BaseAST *Parser::visitCastExpression() {
 			Tokens->applyTokenIndex(bkup);
 			return NULL;
 		}
+		if (llvm::isa<ValueAST>(lhs)) {
+			ValueAST *value = llvm::dyn_cast<ValueAST>(lhs);
+			value->setType(DestType);
+			return value;
+		}
 		return new CastExprAST(lhs, DestType, false);
 
 	}else if (isExpectedToken("is")) {
@@ -1193,6 +1245,10 @@ BaseAST *Parser::visitCastExpression() {
   * @return 解析成功：AST　解析失敗：NULL
   */
 BaseAST *Parser::visitImplicitCastNumber(BaseAST *src, Types impl_type) {
+	if (src->getType().getPrimType() == Type_number && impl_type.getPrimType() == Type_number) {
+		src->setType(Types(Type_int));
+		return src;
+	}
 	if (src->getType().getPrimType() == Type_number) {
 		src->setType(impl_type);
 		return src;
@@ -1272,8 +1328,11 @@ BaseAST *Parser::visitPostfixExpression() {
 
 	// 関数呼び出し用
 	//FUNCTION_IDENTIFIER
-	if (!isExpectedToken(TOK_IDENTIFIER))
+	if (!isExpectedToken(TOK_IDENTIFIER)) {
+		fprintf(stderr, "%s:%d:%d: error: this syntax is nothing\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__);
+		Tokens->applyTokenIndex(bkup);
 		return NULL;
+	}
 
 	//関数名取得
 	std::string Callee = Tokens->getCurString();
@@ -1291,13 +1350,13 @@ BaseAST *Parser::visitPostfixExpression() {
 	//argument list
 	std::vector<BaseAST*> args;
 
-	BaseAST *assign_expr = visitAssignmentExpression(Type_all);
+	BaseAST *assign_expr = visitAssignmentExpression(Types(Type_all));
 	if (assign_expr) {
 		args.push_back(assign_expr);
 		while (isExpectedToken(",")) {
 			Tokens->getNextToken();
 			//IDENTIFIER
-			assign_expr = visitAssignmentExpression(Type_all);
+			assign_expr = visitAssignmentExpression(Types(Type_all));
 			if (assign_expr) args.push_back(assign_expr);
 			else break;
 		}
@@ -1414,12 +1473,24 @@ BaseAST *Parser::visitPrimaryExpression() {
 
 	//VARIABLE_IDENTIFIER
 	}else if (isExpectedToken(TOK_IDENTIFIER)) {
-		for (size_t i = 0;i < VariableTable.size();i++)
-			if (VariableTable[i]->getName() == Tokens->getCurString()) {
+		for (size_t i = 0;;i++) {
+			if (!InsertPoint->getOldVar(i)) break;
+			if (Debbug) fprintf(stderr, "%s:%d:%d: old var %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, InsertPoint->getOldVar(i)->getName().c_str());
+			if (InsertPoint->getOldVar(i)->getName() == Tokens->getCurString()) {
 				if (Debbug) fprintf(stderr, "%s:%d:%d: call variable %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
 				Tokens->getNextToken();
-				return new VariableAST(VariableTable[i]);
+				return new VariableAST(InsertPoint->getOldVar(i));
 			}
+		}
+		for (size_t i = 0;;i++) {
+			if (!InsertPoint->getNewVar(i)) break;
+			if (Debbug) fprintf(stderr, "%s:%d:%d: new var %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, InsertPoint->getNewVar(i)->getName().c_str());
+			if (InsertPoint->getNewVar(i)->getName() == Tokens->getCurString()) {
+				if (Debbug) fprintf(stderr, "%s:%d:%d: call variable %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
+				Tokens->getNextToken();
+				return new VariableAST(InsertPoint->getNewVar(i));
+			}
+		}
 
 	// '(' expression ')'
 	}else if (isExpectedToken("(")) {

@@ -1,118 +1,164 @@
 import stdlib.arow
 import gpio.arow
 
-bool send(int gpio_num, uint3 size, uint8 data) {
-	uint8 i = size
+int sda = 2
+int sck = 3
+bool SDA_DIROUT() {gpioMode(2, 0);return true}
+bool SCK_DIROUT() {gpioMode(3, 0);return true}
+bool SDA_DIRIN() {gpioMode(2, 1);return true}
+bool SCK_DIRIN() {gpioMode(3, 1);return true}
+bool SSS_DIRCL() {gpioMode(2, -1);gpioMode(3, -1);return true}
+bool SDA_WRITE(bool i) {gpioWrite(2, i);return true}
+bool SCK_WRITE(bool i) {gpioWrite(3, i);return true}
+bool SDA_READ() {gpioRead(22);return true}
+bool SCK_READ() {gpioRead(23);return true}
+bool delay(int i) {
 	while i > 0 {
 		i = i - 1
-		gpioWrite(3, 0)
-		if data & (1 << i) == 0 {
-			gpioWrite(gpio_num, 0)
+		wait(500000)
+	}
+	return true
+}
+
+bool send(uint3 size, uint8 data) {
+	printnum(1000)
+	printnum(data)
+	while size > 0 {
+		SCK_WRITE(0)
+		if data & (0b1 as uint8 << (size - 1)) != 0 {
+			printnum(1)
+			SDA_WRITE(1)
 		}else{
-			gpioWrite(gpio_num, 1)
+			printnum(0)
+			SDA_WRITE(0)
 		}
-		wait(5)
-		gpioWrite(3, 1)
-		wait(5)
+		delay(1)
+		SCK_WRITE(1)
+		delay(1)
+		size = size - 1
 	}
 	return true
 }
 
 
 uint8 i2cStart(uint7 slave, uint8 register, bool RW) {
-	// Start Condition
-	gpioWrite(2, 0)
+	SDA_DIROUT();SDA_WRITE(1)
+	SCK_DIROUT();SCK_WRITE(1)
+	delay(3)
+
+	SDA_WRITE(0)
+	delay(1)
+	SCK_WRITE(0)
+	delay(1)
+
 	// スレーブアドレス
-	send(2, 7, slave)
+	send(7, slave)
+
 	// Write: 0 Read: 1
-	send(2, 1, RW)
+	send(1, RW)
+
 	// ACK
-	printnum(gpioRead(2)?)
-	gpioWrite(3, 0)
-	wait(5)
-	printnum(gpioRead(2)?)
-	if gpioRead(2) == 0 {
+	SCK_WRITE(0)
+	SDA_WRITE(0)
+	SDA_DIRIN()
+	delay(1)
+	SCK_WRITE(1)
+	if SDA_READ() == 1 {
 		printnum(123351)
 		return 0
 	}
-	gpioWrite(3, 1)
-	wait(5)
+	delay(1)
+
 	// Write
 	if !RW {
 		// レジスタアドレス
-		send(2, 8, register)
+		send(8, register)
 		// ACK
-		wait(5)
-		if gpioRead(2) == 0 {
+		delay(1)
+		if SDA_READ() == 1 {
 			printnum(123352)
 			return 0
 		}
-		wait(5)
+		delay(1)
 	}
 	return 0
 }
 
 
 uint8 i2cWrite(uint7 slave, uint8 register, uint8 data) {
-	gpioMode(2, 0)
-	gpioMode(3, 0)
 	i2cStart(slave, register, 0)
+
 	// データ送信
-	send(2, 8, data)
+	send(8, data)
+
 	// ACK
-	wait(5)
-	if gpioRead(2) == 0 {
+	delay(1)
+	SDA_DIRIN()
+	if SDA_READ() == 1 {
 		printnum(99999999)
 		return 0
 	}
-	wait(5)
+	SDA_DIROUT()
+	delay(1)
+
 	// Stop Condition
-	gpioWrite(3, 1)
-	gpioWrite(2, 1)
-	gpioClear(2)
-	gpioClear(3)
+	SCK_WRITE(0)
+	SDA_WRITE(0)
+	delay(1)
+	SCK_WRITE(1)
+	delay(1)
+	SDA_WRITE(1)
+	delay(1)
+	SSS_DIRCL()
 	return 0
 }
 
 
-uint8 i2cRead(uint7 slave, uint8 register) {
-	gpioMode(2, 0)
-	gpioMode(3, 0)
+uint8 i2cRead(uint8 slave, uint8 register) {
 	i2cStart(slave, register, 0)
 	i2cStart(slave, register, 1)
-	// データ
-	uint5 i = 0
-	uint8 data
-	uint3 byte = 2
-	uint transmission = 0
 
-	while transmission < byte {
+	// データ
+	int i = 0
+	uint8 data = 0
+	int transmission = 2
+
+	while transmission > 0 {
+		SDA_DIRIN()
 		while i < 8 {
-			gpioWrite(3, 0)
-			wait(5)
-			printnum(data?)
-			data = data << 1 + gpioRead(2)
-			printnum(data?)
-			gpioWrite(3, 1)
-			wait(5)
+			SCK_WRITE(0)
+			delay(1)
+			printnum(SDA_READ()?)
+			data = data << 1 + SDA_READ()
+			SCK_WRITE(1)
+			delay(1)
 			i = i + 1
 		}
-		transmission = transmission + 1
+		transmission = transmission - 1
 		// 最後だけNACK
-		if transmission != byte {
+		SCK_WRITE(0)
+		SDA_DIROUT()
+		if transmission > 0 {
 			// ACK
-			send(2, 1, 0)
+			SDA_WRITE(0)
 		}else{
 			// NACK
-			send(2, 1, 1)
+			SDA_WRITE(1)
 		}
+		delay(1)
+		SCK_WRITE(1)
+		delay(1)
 	}
 
 	// Stop Condition
-	gpioWrite(3, 1)
-	gpioWrite(2, 1)
-	gpioClear(2)
-	gpioClear(3)
+	SCK_WRITE(0)
+	SDA_WRITE(0)
+	delay(1)
+	SCK_WRITE(1)
+	delay(1)
+	SDA_WRITE(1)
+	delay(1)
+	SSS_DIRCL()
 	return data
 }
 

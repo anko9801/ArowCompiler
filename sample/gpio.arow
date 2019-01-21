@@ -3,4 +3,3 @@ bool Close();
 bool gpioMode(int gpio_num, int mode);
 bool gpioWrite(int gpio_num, int mode);
 bool gpioRead(int gpio_num)
-bool gpioClear(int gpio_num);

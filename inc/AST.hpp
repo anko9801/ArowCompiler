@@ -81,6 +81,7 @@ struct Types {
 		: Type(type), bits(bits), non_null(non_null), isArray(true), ArraySize(size) {}
 
 	bool setNonNull(bool NonNull) {non_null = NonNull;return true;}
+	bool setBits(int size) {bits = size;return true;}
 	bool setArray(int size) {isArray = true;ArraySize = size;return true;}
 
 	int getBits() {return bits;}
@@ -105,7 +106,7 @@ struct Seq {
 /**
   * ASTの基底クラス
   */
-class BaseAST{
+class BaseAST {
 	AstID ID;
 
 	public:
@@ -121,7 +122,7 @@ class BaseAST{
 /** 
   * ソースコードを表すAST
   */
-class TranslationUnitAST{
+class TranslationUnitAST {
 	std::vector<PrototypeAST*> Prototypes;
 	std::vector<FunctionAST*> Functions;
 	std::vector<ImportAST*> Imports;
@@ -188,7 +189,7 @@ class ImportAST : public BaseAST {
 /** 
   * 関数宣言を表すAST
   */
-class PrototypeAST{
+class PrototypeAST {
 	Types Type;
 	std::string Name;
 	std::vector<Seq> Params;
@@ -211,7 +212,7 @@ class PrototypeAST{
 /**
   * 関数定義を表すAST
   */
-class FunctionAST{
+class FunctionAST {
 	PrototypeAST *Proto;
 	FunctionStmtAST *Body;
 
@@ -225,56 +226,6 @@ class FunctionAST{
 	std::string getName() {return Proto->getName();}
 	PrototypeAST *getPrototype() {return Proto;}
 	FunctionStmtAST *getBody() {return Body;}
-};
-
-
-class StatementsAST : BaseAST {
-	std::vector<BaseAST*> Statements;
-	std::vector<VariableDeclAST*> VarDecls;
-
-	public:
-	StatementsAST() : BaseAST(StatementsID) {}
-	~StatementsAST();
-	static inline bool classof(StatementsAST const*) {return true;}
-	static inline bool classof(BaseAST const* base) {
-		return base->getValueID() == StatementsID;
-	}
-
-	bool addStatement(BaseAST *stmt) {
-		Statements.push_back(stmt);
-		if (llvm::isa<VariableDeclAST>(stmt)) {
-			VarDecls.push_back(llvm::dyn_cast<VariableDeclAST>(stmt));
-		}
-		return true;
-	}
-	bool clear() {
-		Statements.clear();
-		VarDecls.clear();
-		return true;
-	}
-	size_t getSize() {return Statements.size();}
-	
-	BaseAST *getStatement(size_t i) {if (i<Statements.size())return Statements.at(i);else return NULL;}
-	VariableDeclAST *getVarDecl(size_t i) {if (i<VarDecls.size())return VarDecls.at(i);else return NULL;}
-};
-
-
-/**
-  * 関数定義(本文)を表すAST
-  */
-class FunctionStmtAST : public BaseAST {
-	StatementsAST *stmts = new StatementsAST();
-
-	public:
-	FunctionStmtAST() : BaseAST(FunctionStmtID) {}
-	~FunctionStmtAST() {}
-	static inline bool classof(FunctionStmtAST const*) {return true;}
-	static inline bool classof(BaseAST const* base) {
-		return base->getValueID() == FunctionStmtID;
-	}
-	bool addStatement(BaseAST *stmt) {stmts->addStatement(stmt);return true;}
-
-	BaseAST *getStatement(size_t i) {return stmts->getStatement(i);}
 };
 
 
@@ -310,10 +261,80 @@ class VariableDeclAST: public BaseAST {
 };
 
 
+class StatementsAST : BaseAST {
+	std::vector<BaseAST*> Statements = {};
+	std::vector<VariableDeclAST*> OldVars = {};
+	std::vector<VariableDeclAST*> NewVars = {};
+
+	public:
+	StatementsAST() : BaseAST(StatementsID) {}
+	~StatementsAST();
+	static inline bool classof(StatementsAST const*) {return true;}
+	static inline bool classof(BaseAST const* base) {
+		return base->getValueID() == StatementsID;
+	}
+
+	bool setOldVars(std::vector<VariableDeclAST*> vars) {
+		OldVars = vars;
+		return true;
+	}
+	bool addStatement(BaseAST *stmt) {
+		Statements.push_back(stmt);
+		if (llvm::isa<VariableDeclAST>(stmt)) {
+			NewVars.push_back(llvm::dyn_cast<VariableDeclAST>(stmt));
+		}
+		return true;
+	}
+	bool clear() {
+		Statements.clear();
+		NewVars.clear();
+		return true;
+	}
+	size_t getSize() {return Statements.size();}
+	
+	BaseAST *getStatement(size_t i) {if (i<Statements.size())return Statements.at(i);else return NULL;}
+	VariableDeclAST *getOldVar(size_t i) {if (i<OldVars.size())return OldVars.at(i);else return NULL;}
+	VariableDeclAST *getNewVar(size_t i) {if (i<NewVars.size())return NewVars.at(i);else return NULL;}
+	std::vector<VariableDeclAST*> getVars() {
+		std::vector<VariableDeclAST*> vars = OldVars;
+		for (int i = 0;;i++) {
+			if (!this->getNewVar(i)) break;
+			vars.push_back(this->getNewVar(i));
+		}
+		for (size_t i = 0;i < vars.size();i++)
+			fprintf(stderr, "%s ", vars[i]->getName().c_str());
+		fprintf(stderr, "\n");
+		return vars;
+	}
+	std::vector<VariableDeclAST*> getOldVars() {return OldVars;}
+	std::vector<VariableDeclAST*> getNewVars() {return NewVars;}
+};
+
+
+/**
+  * 関数定義(本文)を表すAST
+  */
+class FunctionStmtAST : public BaseAST {
+	StatementsAST *stmts = new StatementsAST();
+
+	public:
+	FunctionStmtAST() : BaseAST(FunctionStmtID) {}
+	~FunctionStmtAST() {}
+	static inline bool classof(FunctionStmtAST const*) {return true;}
+	static inline bool classof(BaseAST const* base) {
+		return base->getValueID() == FunctionStmtID;
+	}
+	bool addStatement(BaseAST *stmt) {stmts->addStatement(stmt);return true;}
+
+	BaseAST *getStatement(size_t i) {return stmts->getStatement(i);}
+	StatementsAST *getStatements() {return stmts;}
+};
+
+
 /** 
   * 二項演算を表すAST
   */
-class BinaryExprAST : public BaseAST{
+class BinaryExprAST : public BaseAST {
 	Types Type;
 	std::string Op;
 	BaseAST *LHS, *RHS;
@@ -355,8 +376,10 @@ class IfStmtAST : public BaseAST {
 	BaseAST* getCond() {return Cond;}
 	bool addThen(BaseAST *stmt) {ThenStmt->addStatement(stmt);return true;}
 	BaseAST *getThen(size_t i) {return ThenStmt->getStatement(i);}
+	StatementsAST *getThens() {return ThenStmt;}
 	bool addElse(BaseAST *stmt) {ElseStmt->addStatement(stmt);return true;}
 	BaseAST *getElse(size_t i) {return ElseStmt->getStatement(i);}
+	StatementsAST *getElses() {return ElseStmt;}
 };
 
 
@@ -377,6 +400,7 @@ class WhileStmtAST : public BaseAST {
 
 	BaseAST *getCond() {return Cond;}
 	bool addLoop(BaseAST *stmt) {LoopStmt->addStatement(stmt);return true;}
+	StatementsAST *getLoops() {return LoopStmt;}
 	BaseAST *getLoop(size_t i) {return LoopStmt->getStatement(i);}
 };
 
@@ -384,7 +408,7 @@ class WhileStmtAST : public BaseAST {
 /** 
   * 関数呼び出しを表すAST
   */
-class CallExprAST : public BaseAST{
+class CallExprAST : public BaseAST {
 	Types Type;
 	std::string Callee;
 	std::vector<BaseAST*> Args;
@@ -411,7 +435,7 @@ class CallExprAST : public BaseAST{
 /** 
   * ジャンプ(今回はreturn)を表すAST
   */
-class JumpStmtAST : public BaseAST{
+class JumpStmtAST : public BaseAST {
 	BaseAST *Expr;
 
 	public:
@@ -430,7 +454,7 @@ class JumpStmtAST : public BaseAST{
 /** 
   * 変数参照を表すAST
   */
-class VariableAST : public BaseAST{
+class VariableAST : public BaseAST {
 	VariableDeclAST* Var;
 	int Index;
 

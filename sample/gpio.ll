@@ -10,5 +10,3 @@ declare i1 @gpioMode(i32, i32)
 declare i1 @gpioWrite(i32, i32)
 
 declare i1 @gpioRead(i32)
-
-declare i1 @gpioClear(i32)

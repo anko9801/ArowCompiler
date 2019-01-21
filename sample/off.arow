@@ -1,0 +1,15 @@
+import gpio.arow
+import stdlib.arow
+
+int main() {
+	confirm()
+	gpioMode(22, 0)
+	gpioMode(23, 0)
+	gpioWrite(22, 1)
+	wait(500000)
+	gpioWrite(23, 0)
+	wait(500000)
+	gpioWrite(22, 1)
+	Close()
+	return 0
+}

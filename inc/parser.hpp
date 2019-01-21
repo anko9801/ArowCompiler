@@ -20,7 +20,7 @@ typedef class Parser{
 	private:
 		TokenStream *Tokens;
 		TranslationUnitAST *TU;
-		BaseAST *InsertPoint;
+		StatementsAST *InsertPoint;
 		bool warning = false;
 		std::string error;
 		Types CurFuncType;
@@ -59,46 +59,16 @@ typedef class Parser{
 			return NULL;
 		}
 
-		bool SetInsertPoint(BaseAST* Block) {
+		bool SetInsertPoint(StatementsAST* Block) {
+			fprintf(stderr, "setInsertPoint\n");
 			InsertPoint = Block;
 			return true;
 		}
 
 		bool addStatement(BaseAST* stmt, int branch = 0) {
-			if (llvm::isa<StatementsAST>(InsertPoint)) {
-				llvm::dyn_cast<StatementsAST>(InsertPoint)->addStatement(stmt);
-				return true;
-			}else if (llvm::isa<FunctionStmtAST>(InsertPoint)) {
-				llvm::dyn_cast<FunctionStmtAST>(InsertPoint)->addStatement(stmt);
-				return true;
-			}else if (llvm::isa<IfStmtAST>(InsertPoint)) {
-				if (branch == 0) {
-					llvm::dyn_cast<IfStmtAST>(InsertPoint)->addThen(stmt);
-				}else{
-					llvm::dyn_cast<IfStmtAST>(InsertPoint)->addElse(stmt);
-				}
-				return true;
-			}else if (llvm::isa<WhileStmtAST>(InsertPoint)) {
-				llvm::dyn_cast<WhileStmtAST>(InsertPoint)->addLoop(stmt);
-				return true;
-			}else{
-				fprintf(stderr, "error: unknown InsertPoint\n");
-			}
-			return false;
+			InsertPoint->addStatement(stmt);
+			return true;
 		}
-
-
-		bool addVariable(VariableDeclAST* var) {
-			VariableTable.push_back(var);
-		}
-		bool invalidVariable(VariableDeclAST* var) {
-			for (int i = 0;;i++) {
-				if (getVariable(i)) {
-					getVariable(i);
-				}
-			}
-		}
-
 
 		prim_type str2Type(std::string Type) {
 			if (Type == "int")
@@ -132,7 +102,7 @@ typedef class Parser{
 		bool visitImportFile();
 		VariableDeclAST *visitVariableDeclaration();
 		BaseAST *visitArrayExpression(Types Type, int Size);
-		StatementsAST *visitStatements(BaseAST *InsertPoint, int branch);
+		StatementsAST *visitStatements(StatementsAST *InsertPoint, std::vector<VariableDeclAST*> vars);
 		BaseAST *visitStatement();
 		BaseAST *visitJumpStatement();
 		BaseAST *visitIfStatement();

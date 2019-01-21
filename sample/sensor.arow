@@ -3,8 +3,11 @@ import stdlib.arow
 
 int main() {
 	uint8 slave = 0x48
-	uint8 register = 0x05
+	uint8 register = 0x03
+	printnum(0b1 << 10)
 	confirm()
+	printnum(slave as int?)
 	printnum(i2cRead(slave, register) as int?)
+	Close()
 	return 0
 }

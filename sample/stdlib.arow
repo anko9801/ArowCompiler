@@ -1,3 +1,7 @@
-bool printnum(int32? i);
-bool wait(int32 i);
-int32 usclock();
+bool printnum(int32 i)
+bool wait(int32 i)
+int32 usclock()
+bool sleep(int32 i) {
+	wait(i * 1000)
+	return true
+}
