@@ -593,6 +593,7 @@ Value *CodeGen::generateExpression(BaseAST *expr) {
 	else if (isa<CallExprAST>(expr))
 		return generateCallExpression(dyn_cast<CallExprAST>(expr));
 	else if (isa<CastExprAST>(expr)) {
+		if (dyn_cast<CastExprAST>(expr)->getNestin()) return generateValue(new ValueAST(true, Types(Type_bool)));
 		BaseAST *source = dyn_cast<CastExprAST>(expr)->getSource();
 		return generateCastExpression(generateExpression(source), source->getType(), dyn_cast<CastExprAST>(expr)->getDestType());
 	}else if (isa<VariableAST>(expr))

@@ -249,9 +249,9 @@ ifcont:                                           ; preds = %else, %then
 
 define i9 @i2cRead(i9 %slave_arg, i9 %register_arg) {
 entry:
-  %0 = trunc i9 undef to i8
+  %0 = trunc i9 %slave_arg to i8
   %call_tmp = call i9 @i2cStart(i8 %0, i9 %register_arg, i1 false)
-  %1 = trunc i9 undef to i8
+  %1 = trunc i9 %slave_arg to i8
   %call_tmp4 = call i9 @i2cStart(i8 %1, i9 %register_arg, i1 true)
   %ifcond = icmp sgt i32 2, 0
   br i1 %ifcond, label %loop, label %afterloop39

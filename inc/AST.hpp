@@ -493,6 +493,7 @@ class CastExprAST : public BaseAST {
 	bool setDestType(Types type) {DestType = type;return true;}
 
 	BaseAST *getSource() {return Source;}
+	Types getType() {if (Nestin) return Types(Type_bool, 1, true);else return DestType;}
 	Types getDestType() {return DestType;}
 	bool getNestin() {return Nestin;}
 };

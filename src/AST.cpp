@@ -122,7 +122,7 @@ Types BaseAST::getType() {
 	}else if (llvm::isa<VariableAST>(this)) {
 		return llvm::dyn_cast<VariableAST>(this)->getType();
 	}else if (llvm::isa<CastExprAST>(this)) {
-		return llvm::dyn_cast<CastExprAST>(this)->getDestType();
+		return llvm::dyn_cast<CastExprAST>(this)->getType();
 	}else if (llvm::isa<ValueAST>(this)) {
 		return llvm::dyn_cast<ValueAST>(this)->getType();
 	}

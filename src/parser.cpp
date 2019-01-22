@@ -604,6 +604,23 @@ BaseAST *Parser::visitIfStatement() {
 	Tokens->getNextToken();
 
 	CondStmt = visitCondition(NULL, Types(Type_all));
+	auto vars = InsertPoint->getVars();
+
+	// is キャストが働いた時
+	if (llvm::isa<CastExprAST>(CondStmt)) {
+		fprintf(stderr, "%s:%d:%d: is cast\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__);
+		auto iscast = llvm::dyn_cast<CastExprAST>(CondStmt);
+		if (iscast->getNestin() && llvm::isa<VariableAST>(iscast->getSource())) {
+			auto source = llvm::dyn_cast<VariableAST>(iscast->getSource());
+			for (size_t i = 0;i < vars.size();i++) {
+				if (vars[i]->getName() == source->getName()) {
+					fprintf(stderr, "%s:%d:%d: is cast accepted\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__);
+					vars[i]->setType(iscast->getDestType());
+				}
+			}
+		}
+	}
+
 	if (!CondStmt || CondStmt->getType() != Types(Type_bool, 1, true)) {
 		fprintf(stderr, "%s:%d:%d: error: if condition is not bool\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__);
 		Tokens->applyTokenIndex(bkup);
@@ -611,20 +628,7 @@ BaseAST *Parser::visitIfStatement() {
 	}
 	IfStmtAST *if_expr = new IfStmtAST(CondStmt);
 
-	// is キャストが働いた時
-	if (llvm::isa<CastExprAST>(CondStmt)) {
-		auto iscast = llvm::dyn_cast<CastExprAST>(CondStmt);
-		if (iscast->getNestin()) {
-			if (llvm::isa<VariableAST>(iscast->getSource())) {
-				auto source = llvm::dyn_cast<VariableAST>(iscast->getSource());
-				BaseAST *new_variable = new VariableDeclAST(iscast->getDestType(), source->getName());
-				if_expr->addThen(new_variable);
-				if_expr->addThen(new BinaryExprAST("=", new_variable, iscast->getSource(), iscast->getDestType()));
-			}
-		}
-	}
-
-	visitStatements(if_expr->getThens(), InsertPoint->getVars());
+	visitStatements(if_expr->getThens(), vars);
 
 	if (!isExpectedToken("else")) {
 		return if_expr;
@@ -1035,8 +1039,6 @@ BaseAST *Parser::visitAdditiveExpression(BaseAST *lhs, Types type = Types(Type_a
 			return NULL;
 		}
 	}
-	// if (type == Types(Type_number) && lhs->getType() != type)
-	// 	lhs = new CastExprAST(lhs, type);
 	return lhs;
 }
 
@@ -1215,11 +1217,7 @@ BaseAST *Parser::visitCastExpression() {
 			Tokens->applyTokenIndex(bkup);
 			return NULL;
 		}
-		if (lhs->getType() == DestType) {
-			return new ValueAST(true, Types(Type_bool));
-		}else{
-			return new ValueAST(false, Types(Type_bool));
-		}
+		return new CastExprAST(lhs, DestType, true);
 
 	}else if (isExpectedToken("?")) {
 		if (Debbug) fprintf(stderr, "%s:%d:%d: non-null\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__);
