@@ -60,7 +60,6 @@ typedef class Parser{
 		}
 
 		bool SetInsertPoint(StatementsAST* Block) {
-			fprintf(stderr, "setInsertPoint\n");
 			InsertPoint = Block;
 			return true;
 		}

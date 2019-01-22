@@ -10,7 +10,6 @@ int main() {
 		printnum(gpioRead(23)?)
 		wait(500000)
 	}
-	gpioClear(23)
 	Close()
 	return 0
 }

@@ -75,8 +75,8 @@ struct Types {
 	int ArraySize = 0;
 
 	Types() : Type(Type_null), bits(0) {}
-	Types(prim_type type, int bits=32, bool non_null = false)
-		: Type(type), bits(bits), non_null(non_null) {if (type == Type_bool) bits = 1;}
+	Types(prim_type type, int bit=32, bool non_null = false)
+		: Type(type), bits(bit), non_null(non_null) {if (type == Type_bool) bits = 1;}
 	Types(prim_type type, int size, int bits=32, bool non_null = false)
 		: Type(type), bits(bits), non_null(non_null), isArray(true), ArraySize(size) {}
 
@@ -288,6 +288,7 @@ class StatementsAST : BaseAST {
 	bool clear() {
 		Statements.clear();
 		NewVars.clear();
+		OldVars.clear();
 		return true;
 	}
 	size_t getSize() {return Statements.size();}
@@ -301,9 +302,6 @@ class StatementsAST : BaseAST {
 			if (!this->getNewVar(i)) break;
 			vars.push_back(this->getNewVar(i));
 		}
-		for (size_t i = 0;i < vars.size();i++)
-			fprintf(stderr, "%s ", vars[i]->getName().c_str());
-		fprintf(stderr, "\n");
 		return vars;
 	}
 	std::vector<VariableDeclAST*> getOldVars() {return OldVars;}

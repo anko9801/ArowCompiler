@@ -1,6 +1,6 @@
 #include "parser.hpp"
 
-bool Debbug = true;
+bool Debbug = false;
 
 Parser::Parser(std::string filename) {
 	Tokens = LexicalAnalysis(filename);
@@ -311,7 +311,8 @@ FunctionStmtAST *Parser::visitFunctionStatement(PrototypeAST *proto) {
 
 	setFuncType(proto->getType());
 
-	StatementsAST *stmts = visitStatements(func_stmt->getStatements(), InsertPoint->getVars());
+	visitStatements(func_stmt->getStatements(), InsertPoint->getVars());
+	StatementsAST *stmts = func_stmt->getStatements();
 	if (warning) return func_stmt;
 	BaseAST *last_stmt = stmts->getStatement(stmts->getSize()-1);
 
@@ -373,8 +374,7 @@ StatementsAST *Parser::visitStatements(StatementsAST* insert, std::vector<Variab
 			if (Debbug) fprintf(stderr, "%s:%d:%d: unknown %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
 			Tokens->applyTokenIndex(bkup);
 			stmts->clear();
-			if (insert)
-				SAFE_DELETE(insert);
+			SAFE_DELETE(insert);
 			warning = true;
 			return stmts;
 		}
@@ -799,7 +799,6 @@ BaseAST *Parser::visitAssignmentExpression(Types type) {
 					rhs = visitExpression(NULL, InsertPoint->getNewVar(i)->getType());
 					if (rhs) {
 						rhs = visitImplicitCastNumber(rhs, lhs->getType());
-						lhs = visitImplicitCastNumber(lhs, rhs->getType());
 						if (!isExpectedToken(","))
 							Tokens->getNextToken();
 						return new BinaryExprAST("=", lhs, rhs, InsertPoint->getNewVar(i)->getType());
@@ -826,7 +825,6 @@ BaseAST *Parser::visitAssignmentExpression(Types type) {
 					rhs = visitExpression(NULL, InsertPoint->getOldVar(i)->getType());
 					if (rhs) {
 						rhs = visitImplicitCastNumber(rhs, lhs->getType());
-						lhs = visitImplicitCastNumber(lhs, rhs->getType());
 						if (!isExpectedToken(","))
 							Tokens->getNextToken();
 						return new BinaryExprAST("=", lhs, rhs, InsertPoint->getOldVar(i)->getType());
@@ -1037,8 +1035,8 @@ BaseAST *Parser::visitAdditiveExpression(BaseAST *lhs, Types type = Types(Type_a
 			return NULL;
 		}
 	}
-	if (type == Types(Type_number) && lhs->getType() != type)
-		lhs = new CastExprAST(lhs, type);
+	// if (type == Types(Type_number) && lhs->getType() != type)
+	// 	lhs = new CastExprAST(lhs, type);
 	return lhs;
 }
 
@@ -1261,6 +1259,7 @@ BaseAST *Parser::visitImplicitCastNumber(BaseAST *src, Types impl_type) {
 		return src;
 
 	if (src->getType() == impl_type) {
+		if (Debbug) fprintf(stderr, "%s:%d:%d: implicit cast %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
 		if (src->getType().getBits() < impl_type.getBits()) {
 			return new CastExprAST(src, impl_type);
 		}else{
@@ -1282,6 +1281,7 @@ BaseAST *Parser::visitImplicitCastNumber(BaseAST *src, Types impl_type) {
 	if (src->getType().getPrimType() == Type_bool) src_priority = 0;
 
 	if (src_priority < impl_priority || src->getType().getBits() < impl_type.getBits()) {
+		if (Debbug) fprintf(stderr, "%s:%d:%d: implicit cast %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
 		return new CastExprAST(src,
 			Types(
 				impl_type.getPrimType(),
@@ -1329,7 +1329,6 @@ BaseAST *Parser::visitPostfixExpression() {
 	// 関数呼び出し用
 	//FUNCTION_IDENTIFIER
 	if (!isExpectedToken(TOK_IDENTIFIER)) {
-		fprintf(stderr, "%s:%d:%d: error: this syntax is nothing\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__);
 		Tokens->applyTokenIndex(bkup);
 		return NULL;
 	}
@@ -1475,7 +1474,6 @@ BaseAST *Parser::visitPrimaryExpression() {
 	}else if (isExpectedToken(TOK_IDENTIFIER)) {
 		for (size_t i = 0;;i++) {
 			if (!InsertPoint->getOldVar(i)) break;
-			if (Debbug) fprintf(stderr, "%s:%d:%d: old var %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, InsertPoint->getOldVar(i)->getName().c_str());
 			if (InsertPoint->getOldVar(i)->getName() == Tokens->getCurString()) {
 				if (Debbug) fprintf(stderr, "%s:%d:%d: call variable %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
 				Tokens->getNextToken();
@@ -1484,7 +1482,6 @@ BaseAST *Parser::visitPrimaryExpression() {
 		}
 		for (size_t i = 0;;i++) {
 			if (!InsertPoint->getNewVar(i)) break;
-			if (Debbug) fprintf(stderr, "%s:%d:%d: new var %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, InsertPoint->getNewVar(i)->getName().c_str());
 			if (InsertPoint->getNewVar(i)->getName() == Tokens->getCurString()) {
 				if (Debbug) fprintf(stderr, "%s:%d:%d: call variable %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
 				Tokens->getNextToken();

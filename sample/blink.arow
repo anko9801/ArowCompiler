@@ -12,7 +12,6 @@ int main() {
 		gpioWrite(23, 0)
 		wait(1000000)
 	}
-	gpioClear(23)
 	Close()
 	return 0
 }

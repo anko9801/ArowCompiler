@@ -1,8 +1,6 @@
 import stdlib.arow
 import gpio.arow
 
-int sda = 2
-int sck = 3
 bool SDA_DIROUT() {gpioMode(2, 0);return true}
 bool SCK_DIROUT() {gpioMode(3, 0);return true}
 bool SDA_DIRIN() {gpioMode(2, 1);return true}

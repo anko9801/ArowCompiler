@@ -1,6 +1,9 @@
+import stdlib.arow
+
 int main() {
 	int i = 4
 	if i is int? {
 		printnum(i)
 	}
+	return i
 }

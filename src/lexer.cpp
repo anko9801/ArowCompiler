@@ -6,7 +6,7 @@
  * @return 切り出したトークンを格納したTokenStream
  */
 TokenStream *LexicalAnalysis(std::string input_filename) {
-	bool printLex = true;
+	bool printLex = false;
 	TokenStream *tokens = new TokenStream();
 	std::ifstream ifs;
 	std::string cur_line;

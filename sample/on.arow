@@ -10,6 +10,5 @@ int main() {
 	gpioWrite(23, 0)
 	printnum(gpioRead(2) as int?)
 	printnum(gpioRead(3) as int?)
-	gpioClear(23)
 	return i
 }
