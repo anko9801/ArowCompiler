@@ -1,13 +1,13 @@
 import stdlib.arow
 import gpio.arow
 
-bool SDA_DIROUT() {gpioMode(2, 0);return true}
-bool SCK_DIROUT() {gpioMode(3, 0);return true}
-bool SDA_DIRIN() {gpioMode(2, 1);return true}
-bool SCK_DIRIN() {gpioMode(3, 1);return true}
-bool SSS_DIRCL() {gpioMode(2, -1);gpioMode(3, -1);return true}
-bool SDA_WRITE(bool i) {gpioWrite(2, i);return true}
-bool SCK_WRITE(bool i) {gpioWrite(3, i);return true}
+bool SDA_DIROUT() {gpioMode(22, 0);return true}
+bool SCK_DIROUT() {gpioMode(23, 0);return true}
+bool SDA_DIRIN() {gpioMode(22, 1);return true}
+bool SCK_DIRIN() {gpioMode(23, 1);return true}
+bool SSS_DIRCL() {gpioMode(22, -1);gpioMode(23, -1);return true}
+bool SDA_WRITE(bool i) {gpioWrite(22, i);return true}
+bool SCK_WRITE(bool i) {gpioWrite(23, i);return true}
 bool SDA_READ() {gpioRead(22);return true}
 bool SCK_READ() {gpioRead(23);return true}
 bool delay(int i) {

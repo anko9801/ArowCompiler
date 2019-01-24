@@ -1430,7 +1430,7 @@ BaseAST *Parser::visitPrimaryExpression() {
 	if (isExpectedToken(TOK_DIGIT)) {
 		int val = Tokens->getCurNumVal();
 		Tokens->getNextToken();
-		return new ValueAST(val, Types(Type_number, 32, true));
+		return new ValueAST(val, Types(Type_int, 32, true));
 
 	//float
 	}else if (isExpectedToken(TOK_FLOAT)) {

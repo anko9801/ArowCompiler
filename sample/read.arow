@@ -5,10 +5,11 @@ int main() {
 	confirm()
 	gpioMode(23, 1)
 	int i = 0
-	while i < 100 {
+	printnum(230 + gpioRead(23))
+	while i < 10000 {
 		i = i + 1
-		printnum(gpioRead(23)?)
-		wait(500000)
+		printr(230 + gpioRead(23))
+		wait(10000)
 	}
 	Close()
 	return 0

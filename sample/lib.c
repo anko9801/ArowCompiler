@@ -11,6 +11,10 @@ int printnum(int i) {
 	return printf("%d\n", i);
 }
 
+int printr(int i) {
+	return printf("\r%d", i);
+}
+
 int usclock() {
 	return (double)clock() * 1000000 / CLOCKS_PER_SEC;
 }

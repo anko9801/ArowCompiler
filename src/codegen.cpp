@@ -215,7 +215,7 @@ Value *CodeGen::generateFunctionStatement(FunctionStmtAST *func_stmt) {
 
 	//insert expr statement
 	BaseAST *stmt;
-	generateArray();
+	// generateArray();
 	for (int i=0; ; i++) {
 		if (llvmDebbug) fprintf(stderr, "%d\n", i+1);
 		stmt = func_stmt->getStatement(i);
@@ -250,9 +250,11 @@ Value *CodeGen::generateVariableDeclaration(VariableDeclAST *vdecl) {
 
 
 Value *CodeGen::generateArray() {
-	llvm::Type* double_t = llvm::Type::getDoubleTy(GlobalContext);
-	llvm::Type* array_t = llvm::PointerType::getUnqual(llvm::ArrayType::get(double_t, 2));
-	return Builder->CreateAlloca(array_t, Mod->getDataLayout().getAllocaAddrSpace(), ConstantInt::get(generateType(Types(Type_int)), 2), "array");
+	Type* array_t = PointerType::getUnqual(ArrayType::get(generateType(Types(Type_int)), 2));
+	Value *array = Builder->CreateAlloca(array_t, Mod->getDataLayout().getAllocaAddrSpace(), generateValue(new ValueAST(2, Types(Type_int))), "array");
+	auto zero = generateValue(new ValueAST(0, Types(Type_int)));
+	Builder->CreateInsertValue(array, generateValue(new ValueAST(1, Types(Type_int))), {0});
+	return Builder->CreateExtractValue(array, {0});
 }
 
 
