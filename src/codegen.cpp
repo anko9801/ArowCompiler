@@ -66,36 +66,42 @@ bool CodeGen::linkModule(Module *dest, std::string file_name) {
 
 
 Type *CodeGen::generateType(Types type) {
+	Type *dest_type;
 	if (type.getPrimType() == Type_void) {
-		return Type::getVoidTy(GlobalContext);
-
+		dest_type = Type::getVoidTy(GlobalContext);
+		
 	}else if (type.getPrimType() == Type_int) {
-		return Type::getIntNTy(GlobalContext, type.getBits());
+		dest_type = Type::getIntNTy(GlobalContext, type.getBits());
 	
 	}else if (type.getPrimType() == Type_uint) {
-		return Type::getIntNTy(GlobalContext, type.getBits() + 1);
+		dest_type = Type::getIntNTy(GlobalContext, type.getBits() + 1);
 
 	}else if (type.getPrimType() == Type_float) {
 		if (type.getBits() == 16) {
-			return Type::getHalfTy(GlobalContext);
+			dest_type = Type::getHalfTy(GlobalContext);
 		}else if (type.getBits() == 32) {
-			return Type::getFloatTy(GlobalContext);
+			dest_type = Type::getFloatTy(GlobalContext);
 		}else if (type.getBits() == 64) {
-			return Type::getDoubleTy(GlobalContext);
+			dest_type = Type::getDoubleTy(GlobalContext);
 		}else if (type.getBits() == 128) {
-			return Type::getFP128Ty(GlobalContext);
+			dest_type = Type::getFP128Ty(GlobalContext);
 		}else if (type.getBits() == 80) {
-			return Type::getX86_FP80Ty(GlobalContext);
+			dest_type = Type::getX86_FP80Ty(GlobalContext);
 		}else{
 			fprintf(stderr, "Type is not found '%s'\n", type.printType().c_str());
-			return Type::getFloatTy(GlobalContext);
+			dest_type = Type::getFloatTy(GlobalContext);
 		}
 	}else if (type.getPrimType() == Type_bool) {
-		return Type::getInt1Ty(GlobalContext);
+		dest_type = Type::getInt1Ty(GlobalContext);
 	}else{
 		fprintf(stderr, "Type is not found '%s'\n", type.printType().c_str());
-		return Type::getInt32Ty(GlobalContext);
+		dest_type = Type::getInt32Ty(GlobalContext);
 	}
+
+	if (type.getArraySize() != 0) {
+		dest_type = PointerType::getUnqual(ArrayType::get(dest_type, type.getArraySize()));
+	}
+	return dest_type;
 }
 
 

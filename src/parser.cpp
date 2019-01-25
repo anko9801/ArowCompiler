@@ -1,6 +1,6 @@
 #include "parser.hpp"
 
-bool Debbug = false;
+bool Debbug = true;
 
 Parser::Parser(std::string filename) {
 	Tokens = LexicalAnalysis(filename);
@@ -111,8 +111,6 @@ bool Parser::visitExternalDeclaration(TranslationUnitAST *tunit) {
 
 	if (visitImportFile())
 		return true;
-
-	fprintf(stderr, "%s:%d:%d: error: unknown statement\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__);
 
 	return false;
 }
@@ -371,6 +369,7 @@ StatementsAST *Parser::visitStatements(StatementsAST* insert, std::vector<Variab
 			stmts->addStatement(stmt);
 			continue;
 		}else{
+			Tokens->getNextToken();
 			if (Debbug) fprintf(stderr, "%s:%d:%d: unknown %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
 			Tokens->applyTokenIndex(bkup);
 			stmts->clear();
@@ -390,7 +389,9 @@ StatementsAST *Parser::visitStatements(StatementsAST* insert, std::vector<Variab
 Types Parser::visitTypes() {
 	int bkup = Tokens->getCurIndex();
 
-	int bits;prim_type Type;bool non_null = false;int ArraySize = 0;
+	int bits;
+	prim_type Type;
+	bool non_null = false;
 
 	// primary type
 	if (!isExpectedToken(TOK_TYPE)) {
@@ -418,20 +419,8 @@ Types Parser::visitTypes() {
 		Tokens->getNextToken();
 	}
 
-	// array
-	if (isExpectedToken("[")) {
-		Tokens->getNextToken();
-		if (!isExpectedToken(TOK_DIGIT)) {
-			Tokens->applyTokenIndex(bkup);
-			return Types(Type_null);
-		}
-		ArraySize = Tokens->getCurNumVal();
-		Tokens->getNextToken();
-		return Types(Type, ArraySize, bits, non_null);
-	}else{
-		if (Debbug) fprintf(stderr, "%s:%d:%d: %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
-		return Types(Type, bits, non_null);
-	}
+	if (Debbug) fprintf(stderr, "%s:%d:%d: %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
+	return Types(Type, bits, non_null);
 }
 
 
@@ -486,7 +475,6 @@ BaseAST *Parser::visitStatement() {
 	stmt = visitAssignmentExpression(Types(Type_all));
 	if (stmt) return stmt;
 
-	fprintf(stderr, "%s:%d:%d: not find statement %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
 	return NULL;
 }
 
@@ -519,6 +507,7 @@ VariableDeclAST *Parser::visitVariableDeclaration() {
 	if (isExpectedToken("[")) {
 		Tokens->getNextToken();
 		if (!isExpectedToken(TOK_DIGIT)) {
+			fprintf(stderr, "%s:%d:%d: error: cannot find index\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__);
 			Tokens->applyTokenIndex(bkup);
 			return NULL;
 		}
@@ -527,6 +516,7 @@ VariableDeclAST *Parser::visitVariableDeclaration() {
 
 		Tokens->getNextToken();
 		if (!isExpectedToken("]")) {
+			fprintf(stderr, "%s:%d:%d: error: cannot find right palen\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__);
 			Tokens->applyTokenIndex(bkup);
 			return NULL;
 		}
@@ -558,6 +548,7 @@ VariableDeclAST *Parser::visitVariableDeclaration() {
 	}else if (isExpectedToken("=") || isExpectedToken(",")) {
 		return new VariableDeclAST(type, name);
 	}else{
+		fprintf(stderr, "%s:%d:%d: unknown syntax\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__);
 		Tokens->applyTokenIndex(bkup);
 		return NULL;
 	}
@@ -659,6 +650,7 @@ BaseAST *Parser::visitWhileStatement() {
 	CondStmt = visitCondition(NULL, Types(Type_all));
 	if (Debbug) fprintf(stderr, "%s:%d:%d: %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
 	if (!CondStmt || CondStmt->getType() != Types(Type_bool)) {
+		fprintf(stderr, "%s:%d:%d: error: while condition is not bool\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__);
 		Tokens->applyTokenIndex(bkup);
 		return NULL;
 	}
@@ -686,6 +678,7 @@ BaseAST *Parser::visitMatchExpression() {
 
 	BaseAST *Eval = visitAssignmentExpression(Types(Type_all));
 	if (!Eval) {
+		fprintf(stderr, "%s:%d:%d: error: eval is nothing\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__);
 		Tokens->applyTokenIndex(bkup);
 		return NULL;
 	}
@@ -765,6 +758,7 @@ IfStmtAST *Parser::visitPatternExpression(BaseAST *Eval) {
 	if (!pattern) {
 		Tokens->getNextToken();
 		if (!isExpectedToken("}")) {
+			fprintf(stderr, "%s:%d:%d: error: expected '}' but %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
 			Tokens->applyTokenIndex(bkup);
 			return NULL;
 		}
@@ -884,9 +878,9 @@ BaseAST *Parser::visitCondition(BaseAST *lhs, Types type) {
 			type = Types(Type_bool);
 			return visitExpression(new BinaryExprAST("||", lhs, rhs, type), type);
 		}else{
+			fprintf(stderr, "%s:%d:%d: error: expected rhs of || but %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
 			SAFE_DELETE(lhs);
 			Tokens->applyTokenIndex(bkup);
-			fprintf(stderr, "%s:%d:%d: error: rhs of || is nothing\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__);
 			return NULL;
 		}
 	// &&
@@ -898,9 +892,9 @@ BaseAST *Parser::visitCondition(BaseAST *lhs, Types type) {
 			type = Types(Type_bool);
 			return visitExpression(new BinaryExprAST("&&", lhs, rhs, type), type);
 		}else{
+			fprintf(stderr, "%s:%d:%d: error: expected rhs of && but %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
 			SAFE_DELETE(lhs);
 			Tokens->applyTokenIndex(bkup);
-			fprintf(stderr, "%s:%d:%d: error: rhs of && is nothing\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__);
 			return NULL;
 		}
 	}
@@ -937,6 +931,7 @@ BaseAST *Parser::visitExpression(BaseAST *lhs, Types type) {
 				rhs = visitImplicitCastNumber(rhs, lhs->getType());
 				return new BinaryExprAST(op, lhs, rhs, Types(Type_bool));
 			}else{
+				fprintf(stderr, "%s:%d:%d: error: expected rhs of %s but %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, op.c_str(), Tokens->getCurString().c_str());
 				SAFE_DELETE(lhs);
 				Tokens->applyTokenIndex(bkup);
 				return NULL;
@@ -980,9 +975,9 @@ BaseAST *Parser::visitAdditiveExpression(BaseAST *lhs, Types type = Types(Type_a
 			type = lhs->getType();
 			return visitAdditiveExpression(new BinaryExprAST("+", lhs, rhs, type), type);
 		}else{
+			fprintf(stderr, "%s:%d:%d: error: expected rhs of + but %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
 			SAFE_DELETE(lhs);
 			Tokens->applyTokenIndex(bkup);
-			fprintf(stderr, "%s:%d:%d: error: rhs of plus is nothing\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__);
 			return NULL;
 		}
 
@@ -999,9 +994,9 @@ BaseAST *Parser::visitAdditiveExpression(BaseAST *lhs, Types type = Types(Type_a
 			return visitAdditiveExpression(new BinaryExprAST("-", lhs, rhs, type), type);
 			// if (other->getType() != Types(Type_number)) {fprintf(stderr, "error: Type is not difference\n");return NULL;}
 		}else{
+			fprintf(stderr, "%s:%d:%d: error: expected rhs of - but %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
 			SAFE_DELETE(lhs);
 			Tokens->applyTokenIndex(bkup);
-			fprintf(stderr, "%s:%d:%d: error: rhs of minus is nothing\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__);
 			return NULL;
 		}
 
@@ -1071,9 +1066,9 @@ BaseAST *Parser::visitMultiplicativeExpression(BaseAST *lhs, Types type = Types(
 			type = lhs->getType();
 			return visitMultiplicativeExpression(new BinaryExprAST("*", lhs, rhs, type), type);
 		}else{
+			fprintf(stderr, "%s:%d:%d: error: expected rhs of * but %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
 			SAFE_DELETE(lhs);
 			Tokens->applyTokenIndex(bkup);
-			fprintf(stderr, "%s:%d:%d: error: rhs of multiple is nothing\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__);
 			return NULL;
 		}
 			
@@ -1089,9 +1084,9 @@ BaseAST *Parser::visitMultiplicativeExpression(BaseAST *lhs, Types type = Types(
 			type = lhs->getType();
 			return visitMultiplicativeExpression(new BinaryExprAST("/", lhs, rhs, type), type);
 		}else{
+			fprintf(stderr, "%s:%d:%d: error: expected rhs of / but %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
 			SAFE_DELETE(lhs);
 			Tokens->applyTokenIndex(bkup);
-			fprintf(stderr, "%s:%d:%d: error: rhs of divide is nothing\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__);
 			return NULL;
 		}
 
@@ -1106,9 +1101,9 @@ BaseAST *Parser::visitMultiplicativeExpression(BaseAST *lhs, Types type = Types(
 			type = lhs->getType();
 			return visitMultiplicativeExpression(new BinaryExprAST("%", lhs, rhs, type), type);
 		}else{
+			fprintf(stderr, "%s:%d:%d: error: expected rhs of % but %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
 			SAFE_DELETE(lhs);
 			Tokens->applyTokenIndex(bkup);
-			fprintf(stderr, "%s:%d:%d: error: rhs of divide is nothing\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__);
 			return NULL;
 		}
 
@@ -1118,14 +1113,14 @@ BaseAST *Parser::visitMultiplicativeExpression(BaseAST *lhs, Types type = Types(
 		rhs = visitCastExpression();
 		if (rhs) {
 			// 暗黙の型変換
-			lhs = visitImplicitCastNumber(lhs, rhs->getType());
+			lhs = visitImplicitCastNumber(lhs, Types(Type_int));
 			rhs = visitImplicitCastNumber(rhs, lhs->getType());
 			type = lhs->getType();
 			return visitMultiplicativeExpression(new BinaryExprAST("<<", lhs, rhs, type), type);
 		}else{
+			fprintf(stderr, "%s:%d:%d: error: expected rhs of << but %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
 			SAFE_DELETE(lhs);
 			Tokens->applyTokenIndex(bkup);
-			fprintf(stderr, "%s:%d:%d: error: rhs of << is nothing\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__);
 			return NULL;
 		}
 
@@ -1140,9 +1135,9 @@ BaseAST *Parser::visitMultiplicativeExpression(BaseAST *lhs, Types type = Types(
 			type = lhs->getType();
 			return visitMultiplicativeExpression(new BinaryExprAST(">>", lhs, rhs, type), type);
 		}else{
+			fprintf(stderr, "%s:%d:%d: error: expected rhs of >> but %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
 			SAFE_DELETE(lhs);
 			Tokens->applyTokenIndex(bkup);
-			fprintf(stderr, "%s:%d:%d: error: rhs of >> is nothing\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__);
 			return NULL;
 		}
 	
@@ -1157,9 +1152,9 @@ BaseAST *Parser::visitMultiplicativeExpression(BaseAST *lhs, Types type = Types(
 			type = lhs->getType();
 			return visitMultiplicativeExpression(new BinaryExprAST("&", lhs, rhs, type), type);
 		}else{
+			fprintf(stderr, "%s:%d:%d: error: expected rhs of & but %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
 			SAFE_DELETE(lhs);
 			Tokens->applyTokenIndex(bkup);
-			fprintf(stderr, "%s:%d:%d: error: rhs of  is nothing\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__);
 			return NULL;
 		}
 	}
@@ -1199,6 +1194,7 @@ BaseAST *Parser::visitCastExpression() {
 		Types DestType = visitTypes();
 		if (Debbug) fprintf(stderr, "%s:%d:%d: as %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, DestType.printType().c_str());
 		if (DestType.getPrimType() == Type_null) {
+			fprintf(stderr, "%s:%d:%d: error: unknown Type\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__);
 			Tokens->applyTokenIndex(bkup);
 			return NULL;
 		}
@@ -1214,6 +1210,7 @@ BaseAST *Parser::visitCastExpression() {
 		Types DestType = visitTypes();
 		if (Debbug) fprintf(stderr, "%s:%d:%d: is %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, DestType.printType().c_str());
 		if (DestType.getPrimType() == Type_null) {
+			fprintf(stderr, "%s:%d:%d: error: unknown Type\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__);
 			Tokens->applyTokenIndex(bkup);
 			return NULL;
 		}
@@ -1224,9 +1221,9 @@ BaseAST *Parser::visitCastExpression() {
 		lhs->getType().setNonNull(true);
 		Tokens->getNextToken();
 		if (!lhs->getType().getNonNull()) {
-			// IfStmtAST *nonif_stmt = new IfStmtAST(new BinaryExprAST("!=", lhs, new ValueAST(0, lhs->getType()), Types(Type_bool)));
-			// nonif_stmt->addElse(new JumpStmtAST(new ValueAST(0, getFuncType())));
-			// addStatement(nonif_stmt);
+			IfStmtAST *nonif_stmt = new IfStmtAST(new BinaryExprAST("!=", lhs, new ValueAST(0, lhs->getType()), Types(Type_bool)));
+			nonif_stmt->addElse(new JumpStmtAST(new ValueAST(0, getFuncType())));
+			addStatement(nonif_stmt);
 		}
 		return new CastExprAST(lhs,
 			Types(lhs->getType().getPrimType(), lhs->getType().getBits(), true),
@@ -1305,7 +1302,7 @@ BaseAST *Parser::visitCast(BaseAST *src, Types impl_type) {
 	if (impl_type.getPrimType() == Type_number)
 		return src;
 	
-	if (src->getType() == impl_type && src->getType().getBits() == impl_type.getBits() && src->getType().getNonNull() == impl_type.getNonNull()) {
+	if (src->getType() == impl_type && src->getType().getBits() == impl_type.getBits() && src->getType().getNonNull() >= impl_type.getNonNull()) {
 		return src;
 	}
 	return new CastExprAST(src, impl_type);
@@ -1338,8 +1335,8 @@ BaseAST *Parser::visitPostfixExpression() {
 
 	//LEFT PALEN
 	if (!isExpectedToken("(")) {
+		fprintf(stderr, "%s:%d:%d: error: expected '(' but %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
 		Tokens->applyTokenIndex(bkup);
-		fprintf(stderr, "%s:%d:%d: error: LEFT PALEN is nothing\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__);
 		return NULL;
 	}
 
@@ -1395,7 +1392,7 @@ BaseAST *Parser::visitPostfixExpression() {
 	for (size_t i = 0;i < proto->getParamSize();i++) {
 		// 暗黙の型変換
 		args[i] = visitCast(args[i], proto->getParamType(i));
-		if (proto->getParamType(i) != args[i]->getType() || proto->getParamType(i).getBits() != args[i]->getType().getBits() || proto->getParamType(i).getNonNull() < args[i]->getType().getNonNull()) {
+		if (proto->getParamType(i) != args[i]->getType() || proto->getParamType(i).getBits() != args[i]->getType().getBits() || proto->getParamType(i).getNonNull() > args[i]->getType().getNonNull()) {
 			fprintf(stderr, "%s:%d:%d: error: no match for function param found %s but %s in '%s'\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, proto->getParamType(i).printType().c_str(), args[i]->getType().printType().c_str(), Callee.c_str());
 			for (size_t j = 0;j < args.size();j++)
 				SAFE_DELETE(args[j]);
@@ -1409,10 +1406,10 @@ BaseAST *Parser::visitPostfixExpression() {
 		Tokens->getNextToken();
 		return new CallExprAST(func_type, Callee, args, proto);
 	}else{
+		fprintf(stderr, "%s:%d:%d: error: expected ')' but %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
 		for (size_t i = 0;i < args.size();i++)
 			SAFE_DELETE(args[i]);
 		Tokens->applyTokenIndex(bkup);
-		fprintf(stderr, "%s:%d:%d: error: expected ')' but %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
 		return NULL;
 	}
 }
@@ -1430,7 +1427,7 @@ BaseAST *Parser::visitPrimaryExpression() {
 	if (isExpectedToken(TOK_DIGIT)) {
 		int val = Tokens->getCurNumVal();
 		Tokens->getNextToken();
-		return new ValueAST(val, Types(Type_int, 32, true));
+		return new ValueAST(val, Types(Type_number));
 
 	//float
 	}else if (isExpectedToken(TOK_FLOAT)) {
@@ -1450,6 +1447,7 @@ BaseAST *Parser::visitPrimaryExpression() {
 			Tokens->getNextToken();
 			return new ValueAST(-val, Types(Type_float, 32, true));
 		}else{
+			fprintf(stderr, "%s:%d:%d: error: rhs of - is nothing\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__);
 			Tokens->applyTokenIndex(bkup);
 			return NULL;
 		}
@@ -1470,11 +1468,31 @@ BaseAST *Parser::visitPrimaryExpression() {
 
 	//VARIABLE_IDENTIFIER
 	}else if (isExpectedToken(TOK_IDENTIFIER)) {
+		Tokens->getNextToken();
+		int index = -1;
+		if (isExpectedToken("[")) {
+			if (!isExpectedToken(TOK_DIGIT)) {
+				fprintf(stderr, "%s:%d:%d: error: cannot find index\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__);
+				Tokens->applyTokenIndex(bkup);
+				return NULL;
+			}
+			index = Tokens->getCurNumVal();
+			Tokens->getNextToken();
+			if (!isExpectedToken("]")) {
+				fprintf(stderr, "%s:%d:%d: error: expected ']' but %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
+				Tokens->applyTokenIndex(bkup);
+				return NULL;
+			}
+			Tokens->getNextToken();
+		}
 		for (size_t i = 0;;i++) {
 			if (!InsertPoint->getOldVar(i)) break;
 			if (InsertPoint->getOldVar(i)->getName() == Tokens->getCurString()) {
 				if (Debbug) fprintf(stderr, "%s:%d:%d: call variable %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
 				Tokens->getNextToken();
+				if (index != -1) {
+					return new VariableAST(InsertPoint->getOldVar(i), index);
+				}
 				return new VariableAST(InsertPoint->getOldVar(i));
 			}
 		}
@@ -1483,9 +1501,13 @@ BaseAST *Parser::visitPrimaryExpression() {
 			if (InsertPoint->getNewVar(i)->getName() == Tokens->getCurString()) {
 				if (Debbug) fprintf(stderr, "%s:%d:%d: call variable %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
 				Tokens->getNextToken();
+				if (index != -1) {
+					return new VariableAST(InsertPoint->getOldVar(i), index);
+				}
 				return new VariableAST(InsertPoint->getNewVar(i));
 			}
 		}
+		return NULL;
 
 	// '(' expression ')'
 	}else if (isExpectedToken("(")) {

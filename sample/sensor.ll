@@ -3,6 +3,8 @@ source_filename = "sensor.arow"
 
 declare i1 @printnum(i32)
 
+declare i1 @printr(i32)
+
 declare i1 @wait(i32)
 
 declare i32 @usclock()
@@ -139,18 +141,20 @@ entry:
 loop:                                             ; preds = %ifcont, %entry
   %call_tmp4 = call i1 @SCK_WRITE(i1 false)
   %var_tmp5 = load i9, i9* %data
+  %1 = zext i9 %var_tmp5 to i32
   %var_tmp6 = load i4, i4* %size
   %sub_tmp = sub i4 %var_tmp6, 1
-  %1 = zext i4 %sub_tmp to i9
-  %shl_tmp = shl i9 1, %1
-  %and_tmp = and i9 %var_tmp5, %shl_tmp
+  %2 = zext i4 %sub_tmp to i32
+  %shl_tmp = shl i32 1, %2
+  %and_tmp = and i32 %1, %shl_tmp
   %var_tmp7 = load i9, i9* %data
+  %3 = zext i9 %var_tmp7 to i32
   %var_tmp8 = load i4, i4* %size
   %sub_tmp9 = sub i4 %var_tmp8, 1
-  %2 = zext i4 %sub_tmp9 to i9
-  %shl_tmp10 = shl i9 1, %2
-  %and_tmp11 = and i9 %var_tmp7, %shl_tmp10
-  %ifcond12 = icmp ne i9 %and_tmp11, 0
+  %4 = zext i4 %sub_tmp9 to i32
+  %shl_tmp10 = shl i32 1, %4
+  %and_tmp11 = and i32 %3, %shl_tmp10
+  %ifcond12 = icmp ne i32 %and_tmp11, 0
   br i1 %ifcond12, label %then, label %else
 
 then:                                             ; preds = %loop
@@ -333,11 +337,13 @@ loop8:                                            ; preds = %loop8, %loop
   %2 = zext i1 %call_tmp14 to i32
   %call_tmp15 = call i1 @printnum(i32 %2)
   %var_tmp16 = load i9, i9* %data
-  %shl_tmp = shl i9 %var_tmp16, 1
+  %3 = zext i9 %var_tmp16 to i32
+  %shl_tmp = shl i32 %3, 1
   %call_tmp17 = call i1 @SDA_READ()
-  %3 = zext i1 %call_tmp17 to i9
-  %add_tmp = add i9 %shl_tmp, %3
-  store i9 %add_tmp, i9* %data
+  %4 = zext i1 %call_tmp17 to i32
+  %add_tmp = add i32 %shl_tmp, %4
+  %5 = trunc i32 %add_tmp to i9
+  store i9 %5, i9* %data
   %call_tmp18 = call i1 @SCK_WRITE(i1 true)
   %call_tmp19 = call i1 @delay(i32 1)
   %var_tmp20 = load i32, i32* %i

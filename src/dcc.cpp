@@ -136,7 +136,6 @@ Parser *Compile::lex(std::string filetext) {
 
 TranslationUnitAST &Compile::parse() {
 	if (!parser->doParse()) {
-		fprintf(stderr, "err at Parser or Lexer\n");
 		SAFE_DELETE(parser);
 		exit(1);
 	}
@@ -153,7 +152,6 @@ CodeGen *Compile::LLVMGen() {
 	codegen = new CodeGen();
 	TranslationUnitAST &tunit = parser->getAST();
 	if (!codegen->doCodeGen(tunit, filetext, opt.getLinkFileName(), opt.getWithJit())) {
-		fprintf(stderr, "err at codegen\n");
 		SAFE_DELETE(parser);
 		SAFE_DELETE(codegen);
 		exit(1);
@@ -175,7 +173,7 @@ CodeGen *Compile::LLVMGen() {
  * main関数
  */
 int main(int argc, char **argv) {
-	bool printStruct = true;
+	bool printStruct = false;
 	clock_t start = clock();
 	clock_t left, right = clock();
 	llvm::InitializeNativeTarget();

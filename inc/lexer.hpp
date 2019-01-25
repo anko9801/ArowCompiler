@@ -57,10 +57,12 @@ typedef class Token{
 			if (string[0] == '0' && string[1] == 'b') {
 				string.erase(string.begin(), string.begin() + 2);
 				Number = strtol(string.c_str(), NULL, 2);
-			}else
+			}else{
 				Number = atof(string.c_str());
-		}else
+			}
+		}else{
 			Number = 0x7fffffff;
+		}
 		if (type == TOK_TRUTH)
 			Bool = true;
 		else

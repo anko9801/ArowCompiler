@@ -56,58 +56,6 @@ bool Seq::operator== (const Seq &rhs) const {
 }
 
 
-/**
-  * デストラクタ
-  */
-TranslationUnitAST::~TranslationUnitAST() {
-	for (size_t i = 0;i < Prototypes.size(); i++) {
-		SAFE_DELETE(Prototypes[i]);
-	}
-	Prototypes.clear();
-
-	for (size_t i = 0;i < Functions.size(); i++) {
-		SAFE_DELETE(Functions[i]);
-	}
-	Functions.clear();
-
-	for (size_t i = 0;i < Imports.size(); i++) {
-		SAFE_DELETE(Imports[i]);
-	}
-	Imports.clear();
-}
-
-
-FunctionAST::~FunctionAST() {
-	SAFE_DELETE(Proto);
-	if (Body)
-		SAFE_DELETE(Body);
-}
-
-
-StatementsAST::~StatementsAST() {
-	for (size_t i=0; i<Statements.size(); i++) {
-		SAFE_DELETE(Statements[i]);
-	}
-	Statements.clear();
-
-	for (size_t i=0; i<OldVars.size(); i++) {
-		SAFE_DELETE(OldVars[i]);
-	}
-	OldVars.clear();
-
-	for (size_t i=0; i<NewVars.size(); i++) {
-		SAFE_DELETE(NewVars[i]);
-	}
-	NewVars.clear();
-}
-
-
-BinaryExprAST::~BinaryExprAST() {
-	SAFE_DELETE(LHS);
-	SAFE_DELETE(RHS);
-}
-
-
 Types BaseAST::getType() {
 	if (llvm::isa<VariableDeclAST>(this)) {
 		return llvm::dyn_cast<VariableDeclAST>(this)->getType();
@@ -198,4 +146,50 @@ void BaseAST::printAST(int nest = 0) {
 		fprintf(stderr, "Placeholder\n");
 	else
 		fprintf(stderr, "unknown\n");
+}
+
+
+/**
+  * デストラクタ
+  */
+TranslationUnitAST::~TranslationUnitAST() {
+	for (size_t i = 0;i < Prototypes.size(); i++) {
+		SAFE_DELETE(Prototypes[i]);
+	}
+	Prototypes.clear();
+
+	for (size_t i = 0;i < Functions.size(); i++) {
+		SAFE_DELETE(Functions[i]);
+	}
+	Functions.clear();
+
+	for (size_t i = 0;i < Imports.size(); i++) {
+		SAFE_DELETE(Imports[i]);
+	}
+	Imports.clear();
+}
+
+
+FunctionAST::~FunctionAST() {
+	SAFE_DELETE(Proto);
+	if (Body)
+		SAFE_DELETE(Body);
+}
+
+
+StatementsAST::~StatementsAST() {
+	for (size_t i = 0;i < Statements.size();i++) {
+		SAFE_DELETE(Statements[i]);
+	}
+	Statements.clear();
+}
+
+
+BinaryExprAST::~BinaryExprAST() {
+	SAFE_DELETE(LHS);
+	SAFE_DELETE(RHS);
+}
+
+SingleExprAST::~SingleExprAST() {
+	SAFE_DELETE(LHS);
 }

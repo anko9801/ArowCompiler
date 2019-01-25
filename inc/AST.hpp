@@ -71,22 +71,22 @@ struct Types {
 	prim_type Type;
 	int bits;
 	bool non_null = false;
-	bool isArray = false;
 	int ArraySize = 0;
 
 	Types() : Type(Type_null), bits(0) {}
 	Types(prim_type type, int bit=32, bool non_null = false)
 		: Type(type), bits(bit), non_null(non_null) {if (type == Type_bool) bits = 1;}
 	Types(prim_type type, int size, int bits=32, bool non_null = false)
-		: Type(type), bits(bits), non_null(non_null), isArray(true), ArraySize(size) {}
+		: Type(type), bits(bits), non_null(non_null), ArraySize(size) {}
 
 	bool setNonNull(bool NonNull) {non_null = NonNull;return true;}
 	bool setBits(int size) {bits = size;return true;}
-	bool setArray(int size) {isArray = true;ArraySize = size;return true;}
+	bool setArray(int size) {ArraySize = size;return true;}
 
 	int getBits() {return bits;}
 	prim_type getPrimType() {return Type;}
 	bool getNonNull() {return non_null;}
+	int getArraySize() {return ArraySize;}
 	std::string printType();
 	bool operator== (const Types &rhs) const;
 	bool operator!= (const Types &rhs) const;
@@ -248,7 +248,7 @@ class VariableDeclAST: public BaseAST {
 		VariableDeclAST(const Types &type, const std::string &name) : BaseAST(VariableDeclID), Type(type), Name(name) {}
 		static inline bool classof(VariableDeclAST const*) {return true;}
 		static inline bool classof(BaseAST const* base) {
-			return base->getValueID()==VariableDeclID;
+			return base->getValueID() == VariableDeclID;
 		}
 		~VariableDeclAST() {}
 
@@ -510,7 +510,7 @@ class SingleExprAST : public BaseAST {
 	public:
 	SingleExprAST(std::string op, BaseAST *lhs, Types type)
 		: BaseAST(SingleExprID), Type(type), Op(op), LHS(lhs) {}
-	~SingleExprAST() {};
+	~SingleExprAST();
 	static inline bool classof(SingleExprAST const*) {return true;}
 	static inline bool classof(BaseAST const* base) {
 		return base->getValueID() == SingleExprID;

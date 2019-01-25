@@ -126,7 +126,7 @@ uint8 i2cRead(uint8 slave, uint8 register) {
 		while i < 8 {
 			SCK_WRITE(0)
 			delay(1)
-			printnum(SDA_READ()?)
+			printnum(SDA_READ())
 			data = data << 1 + SDA_READ()
 			SCK_WRITE(1)
 			delay(1)

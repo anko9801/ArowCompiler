@@ -36,29 +36,31 @@ entry:
   %i = alloca i32
   store i32 0, i32* %i
   %call_tmp2 = call i1 @gpioRead(i32 23)
-  %0 = zext i1 %call_tmp2 to i32
-  %add_tmp = add i32 230, %0
-  %call_tmp3 = call i1 @printnum(i32 %add_tmp)
+  %call_tmp3 = call i1 @gpioRead(i32 23)
+  %ifcond = icmp ugt i1 false, %call_tmp3
+  %0 = zext i1 %ifcond to i32
+  %call_tmp4 = call i1 @printnum(i32 %0)
   %var_tmp = load i32, i32* %i
-  %var_tmp4 = load i32, i32* %i
-  %ifcond = icmp slt i32 %var_tmp4, 10000
-  br i1 %ifcond, label %loop, label %afterloop
+  %var_tmp5 = load i32, i32* %i
+  %ifcond6 = icmp slt i32 %var_tmp5, 10000
+  br i1 %ifcond6, label %loop, label %afterloop
 
 loop:                                             ; preds = %loop, %entry
-  %var_tmp5 = load i32, i32* %i
-  %add_tmp6 = add i32 %var_tmp5, 1
-  store i32 %add_tmp6, i32* %i
-  %call_tmp7 = call i1 @gpioRead(i32 23)
-  %1 = zext i1 %call_tmp7 to i32
-  %add_tmp8 = add i32 230, %1
-  %call_tmp9 = call i1 @printr(i32 %add_tmp8)
-  %call_tmp10 = call i1 @wait(i32 10000)
-  %var_tmp11 = load i32, i32* %i
-  %var_tmp12 = load i32, i32* %i
-  %ifcond13 = icmp slt i32 %var_tmp12, 10000
-  br i1 %ifcond13, label %loop, label %afterloop
+  %var_tmp7 = load i32, i32* %i
+  %add_tmp = add i32 %var_tmp7, 1
+  store i32 %add_tmp, i32* %i
+  %call_tmp8 = call i1 @gpioRead(i32 23)
+  %call_tmp9 = call i1 @gpioRead(i32 23)
+  %ifcond10 = icmp ugt i1 false, %call_tmp9
+  %1 = zext i1 %ifcond10 to i32
+  %call_tmp11 = call i1 @printr(i32 %1)
+  %call_tmp12 = call i1 @wait(i32 10000)
+  %var_tmp13 = load i32, i32* %i
+  %var_tmp14 = load i32, i32* %i
+  %ifcond15 = icmp slt i32 %var_tmp14, 10000
+  br i1 %ifcond15, label %loop, label %afterloop
 
 afterloop:                                        ; preds = %loop, %entry
-  %call_tmp14 = call i1 @Close()
+  %call_tmp16 = call i1 @Close()
   ret i32 0
 }
