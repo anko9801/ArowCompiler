@@ -1,10 +1,9 @@
 import stdlib.arow
 
-int32 main() {
-	int32 cnt = 13
-	while (cnt < 20) {
-		cnt = cnt + 1
-	}
-	printnum(cnt?)
-	return cnt
+int main() {
+	int32 cnt = 63
+	printnum(cnt as int4)
+	return 0
 }
+
+

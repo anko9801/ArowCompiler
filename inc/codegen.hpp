@@ -29,7 +29,7 @@ using namespace llvm;
 /**
   * コード生成クラス
   */
-class CodeGen{
+class CodeGen {
 	private:
 		Function *CurFunc;		//現在コード生成中のFunction
 		Module *Mod;				//生成したModule を格納

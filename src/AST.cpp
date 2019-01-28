@@ -24,6 +24,7 @@ std::string Types::printType() {
 		type = "yannaiyo";
 	type += std::to_string(this->getBits());
 	if (this->getNonNull()) type += "?";
+	if (this->getArraySize() != 0) type += "[" + std::to_string(this->getArraySize()) + "]";
 	return type;
 }
 

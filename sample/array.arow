@@ -2,6 +2,7 @@ import stdlib.arow
 
 int main() {
 	int a[3]
+	a[0] = 3
 	printnum(a[0])
 	return 0
 }

@@ -91,8 +91,10 @@ Type *CodeGen::generateType(Types type) {
 			fprintf(stderr, "Type is not found '%s'\n", type.printType().c_str());
 			dest_type = Type::getFloatTy(GlobalContext);
 		}
+
 	}else if (type.getPrimType() == Type_bool) {
 		dest_type = Type::getInt1Ty(GlobalContext);
+		
 	}else{
 		fprintf(stderr, "Type is not found '%s'\n", type.printType().c_str());
 		dest_type = Type::getInt32Ty(GlobalContext);
@@ -245,6 +247,7 @@ Value *CodeGen::generateVariableDeclaration(VariableDeclAST *vdecl) {
 	//create alloca
 	Type* type = generateType(vdecl->getType());
 	Value *alloca = Builder->CreateAlloca(type, nullptr, vdecl->getName());
+	VariableTable.insert(std::make_pair(vdecl->getName(), alloca));
 
 	//if args alloca
 	if (vdecl->getDeclType() == VariableDeclAST::param) {
@@ -258,9 +261,11 @@ Value *CodeGen::generateVariableDeclaration(VariableDeclAST *vdecl) {
 Value *CodeGen::generateArray() {
 	Type* array_t = PointerType::getUnqual(ArrayType::get(generateType(Types(Type_int)), 2));
 	Value *array = Builder->CreateAlloca(array_t, Mod->getDataLayout().getAllocaAddrSpace(), generateValue(new ValueAST(2, Types(Type_int))), "array");
-	auto zero = generateValue(new ValueAST(0, Types(Type_int)));
-	Builder->CreateInsertValue(array, generateValue(new ValueAST(1, Types(Type_int))), {0});
-	return Builder->CreateExtractValue(array, {0});
+	auto one = generateValue(new ValueAST(1, Types(Type_int)));
+	// auto zero = llvm::ConstantInt::get(GlobalContext, llvm::APInt(64, 0, true));
+	// auto index = llvm::ConstantInt::get(GlobalContext, llvm::APInt(32, 1, true));
+	Builder->CreateInsertValue(array, one, {0});
+	return Builder->CreateExtractValue(Builder->CreateLoad(array), {0});
 }
 
 
@@ -359,13 +364,16 @@ Value *CodeGen::generateBinaryExpression(BinaryExprAST *bin_expr) {
 		//lhs is variable
 		if (llvmDebbug) fprintf(stderr, "%d: lhs is variable\n", __LINE__);
 		VariableAST *lhs_var = dyn_cast<VariableAST>(lhs);
+		if (lhs_var->getIndex() != -1) {
+			return Builder->CreateInsertValue(VariableTable.at(lhs_var->getName()), rhs_v, lhs_var->getIndex());
+		}
 		lhs_v = CurFunc->getValueSymbolTable()->lookup(lhs_var->getName());
 		rhs_v = generateExpression(rhs);
 		// bit数の暗黙の型変換
-		if (lhs->getType() != rhs->getType() || lhs->getType().getBits() != rhs->getType().getBits()) {
-			rhs_v = generateCastExpression(rhs_v, rhs->getType(), lhs->getType());
-			rhs->setType(lhs->getType());
-		}
+		// if (lhs->getType() != rhs->getType() || lhs->getType().getBits() != rhs->getType().getBits()) {
+		// 	rhs_v = generateCastExpression(rhs_v, rhs->getType(), lhs->getType());
+		// 	rhs->setType(lhs->getType());
+		// }
 	}else{
 		lhs_v = generateExpression(lhs);
 		rhs_v = generateExpression(rhs);
@@ -448,7 +456,7 @@ Value *CodeGen::generateBinaryExpression(BinaryExprAST *bin_expr) {
 		Types type = Types(Type_null);
 
 		if (bin_expr->getLHS()->getType() == bin_expr->getRHS()->getType()) {
-				type = bin_expr->getLHS()->getType();
+			type = bin_expr->getLHS()->getType();
 		}
 
 		if (bin_expr->getOp() == "==")
@@ -708,6 +716,9 @@ Value *CodeGen::generateCastExpression(Value *src, Types SrcType, Types DestType
   */
 Value *CodeGen::generateVariable(VariableAST *var) {
 	if (llvmDebbug) fprintf(stderr, "%d: %s\n", __LINE__, __func__);
+	if (var->getIndex() != -1) {
+		return Builder->CreateExtractValue(VariableTable.at(var->getName()), {var->getIndex()});
+	}
 	return Builder->CreateLoad(
 			CurFunc->getValueSymbolTable()->lookup(var->getName()),
 			"var_tmp");

@@ -73,11 +73,12 @@ struct Types {
 	bool non_null = false;
 	int ArraySize = 0;
 
-	Types() : Type(Type_null), bits(0) {}
+	Types()
+		: Type(Type_null), bits(0), non_null(false), ArraySize(0) {}
 	Types(prim_type type, int bit=32, bool non_null = false)
-		: Type(type), bits(bit), non_null(non_null) {if (type == Type_bool) bits = 1;}
-	Types(prim_type type, int size, int bits=32, bool non_null = false)
-		: Type(type), bits(bits), non_null(non_null), ArraySize(size) {}
+		: Type(type), bits(bit), non_null(non_null), ArraySize(0) {if (type == Type_bool) bits = 1;}
+	Types(prim_type type, int size, int bit=32, bool non_null = false)
+		: Type(type), bits(bit), non_null(non_null), ArraySize(size) {}
 
 	bool setNonNull(bool NonNull) {non_null = NonNull;return true;}
 	bool setBits(int size) {bits = size;return true;}
@@ -454,10 +455,10 @@ class JumpStmtAST : public BaseAST {
   */
 class VariableAST : public BaseAST {
 	VariableDeclAST* Var;
-	int Index;
+	unsigned int Index;
 
 	public:
-	VariableAST(VariableDeclAST* var_decl, const int &index = 0) : BaseAST(VariableID), Var(var_decl), Index(index) {}
+	VariableAST(VariableDeclAST* var_decl, unsigned int index = ~0) : BaseAST(VariableID), Var(var_decl), Index(index) {}
 	~VariableAST() {}
 
 	static inline bool classof(VariableAST const*) {return true;}
@@ -469,7 +470,7 @@ class VariableAST : public BaseAST {
 
 	Types getType() {return Var->getType();}
 	std::string getName() {return Var->getName();}
-	int getIndex() {return Index;}
+	unsigned int getIndex() {return Index;}
 };
 
 

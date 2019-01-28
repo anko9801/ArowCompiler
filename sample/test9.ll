@@ -22,37 +22,10 @@ entry:
 define i32 @main() {
 entry:
   %cnt = alloca i32
-  store i32 13, i32* %cnt
+  store i32 63, i32* %cnt
   %var_tmp = load i32, i32* %cnt
-  %var_tmp1 = load i32, i32* %cnt
-  %ifcond = icmp slt i32 %var_tmp1, 20
-  br i1 %ifcond, label %loop, label %afterloop
-
-loop:                                             ; preds = %loop, %entry
-  %var_tmp2 = load i32, i32* %cnt
-  %add_tmp = add i32 %var_tmp2, 1
-  store i32 %add_tmp, i32* %cnt
-  %var_tmp3 = load i32, i32* %cnt
-  %var_tmp4 = load i32, i32* %cnt
-  %ifcond5 = icmp slt i32 %var_tmp4, 20
-  br i1 %ifcond5, label %loop, label %afterloop
-
-afterloop:                                        ; preds = %loop, %entry
-  %var_tmp6 = load i32, i32* %cnt
-  %var_tmp7 = load i32, i32* %cnt
-  %ifcond8 = icmp ne i32 %var_tmp7, 0
-  br i1 %ifcond8, label %then, label %else
-
-then:                                             ; preds = %afterloop
-  br label %ifcont
-
-else:                                             ; preds = %afterloop
+  %0 = trunc i32 %var_tmp to i4
+  %1 = zext i4 %0 to i32
+  %call_tmp = call i1 @printnum(i32 %1)
   ret i32 0
-  br label %ifcont
-
-ifcont:                                           ; preds = %else, %then
-  %var_tmp9 = load i32, i32* %cnt
-  %call_tmp = call i1 @printnum(i32 %var_tmp9)
-  %var_tmp10 = load i32, i32* %cnt
-  ret i32 %var_tmp10
 }

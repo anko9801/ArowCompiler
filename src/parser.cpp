@@ -1,6 +1,6 @@
 #include "parser.hpp"
 
-bool Debbug = true;
+bool Debbug = false;
 
 Parser::Parser(std::string filename) {
 	Tokens = LexicalAnalysis(filename);
@@ -301,9 +301,7 @@ FunctionStmtAST *Parser::visitFunctionStatement(PrototypeAST *proto) {
 	SetInsertPoint(func_stmt->getStatements());
 	for (size_t i = 0;i < proto->getParamSize(); i++) {
 		vdecl = new VariableDeclAST(proto->getParamType(i), proto->getParamName(i));
-		// vdecl->setDeclType(VariableDeclAST::param);
 		addStatement(vdecl);
-		// VariableTable.push_back(vdecl);
 	}
 	if (Debbug) fprintf(stderr, "%s:%d:%d: %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
 
@@ -369,7 +367,6 @@ StatementsAST *Parser::visitStatements(StatementsAST* insert, std::vector<Variab
 			stmts->addStatement(stmt);
 			continue;
 		}else{
-			Tokens->getNextToken();
 			if (Debbug) fprintf(stderr, "%s:%d:%d: unknown %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
 			Tokens->applyTokenIndex(bkup);
 			stmts->clear();
@@ -697,11 +694,6 @@ BaseAST *Parser::visitMatchExpression() {
 		return NULL;
 	}
 
-	if (!isExpectedToken("}")) {
-		fprintf(stderr, "%s:%d:%d: expected '}' but %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
-		Tokens->applyTokenIndex(bkup);
-		return NULL;
-	}
 	Tokens->getNextToken();
 
 	if (Debbug) fprintf(stderr, "%s:%d:%d: %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
@@ -732,36 +724,28 @@ IfStmtAST *Parser::visitPatternExpression(BaseAST *Eval) {
 		return NULL;
 	}
 	Tokens->getNextToken();
-
-	StatementsAST *stmts = new StatementsAST();
-	visitStatements(stmts, InsertPoint->getVars());
-	if (!stmts || !stmts->getSize()) {
-		fprintf(stderr, "%s:%d:%d: error: statement is nothing\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__);
-		Tokens->applyTokenIndex(bkup);
-		return NULL;
-	}
-	for (int i = 0;;i++)
-		if (!stmts->getStatement(i)) break;
-		else if_expr->addThen(stmts->getStatement(i));
-	
 	if (!isExpectedToken(",")) {
-		if (!isExpectedToken("}")) {
-			fprintf(stderr, "%s:%d:%d: error: expected ',' but %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
+		StatementsAST *stmts = new StatementsAST();
+		visitStatements(stmts, InsertPoint->getVars());
+		if (!stmts) {
+			fprintf(stderr, "%s:%d:%d: error: statement is nothing\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__);
 			Tokens->applyTokenIndex(bkup);
 			return NULL;
 		}
-		return if_expr;
+		for (int i = 0;;i++)
+			if (!stmts->getStatement(i)) break;
+			else if_expr->addThen(stmts->getStatement(i));
+	
+		if (!isExpectedToken(",")) {
+			Tokens->getNextToken();
+			return if_expr;
+		}
 	}
 	Tokens->getNextToken();
 	
 	IfStmtAST *pattern = visitPatternExpression(Eval);
 	if (!pattern) {
 		Tokens->getNextToken();
-		if (!isExpectedToken("}")) {
-			fprintf(stderr, "%s:%d:%d: error: expected '}' but %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
-			Tokens->applyTokenIndex(bkup);
-			return NULL;
-		}
 		return if_expr;
 	}
 	if_expr->addElse(pattern);
@@ -788,7 +772,23 @@ BaseAST *Parser::visitAssignmentExpression(Types type) {
 				Tokens->getNextToken();
 				all_confirm = true;
 
-				int Index = 0;
+				int Index = -1;
+				if (isExpectedToken("[")) {
+					Tokens->getNextToken();
+					if (!isExpectedToken(TOK_DIGIT)) {
+						fprintf(stderr, "%s:%d:%d: error: cannot find index\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__);
+						Tokens->applyTokenIndex(bkup);
+						return NULL;
+					}
+					Index = Tokens->getCurNumVal();
+					Tokens->getNextToken();
+					if (!isExpectedToken("]")) {
+						fprintf(stderr, "%s:%d:%d: error: expected ']' but %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
+						Tokens->applyTokenIndex(bkup);
+						return NULL;
+					}
+					Tokens->getNextToken();
+				}
 				lhs = new VariableAST(InsertPoint->getNewVar(i), Index);
 				BaseAST *rhs;
 				if (isExpectedToken("=")) {
@@ -814,7 +814,23 @@ BaseAST *Parser::visitAssignmentExpression(Types type) {
 				Tokens->getNextToken();
 				all_confirm = true;
 
-				int Index = 0;
+				int Index = -1;
+				if (isExpectedToken("[")) {
+					Tokens->getNextToken();
+					if (!isExpectedToken(TOK_DIGIT)) {
+						fprintf(stderr, "%s:%d:%d: error: cannot find index\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__);
+						Tokens->applyTokenIndex(bkup);
+						return NULL;
+					}
+					Index = Tokens->getCurNumVal();
+					Tokens->getNextToken();
+					if (!isExpectedToken("]")) {
+						fprintf(stderr, "%s:%d:%d: error: expected ']' but %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
+						Tokens->applyTokenIndex(bkup);
+						return NULL;
+					}
+					Tokens->getNextToken();
+				}
 				lhs = new VariableAST(InsertPoint->getOldVar(i), Index);
 				BaseAST *rhs;
 				if (isExpectedToken("=")) {
@@ -1468,9 +1484,11 @@ BaseAST *Parser::visitPrimaryExpression() {
 
 	//VARIABLE_IDENTIFIER
 	}else if (isExpectedToken(TOK_IDENTIFIER)) {
+		std::string var = Tokens->getCurString();
 		Tokens->getNextToken();
 		int index = -1;
 		if (isExpectedToken("[")) {
+			Tokens->getNextToken();
 			if (!isExpectedToken(TOK_DIGIT)) {
 				fprintf(stderr, "%s:%d:%d: error: cannot find index\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__);
 				Tokens->applyTokenIndex(bkup);
@@ -1487,10 +1505,9 @@ BaseAST *Parser::visitPrimaryExpression() {
 		}
 		for (size_t i = 0;;i++) {
 			if (!InsertPoint->getOldVar(i)) break;
-			if (InsertPoint->getOldVar(i)->getName() == Tokens->getCurString()) {
-				if (Debbug) fprintf(stderr, "%s:%d:%d: call variable %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
-				Tokens->getNextToken();
-				if (index != -1) {
+			if (InsertPoint->getOldVar(i)->getName() == var) {
+				if (Debbug) fprintf(stderr, "%s:%d:%d: call old variable %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, var.c_str());
+				if (index != ~0) {
 					return new VariableAST(InsertPoint->getOldVar(i), index);
 				}
 				return new VariableAST(InsertPoint->getOldVar(i));
@@ -1498,16 +1515,14 @@ BaseAST *Parser::visitPrimaryExpression() {
 		}
 		for (size_t i = 0;;i++) {
 			if (!InsertPoint->getNewVar(i)) break;
-			if (InsertPoint->getNewVar(i)->getName() == Tokens->getCurString()) {
-				if (Debbug) fprintf(stderr, "%s:%d:%d: call variable %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, Tokens->getCurString().c_str());
-				Tokens->getNextToken();
-				if (index != -1) {
-					return new VariableAST(InsertPoint->getOldVar(i), index);
+			if (InsertPoint->getNewVar(i)->getName() == var) {
+				if (Debbug) fprintf(stderr, "%s:%d:%d: call new variable %s\n", Tokens->getFile().c_str(), Tokens->getLine(), __LINE__, var.c_str());
+				if (index != ~0) {
+					return new VariableAST(InsertPoint->getNewVar(i), index);
 				}
 				return new VariableAST(InsertPoint->getNewVar(i));
 			}
 		}
-		return NULL;
 
 	// '(' expression ')'
 	}else if (isExpectedToken("(")) {
@@ -1530,6 +1545,7 @@ BaseAST *Parser::visitPrimaryExpression() {
 		
 		return assign_expr;
 	}
+	Tokens->applyTokenIndex(bkup);
 	return NULL;
 }
 

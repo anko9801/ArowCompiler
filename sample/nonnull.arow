@@ -1,0 +1,9 @@
+import stdlib.arow
+
+int main() {
+	int val = 10
+	printnum(val as int?)
+	return 0
+}
+
+

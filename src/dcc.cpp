@@ -22,8 +22,10 @@
 class OptionParser {
 	private:
 		std::string InputFileName;
+		std::string LLVMFileName;
 		std::string OutputFileName;
 		std::string LinkFileName;
+		std::string ArchName;
 		bool Lazy;
 		bool WithJit;
 		int Argc;
@@ -33,8 +35,10 @@ class OptionParser {
 		OptionParser(int argc, char **argv) : WithJit(false), Argc(argc), Argv(argv) {}
 		void printHelp();
 		std::string getInputFileName() {return InputFileName;} 		//入力ファイル名取得
+		std::string getLLVMFileName() {return LLVMFileName;} 	//LLVM IRファイル名取得
 		std::string getOutputFileName() {return OutputFileName;} 	//出力ファイル名取得
 		std::string getLinkFileName() {return LinkFileName;} 	//リンク用ファイル名取得
+		std::string getArchName() {return ArchName;}
 		bool getWithJit() {return WithJit;}		//JIT実行有無
 		bool getLazy() {return Lazy;}
 		bool parseOption();
@@ -60,16 +64,23 @@ bool OptionParser::parseOption() {
 
 	Lazy = true;
 	for (int i=1; i<Argc; i++) {
+		// -o 出力ファイル名の選択
 		if (Argv[i][0]=='-' && Argv[i][1] == 'o' && Argv[i][2] == '\0') {
-			//output filename
 			OutputFileName.assign(Argv[++i]);
+		// -arch アーキテクチャ指定
+		}else if (Argv[i][0]=='-' && Argv[i][1] == 'a' && Argv[i][2] == 'r' && Argv[i][3] == 'c' && Argv[i][4] == 'h' && Argv[i][5] == '\0') {
+			ArchName.assign(Argv[++i]);
+		// -h ヘルプの表示
 		}else if (Argv[i][0]=='-' && Argv[i][1] == 'h' && Argv[i][2] == '\0') {
 			printHelp();
 			return false;
+		// -l リンクオプション
 		}else if (Argv[i][0]=='-' && Argv[i][1] == 'l' && Argv[i][2] == '\0') {
 			LinkFileName.assign(Argv[++i]);
+		// -jit JITコンパイル
 		}else if (Argv[i][0]=='-' && Argv[i][1] == 'j' && Argv[i][2] == 'i' && Argv[i][3] == 't' && Argv[i][4] == '\0') {
 			WithJit = true;
+		// -O LLVMでの最適化適用
 		}else if (Argv[i][0]=='-' && Argv[i][1] == 'O' && Argv[i][2] == '\0') {
 			Lazy = false;
 		}else if (Argv[i][0]=='-') {
@@ -83,13 +94,20 @@ bool OptionParser::parseOption() {
 	//OutputFileName
 	std::string ifn = InputFileName;
 	int len = ifn.length();
+	if (LLVMFileName.empty() && (len > 5) &&
+		ifn[len-5] == '.' && ifn[len-4] == 'a' && ifn[len-3] == 'r' && ifn[len-2] == 'o' && ifn[len-1] == 'w') {
+		LLVMFileName = std::string(ifn.begin(), ifn.end()-5); 
+		LLVMFileName += ".ll";
+	} else if (LLVMFileName.empty()) {
+		LLVMFileName = ifn;
+		LLVMFileName += ".ll";
+	}
+	//OutputFileName
 	if (OutputFileName.empty() && (len > 5) &&
 		ifn[len-5] == '.' && ifn[len-4] == 'a' && ifn[len-3] == 'r' && ifn[len-2] == 'o' && ifn[len-1] == 'w') {
-		OutputFileName = std::string(ifn.begin(), ifn.end()-5); 
-		OutputFileName += ".ll";
+		OutputFileName = std::string(ifn.begin(), ifn.end()-5);
 	} else if (OutputFileName.empty()) {
 		OutputFileName = ifn;
-		OutputFileName += ".ll";
 	}
 	return true;
 }
@@ -173,6 +191,7 @@ CodeGen *Compile::LLVMGen() {
  * main関数
  */
 int main(int argc, char **argv) {
+	bool Progress = false;
 	bool printStruct = false;
 	clock_t start = clock();
 	clock_t left, right = clock();
@@ -195,7 +214,7 @@ int main(int argc, char **argv) {
 	}
 
 	left = clock();
-	fprintf(stderr, "%.3f ms : File Read\n", (double)(left - right) * 1000 / CLOCKS_PER_SEC);
+	if (Progress) fprintf(stderr, "%.3f ms : File Read\n", (double)(left - right) * 1000 / CLOCKS_PER_SEC);
 	right = left;
 
 	// lex
@@ -206,14 +225,14 @@ int main(int argc, char **argv) {
 	if (printStruct) printASTs(tunit);
 
 	left = clock();
-	fprintf(stderr, "%.3f ms : Lex and Parse\n", (double)(left - right) * 1000 / CLOCKS_PER_SEC);
+	if (Progress) fprintf(stderr, "%.3f ms : Lex and Parse\n", (double)(left - right) * 1000 / CLOCKS_PER_SEC);
 	right = left;
 
 	CodeGen *codegen = compile.LLVMGen();
 	llvm::Module &mod = codegen->getModule();
 
 	left = clock();
-	fprintf(stderr, "%.3f ms : generate the LLVM IR\n", (double)(left - right) * 1000 / CLOCKS_PER_SEC);
+	if (Progress) fprintf(stderr, "%.3f ms : generate the LLVM IR\n", (double)(left - right) * 1000 / CLOCKS_PER_SEC);
 	right = left;
 
 	//llvm::PassManager<AnalysisManager<>> pm;
@@ -224,7 +243,7 @@ int main(int argc, char **argv) {
 	
 	//出力
 	std::error_code error;
-	llvm::raw_fd_ostream raw_stream(opt.getOutputFileName().c_str(), error, llvm::sys::fs::OpenFlags::F_None);
+	llvm::raw_fd_ostream raw_stream(opt.getLLVMFileName().c_str(), error, llvm::sys::fs::OpenFlags::F_None);
 	pm.add(llvm::createPrintModulePass(raw_stream));
 	pm.run(mod);
 	raw_stream.close();
@@ -233,7 +252,20 @@ int main(int argc, char **argv) {
 	SAFE_DELETE(parser);
 	SAFE_DELETE(codegen);
 	left = clock();
-	fprintf(stderr, "%.3f ms : write the LLVM file\n", (double)(left - right) * 1000 / CLOCKS_PER_SEC);
-	fprintf(stderr, "compile has been completed! total compile time is %.3f ms\n", (double)(left - start) * 1000 / CLOCKS_PER_SEC);
+	if (Progress) fprintf(stderr, "%.3f ms : write the LLVM file\n", (double)(left - right) * 1000 / CLOCKS_PER_SEC);
+	right = left;
+
+	if (opt.getArchName().empty()) {
+		system(("llc -o test.o " + opt.getLLVMFileName() + " -filetype=obj").c_str());
+		system(("gcc test.o lib.o -o " + opt.getOutputFileName()).c_str());
+		system("rm test.o");
+	}else{
+		system(("llc -o " + opt.getOutputFileName() + "-diffarch.o " + opt.getLLVMFileName() + " -filetype=obj -mtriple=" + opt.getArchName() + "-unknown-linux-gnueabihf").c_str());
+		system(("scp ./" + opt.getOutputFileName() + "-diffarch.o pi@raspberrypi.local:~/GPIO/").c_str());
+	}
+	left = clock();
+	if (Progress) fprintf(stderr, "%.3f ms : compile the file\n", (double)(left - right) * 1000 / CLOCKS_PER_SEC);
+
+	if (Progress) fprintf(stderr, "compile has been completed! total compile time is %.3f ms\n", (double)(left - start) * 1000 / CLOCKS_PER_SEC);
 	return 0;
 }
