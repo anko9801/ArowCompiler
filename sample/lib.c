@@ -18,3 +18,7 @@ int printr(int i) {
 int usclock() {
 	return (double)clock() * 1000000 / CLOCKS_PER_SEC;
 }
+
+int getPID() {
+	return getpid();
+}

@@ -2,6 +2,7 @@ bool printnum(int32 i)
 bool printr(int32 i)
 bool wait(int32 i)
 int32 usclock()
+int getPID()
 bool sleep(int32 i) {
 	wait(i * 1000)
 	return true

@@ -74,6 +74,8 @@ Types BaseAST::getType() {
 		return llvm::dyn_cast<CastExprAST>(this)->getType();
 	}else if (llvm::isa<ValueAST>(this)) {
 		return llvm::dyn_cast<ValueAST>(this)->getType();
+	}else if (llvm::isa<PlaceholderAST>(this)) {
+		return llvm::dyn_cast<PlaceholderAST>(this)->getType();
 	}
 	return Types(Type_null);
 }

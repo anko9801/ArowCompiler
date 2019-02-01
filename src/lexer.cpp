@@ -89,7 +89,6 @@ TokenStream *LexicalAnalysis(std::string input_filename) {
 		
 			//数字
 			}else if (isdigit(next_char)) {
-				
 				if (next_char == '0') {
 					token_str += next_char;
 					if (index < length) {
@@ -306,7 +305,10 @@ TokenStream *LexicalAnalysis(std::string input_filename) {
 					case '|':
 						token_str += next_char;
 						next_char = cur_line.at(index++);
-						if (next_char == '|') {
+						if (next_char == '=') {
+							token_str += next_char;
+							next_token = new Token(token_str, TOK_SYMBOL, line_num, input_filename);
+						}else if (next_char == '|') {
 							token_str += next_char;
 							next_token = new Token(token_str, TOK_SYMBOL, line_num, input_filename);
 						}else{
@@ -318,7 +320,10 @@ TokenStream *LexicalAnalysis(std::string input_filename) {
 					case '&':
 						token_str += next_char;
 						next_char = cur_line.at(index++);
-						if (next_char == '&') {
+						if (next_char == '=') {
+							token_str += next_char;
+							next_token = new Token(token_str, TOK_SYMBOL, line_num, input_filename);
+						}else if (next_char == '&') {
 							token_str += next_char;
 							next_token = new Token(token_str, TOK_SYMBOL, line_num, input_filename);
 						}else{
@@ -387,6 +392,16 @@ TokenStream *LexicalAnalysis(std::string input_filename) {
 						next_token = new Token(token_str, TOK_SYMBOL, line_num, input_filename);
 						break;
 
+					case '\"':
+						token_str += next_char;
+						next_token = new Token(token_str, TOK_SYMBOL, line_num, input_filename);
+						break;
+
+					case '\'':
+						token_str += next_char;
+						next_token = new Token(token_str, TOK_SYMBOL, line_num, input_filename);
+						break;
+
 					default:
 						fprintf(stderr, "unclear token : %s\n", token_str.c_str());
 						SAFE_DELETE(tokens);
@@ -425,7 +440,7 @@ TokenStream *LexicalAnalysis(std::string input_filename) {
   * デストラクタ
   */
 TokenStream::~TokenStream() {
-	for (size_t i=0; i<Tokens.size(); i++) {
+	for (size_t i = 0;i < Tokens.size();i++) {
 		SAFE_DELETE(Tokens[i]);
 	}
 	Tokens.clear();
@@ -449,7 +464,7 @@ bool TokenStream::getNextToken() {
 	int size = Tokens.size();
 	if (--size == CurIndex) {
 		return false;
-	}else if ( CurIndex < size ) {
+	}else if (CurIndex < size) {
 		CurIndex++;
 		return true;
 	}else{

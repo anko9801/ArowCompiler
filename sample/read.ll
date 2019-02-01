@@ -9,9 +9,11 @@ declare i1 @wait(i32)
 
 declare i32 @usclock()
 
-declare i1 @confirm()
+declare i32 @getPID()
 
-declare i1 @Close()
+declare i1 @Start()
+
+declare i1 @End()
 
 declare i1 @gpioMode(i32, i32)
 
@@ -31,7 +33,7 @@ entry:
 
 define i32 @main() {
 entry:
-  %call_tmp = call i1 @confirm()
+  %call_tmp = call i1 @Start()
   %call_tmp1 = call i1 @gpioMode(i32 23, i32 1)
   %i = alloca i32
   store i32 0, i32* %i
@@ -61,6 +63,6 @@ loop:                                             ; preds = %loop, %entry
   br i1 %ifcond15, label %loop, label %afterloop
 
 afterloop:                                        ; preds = %loop, %entry
-  %call_tmp16 = call i1 @Close()
+  %call_tmp16 = call i1 @End()
   ret i32 0
 }

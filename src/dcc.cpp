@@ -154,6 +154,7 @@ Parser *Compile::lex(std::string filetext) {
 
 TranslationUnitAST &Compile::parse() {
 	if (!parser->doParse()) {
+		fprintf(stderr,"error at parse\n");
 		SAFE_DELETE(parser);
 		exit(1);
 	}
@@ -229,6 +230,10 @@ int main(int argc, char **argv) {
 	right = left;
 
 	CodeGen *codegen = compile.LLVMGen();
+	if (!codegen) {
+		fprintf(stderr,"error at codegen\n");
+		exit(1);
+	}
 	llvm::Module &mod = codegen->getModule();
 
 	left = clock();

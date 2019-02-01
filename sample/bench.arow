@@ -1,0 +1,10 @@
+import stdlib.arow
+
+int main() {
+	int i = 0
+	while i < 100000000 {
+		i = i + 1
+		printnum(i)
+	}
+	return 0
+}

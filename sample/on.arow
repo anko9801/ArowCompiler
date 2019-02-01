@@ -3,12 +3,13 @@ import stdlib.arow
 
 int main() {
 	int i = 0
-	confirm()
+	Start()
 	gpioMode(23, 0)
 	gpioWrite(23, 1)
 	wait(1000000)
 	gpioWrite(23, 0)
 	printnum(gpioRead(2) as int?)
 	printnum(gpioRead(3) as int?)
+	End()
 	return i
 }

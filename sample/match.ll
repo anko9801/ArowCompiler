@@ -9,6 +9,8 @@ declare i1 @wait(i32)
 
 declare i32 @usclock()
 
+declare i32 @getPID()
+
 define i1 @sleep(i32 %i_arg) {
 entry:
   %i = alloca i32
@@ -76,19 +78,6 @@ ifcont19:                                         ; preds = %ifcont18, %then6
 
 ifcont20:                                         ; preds = %ifcont19, %then
   %var_tmp21 = load i32, i32* %a
-  %var_tmp22 = load i32, i32* %a
-  %ifcond23 = icmp ne i32 %var_tmp22, 0
-  br i1 %ifcond23, label %then24, label %else25
-
-then24:                                           ; preds = %ifcont20
-  br label %ifcont26
-
-else25:                                           ; preds = %ifcont20
-  ret i32 0
-  br label %ifcont26
-
-ifcont26:                                         ; preds = %else25, %then24
-  %var_tmp27 = load i32, i32* %a
-  %call_tmp28 = call i1 @printnum(i32 %var_tmp27)
+  %call_tmp22 = call i1 @printnum(i32 %var_tmp21)
   ret i32 0
 }

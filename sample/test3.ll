@@ -9,6 +9,8 @@ declare i1 @wait(i32)
 
 declare i32 @usclock()
 
+declare i32 @getPID()
+
 define i1 @sleep(i32 %i_arg) {
 entry:
   %i = alloca i32

@@ -2,7 +2,7 @@ import stdlib.arow
 
 int main() {
 	int a = 0
-	match (a) {
+	match a {
 		0 => {
 			a = 3
 			printnum(a)
@@ -11,6 +11,7 @@ int main() {
 		10 => ,
 		_ => printnum(a)
 	}
-	printnum(a?)
+	printnum(a)
 	return 0
 }
+

@@ -2,7 +2,7 @@ import gpio.arow
 import stdlib.arow
 
 int main() {
-	confirm()
+	Start()
 	gpioMode(22, 0)
 	gpioMode(23, 0)
 	gpioWrite(22, 1)
@@ -10,6 +10,6 @@ int main() {
 	gpioWrite(23, 0)
 	wait(500000)
 	gpioWrite(22, 1)
-	Close()
+	End()
 	return 0
 }

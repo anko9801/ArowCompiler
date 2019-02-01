@@ -533,6 +533,8 @@ class PlaceholderAST : public BaseAST {
 	static inline bool classof(BaseAST const* base) {
 		return base->getValueID() == PlaceholderID;
 	}
+
+	Types getType() {return Types(Type_all);}
 };
 
 /** 

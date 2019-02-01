@@ -1,9 +1,9 @@
 ; ModuleID = 'gpio.arow'
 source_filename = "gpio.arow"
 
-declare i1 @confirm()
+declare i1 @Start()
 
-declare i1 @Close()
+declare i1 @End()
 
 declare i1 @gpioMode(i32, i32)
 

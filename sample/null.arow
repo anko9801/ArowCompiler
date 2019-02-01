@@ -1,10 +1,10 @@
 import stdlib.arow
 
-int none(){
+int none() {
 	return null;
 }
 
-int main(){
+int main() {
 	int ab = none();
 	if (ab == null) {
 		printnum(1);

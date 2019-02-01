@@ -1,0 +1,22 @@
+import stdlib.arow
+import gpio.arow
+
+int main() {
+	Start()
+	gpioMode(23, 1)
+	gpioMode(22, 0)
+	int i = 0
+	printnum(230 + gpioRead(23) as int)
+	while i < 100000 {
+		printr(230 + gpioRead(23) as int)
+		if gpioRead(23) == 1 {
+			gpioWrite(22, 0)
+		}else{
+			gpioWrite(22, 1)
+		}
+		wait(5000)
+		i = i + 1
+	}
+	End()
+	return 0
+}

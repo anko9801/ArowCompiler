@@ -49,65 +49,6 @@ Module &CodeGen::getModule() {
 
 
 /**
-  * LLVM IRとリンク
-  */
-bool CodeGen::linkModule(Module *dest, std::string file_name) {
-	if (llvmDebbug) fprintf(stderr, "%d: %s\n", __LINE__, __func__);
-	SMDiagnostic err;
-	std::unique_ptr<Module> link_mod = llvm::parseIRFile(file_name, err, GlobalContext);
-	if (!link_mod)
-		return false;
-
-	if (Linker::linkModules(*dest, std::move(link_mod), 0))
-		return false;
-
-	return true;
-}
-
-
-Type *CodeGen::generateType(Types type) {
-	Type *dest_type;
-	if (type.getPrimType() == Type_void) {
-		dest_type = Type::getVoidTy(GlobalContext);
-		
-	}else if (type.getPrimType() == Type_int) {
-		dest_type = Type::getIntNTy(GlobalContext, type.getBits());
-	
-	}else if (type.getPrimType() == Type_uint) {
-		dest_type = Type::getIntNTy(GlobalContext, type.getBits() + 1);
-
-	}else if (type.getPrimType() == Type_float) {
-		if (type.getBits() == 16) {
-			dest_type = Type::getHalfTy(GlobalContext);
-		}else if (type.getBits() == 32) {
-			dest_type = Type::getFloatTy(GlobalContext);
-		}else if (type.getBits() == 64) {
-			dest_type = Type::getDoubleTy(GlobalContext);
-		}else if (type.getBits() == 128) {
-			dest_type = Type::getFP128Ty(GlobalContext);
-		}else if (type.getBits() == 80) {
-			dest_type = Type::getX86_FP80Ty(GlobalContext);
-		}else{
-			fprintf(stderr, "Type is not found '%s'\n", type.printType().c_str());
-			dest_type = Type::getFloatTy(GlobalContext);
-		}
-
-	}else if (type.getPrimType() == Type_bool) {
-		dest_type = Type::getInt1Ty(GlobalContext);
-		
-	}else{
-		fprintf(stderr, "Type is not found '%s'\n", type.printType().c_str());
-		dest_type = Type::getInt32Ty(GlobalContext);
-	}
-
-	if (type.getArraySize() != 0) {
-		dest_type = PointerType::getUnqual(ArrayType::get(dest_type, type.getArraySize()));
-	}
-	return dest_type;
-}
-
-
-/**
   * Module生成メソッド
   * @param  TranslationUnitAST Module名(入力ファイル名)
   * @return 成功時：true　失敗時：false　
@@ -150,20 +91,19 @@ bool CodeGen::generateTranslationUnit(TranslationUnitAST &tunit, std::string nam
 
 
 /**
-  * 関数定義生成メソッド
-  * @param  FunctionAST Module
-  * @return 生成したFunctionのポインタ
+  * LLVM IRとリンク
   */
-Function *CodeGen::generateFunctionDefinition(FunctionAST *func_ast, Module *mod) {
-	Function *func = generatePrototype(func_ast->getPrototype(), mod);
-	if (!func)
-		return NULL;
-	CurFunc = func;
-	CurBB = BasicBlock::Create(GlobalContext, "entry", func);
-	Builder->SetInsertPoint(CurBB);
-	generateFunctionStatement(func_ast->getBody());
+bool CodeGen::linkModule(Module *dest, std::string file_name) {
+	if (llvmDebbug) fprintf(stderr, "%d: %s\n", __LINE__, __func__);
+	SMDiagnostic err;
+	std::unique_ptr<Module> link_mod = llvm::parseIRFile(file_name, err, GlobalContext);
+	if (!link_mod)
+		return false;
 
-	return func;
+	if (Linker::linkModules(*dest, std::move(link_mod), 0))
+		return false;
+
+	return true;
 }
 
 
@@ -191,15 +131,9 @@ Function *CodeGen::generatePrototype(PrototypeAST *proto, Module *mod) {
 		else break;
 
 	//create func type
-	FunctionType *func_type = FunctionType::get(
-							generateType(proto->getType()),
-							arg_types,
-							false);
+	FunctionType *func_type = FunctionType::get(generateType(proto->getType()), arg_types, false);
 	//create function
-	func = Function::Create(func_type, 
-							Function::ExternalLinkage,
-							proto->getName(),
-							mod);
+	func = Function::Create(func_type, Function::ExternalLinkage, proto->getName(), mod);
 
 	//set names
 	Function::arg_iterator arg_iter = func->arg_begin();
@@ -209,6 +143,71 @@ Function *CodeGen::generatePrototype(PrototypeAST *proto, Module *mod) {
 	}
 
 	return func;
+}
+
+
+/**
+  * 関数定義生成メソッド
+  * @param  FunctionAST Module
+  * @return 生成したFunctionのポインタ
+  */
+Function *CodeGen::generateFunctionDefinition(FunctionAST *func_ast, Module *mod) {
+	Function *func = generatePrototype(func_ast->getPrototype(), mod);
+	if (!func)
+		return NULL;
+	CurFunc = func;
+	CurBB = BasicBlock::Create(GlobalContext, "entry", func);
+	Builder->SetInsertPoint(CurBB);
+	generateFunctionStatement(func_ast->getBody());
+
+	return func;
+}
+
+
+/**
+  * 型生成メソッド
+  * @param  Types
+  * @return 生成したTypeのポインタ
+  */
+Type *CodeGen::generateType(Types type) {
+	Type *dest_type;
+	if (type.getPrimType() == Type_void) {
+		dest_type = Type::getVoidTy(GlobalContext);
+		
+	}else if (type.getPrimType() == Type_int) {
+		dest_type = Type::getIntNTy(GlobalContext, type.getBits());
+	
+	}else if (type.getPrimType() == Type_uint) {
+		dest_type = Type::getIntNTy(GlobalContext, type.getBits() + 1);
+
+	}else if (type.getPrimType() == Type_float) {
+		if (type.getBits() == 16) {
+			dest_type = Type::getHalfTy(GlobalContext);
+		}else if (type.getBits() == 32) {
+			dest_type = Type::getFloatTy(GlobalContext);
+		}else if (type.getBits() == 64) {
+			dest_type = Type::getDoubleTy(GlobalContext);
+		}else if (type.getBits() == 128) {
+			dest_type = Type::getFP128Ty(GlobalContext);
+		}else if (type.getBits() == 80) {
+			dest_type = Type::getX86_FP80Ty(GlobalContext);
+		}else{
+			fprintf(stderr, "Type is not found '%s'\n", type.printType().c_str());
+			dest_type = Type::getFloatTy(GlobalContext);
+		}
+
+	}else if (type.getPrimType() == Type_bool) {
+		dest_type = Type::getInt1Ty(GlobalContext);
+
+	}else{
+		fprintf(stderr, "Type is not found '%s'\n", type.printType().c_str());
+		dest_type = Type::getInt32Ty(GlobalContext);
+	}
+
+	if (type.getArraySize() != 0) {
+		dest_type = PointerType::getUnqual(ArrayType::get(dest_type, type.getArraySize()));
+	}
+	return dest_type;
 }
 
 
@@ -246,8 +245,14 @@ Value *CodeGen::generateVariableDeclaration(VariableDeclAST *vdecl) {
 	if (llvmDebbug) fprintf(stderr, "%d: %s\n", __LINE__, __func__);
 	//create alloca
 	Type* type = generateType(vdecl->getType());
-	Value *alloca = Builder->CreateAlloca(type, nullptr, vdecl->getName());
+	Value *alloca;
+	if (vdecl->getType().getArraySize() != 0) {
+		// alloca = Builder->CreateAlloca(type, Mod->getDataLayout().getAllocaAddrSpace(), vdecl->getName());
+	}else{
+		alloca = Builder->CreateAlloca(type, nullptr, vdecl->getName());
+	}
 	VariableTable.insert(std::make_pair(vdecl->getName(), alloca));
+	generateArray();
 
 	//if args alloca
 	if (vdecl->getDeclType() == VariableDeclAST::param) {
@@ -258,14 +263,22 @@ Value *CodeGen::generateVariableDeclaration(VariableDeclAST *vdecl) {
 }
 
 
+/**
+  * test Array生成メソッド
+  * @param VariableDeclAST
+  * @return 生成したValueのポインタ
+  */
 Value *CodeGen::generateArray() {
-	Type* array_t = PointerType::getUnqual(ArrayType::get(generateType(Types(Type_int)), 2));
-	Value *array = Builder->CreateAlloca(array_t, Mod->getDataLayout().getAllocaAddrSpace(), generateValue(new ValueAST(2, Types(Type_int))), "array");
-	auto one = generateValue(new ValueAST(1, Types(Type_int)));
+	// auto arrayType = llvm::ArrayType::get(llvm::IntegerType::get(GlobalContext, 32), size);
+	// auto arrayPtr = new llvm::AllocaInst(arrayType, "", Builder->GetInsertBlock());
 	// auto zero = llvm::ConstantInt::get(GlobalContext, llvm::APInt(64, 0, true));
 	// auto index = llvm::ConstantInt::get(GlobalContext, llvm::APInt(32, 1, true));
-	Builder->CreateInsertValue(array, one, {0});
-	return Builder->CreateExtractValue(Builder->CreateLoad(array), {0});
+	// auto ptr = llvm::GetElementPtrInst::Create(arrayPtr, { zero, index }, "", Builder->GetInsertBlock());
+	// auto store = new llvm::StoreInst(index, ptr, false, Builder->GetInsertBlock());
+	// ptr = llvm::GetElementPtrInst::Create(arrayPtr, { zero, index }, "", Builder->GetInsertBlock());
+	// return Builder->CreateLoad(ptr);
+	// Builder->CreateInsertValue(array, one, {0});
+	// return Builder->CreateExtractValue(Builder->CreateLoad(array), {0});
 }
 
 
@@ -502,6 +515,8 @@ Value *CodeGen::generateBinaryExpression(BinaryExprAST *bin_expr) {
 				return Builder->CreateICmpULE(lhs_v, rhs_v, "ifcond");
 			if (type == Types(Type_float))
 				return Builder->CreateFCmpOLE(lhs_v, rhs_v, "ifcond");
+
+		else fprintf(stderr, "not found");
 	}
 	
 	return NULL;

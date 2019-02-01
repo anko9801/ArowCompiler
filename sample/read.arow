@@ -2,7 +2,7 @@ import stdlib.arow
 import gpio.arow
 
 int main() {
-	confirm()
+	Start()
 	gpioMode(23, 1)
 	int i = 0
 	printnum(230 + gpioRead(23))
@@ -11,6 +11,6 @@ int main() {
 		printr(230 + gpioRead(23))
 		wait(10000)
 	}
-	Close()
+	End()
 	return 0
 }

@@ -1,5 +1,5 @@
-bool confirm();
-bool Close();
+bool Start();
+bool End();
 bool gpioMode(int gpio_num, int mode);
 bool gpioWrite(int gpio_num, int mode);
 bool gpioRead(int gpio_num)

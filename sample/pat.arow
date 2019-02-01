@@ -1,0 +1,20 @@
+import stdlib.arow
+
+int main() {
+	int x = 5
+
+	match x {
+		1 => print("one"),
+		2 => print("two"),
+		3 => print("three"),
+		4 => print("four"),
+		5 => print("five"),
+		_ => {
+			printnum(x)
+			print("something else")
+		},
+	}
+	return 0
+}
+
+

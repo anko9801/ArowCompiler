@@ -1,12 +1,20 @@
 import stdlib.arow
 
-int main() {
-	int i = 0;
-	int start = usclock();
-	while (i < 1000000) {
-		i = i + 1;
-		printnum(i?);
+int fibo(int6 x) {
+	match x {
+		0 => return 0,
+		1 => return 1,
+		_ => return fibo(x - 1) + fibo(x - 2)
 	}
-	printnum(usclock() - start?);
-	return i;
 }
+
+int main() {
+	printnum(getPID())
+	int32 start = usclock()
+
+	printnum(fibo(45))
+
+	printnum(usclock() - start)
+	return 0
+}
+
