@@ -115,7 +115,7 @@ typedef class Parser{
 		BaseAST *visitMultiplicativeExpression(BaseAST *lhs, Types type);
 		BaseAST *visitCastExpression();
 		BaseAST *visitImplicitCastNumber(BaseAST *src, Types impl_type);
-		BaseAST *visitCast(BaseAST *src, Types impl_type);
+		BaseAST *visitImplicitCast(BaseAST *src, Types impl_type);
 		BaseAST *visitPostfixExpression();
 		BaseAST *visitPrimaryExpression();
 

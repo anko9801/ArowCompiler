@@ -1,9 +1,10 @@
-bool printnum(int32 i)
-bool printr(int32 i)
-bool wait(int32 i)
-int32 usclock()
+bool printnum(int i)
+bool printr(int i)
+bool print(int i)
+bool wait(int i)
+int usclock()
 int getPID()
-bool sleep(int32 i) {
+bool sleep(int i) {
 	wait(i * 1000)
 	return true
 }

@@ -141,7 +141,6 @@ Function *CodeGen::generatePrototype(PrototypeAST *proto, Module *mod) {
 		arg_iter->setName(proto->getParamName(i).append("_arg"));
 		++arg_iter;
 	}
-
 	return func;
 }
 
@@ -382,26 +381,9 @@ Value *CodeGen::generateBinaryExpression(BinaryExprAST *bin_expr) {
 		}
 		lhs_v = CurFunc->getValueSymbolTable()->lookup(lhs_var->getName());
 		rhs_v = generateExpression(rhs);
-		// bit数の暗黙の型変換
-		// if (lhs->getType() != rhs->getType() || lhs->getType().getBits() != rhs->getType().getBits()) {
-		// 	rhs_v = generateCastExpression(rhs_v, rhs->getType(), lhs->getType());
-		// 	rhs->setType(lhs->getType());
-		// }
 	}else{
 		lhs_v = generateExpression(lhs);
 		rhs_v = generateExpression(rhs);
-		// bit数の暗黙の型変換
-		if (lhs->getType() != rhs->getType() || lhs->getType().getBits() != rhs->getType().getBits()) {
-			if (lhs->getType().getBits() < rhs->getType().getBits()) {
-				if (llvmDebbug) fprintf(stderr, "%d: set rhs type\n", __LINE__);
-				lhs_v = generateCastExpression(lhs_v, lhs->getType(), rhs->getType());
-				lhs->setType(rhs->getType());
-			}else if (lhs->getType().getBits() > rhs->getType().getBits()) {
-				if (llvmDebbug) fprintf(stderr, "%d: set lhs type\n", __LINE__);
-				rhs_v = generateCastExpression(rhs_v, rhs->getType(), lhs->getType());
-				rhs->setType(lhs->getType());
-			}
-		}
 	}
 
 	if (llvmDebbug) fprintf(stderr, "%d: lhs and rhs exist\n", __LINE__);
