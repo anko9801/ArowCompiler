@@ -21,9 +21,10 @@ bool delay(int i) {
 bool send(uint3 size, uint8 data) {
 	printnum(1000)
 	printnum(data)
-	while size > 0 {
+	while size >= 0 {
+		size = size - 1
 		SCK_WRITE(0)
-		if data & (0b1 as uint8 << (size - 1)) != 0 {
+		if data & (0b1 as uint8 << size) != 0 {
 			printnum(1)
 			SDA_WRITE(1)
 		}else{
@@ -33,7 +34,6 @@ bool send(uint3 size, uint8 data) {
 		delay(1)
 		SCK_WRITE(1)
 		delay(1)
-		size = size - 1
 	}
 	return true
 }
@@ -127,7 +127,7 @@ uint8 i2cRead(uint8 slave, uint8 register) {
 			SCK_WRITE(0)
 			delay(1)
 			printnum(SDA_READ())
-			data = data << 1 + SDA_READ()
+			data = data << 1 + SDA_READ() as uint
 			SCK_WRITE(1)
 			delay(1)
 			i = i + 1

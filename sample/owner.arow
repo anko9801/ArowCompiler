@@ -1,0 +1,8 @@
+import stdlib.arow
+
+int main() {
+	int a = 2
+	int b = a
+	printnum(a)
+	return 0
+}

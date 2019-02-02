@@ -245,7 +245,7 @@ int main(int argc, char **argv) {
 
 	if (!opt.getLazy())
 		pm.add(llvm::createPromoteMemoryToRegisterPass());
-	
+
 	//出力
 	std::error_code error;
 	llvm::raw_fd_ostream raw_stream(opt.getLLVMFileName().c_str(), error, llvm::sys::fs::OpenFlags::F_None);
@@ -260,13 +260,15 @@ int main(int argc, char **argv) {
 	if (Progress) fprintf(stderr, "%.3f ms : write the LLVM file\n", (double)(left - right) * 1000 / CLOCKS_PER_SEC);
 	right = left;
 
-	if (opt.getArchName().empty()) {
-		system(("llc -o test.o " + opt.getLLVMFileName() + " -filetype=obj").c_str());
-		system(("gcc test.o lib.o -o " + opt.getOutputFileName()).c_str());
-		system("rm test.o");
-	}else{
-		system(("llc -o " + opt.getOutputFileName() + "-diffarch.o " + opt.getLLVMFileName() + " -filetype=obj -mtriple=" + opt.getArchName() + "-unknown-linux-gnueabihf").c_str());
-		system(("scp ./" + opt.getOutputFileName() + "-diffarch.o pi@raspberrypi.local:~/GPIO/").c_str());
+	if (!opt.getWithJit()) {
+		if (opt.getArchName().empty()) {
+			system(("llc -o test.o " + opt.getLLVMFileName() + " -filetype=obj").c_str());
+			system(("gcc test.o gpio.o lib.o -o " + opt.getOutputFileName()).c_str());
+			system("rm test.o");
+		}else{
+			system(("llc -o " + opt.getOutputFileName() + "-diffarch.o " + opt.getLLVMFileName() + " -filetype=obj -mtriple=" + opt.getArchName() + "-unknown-linux-gnueabihf").c_str());
+			system(("scp ./" + opt.getOutputFileName() + "-diffarch.o pi@raspberrypi.local:~/GPIO/").c_str());
+		}
 	}
 	left = clock();
 	if (Progress) fprintf(stderr, "%.3f ms : compile the file\n", (double)(left - right) * 1000 / CLOCKS_PER_SEC);

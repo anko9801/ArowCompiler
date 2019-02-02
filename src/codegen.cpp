@@ -33,7 +33,7 @@ bool CodeGen::doCodeGen(TranslationUnitAST &tunit, std::string name, std::string
 			return false;
 
 		int (*fp)() = (int (*)())EE->getPointerToFunction(F);
-		fprintf(stderr,"%d\n",fp());
+		fprintf(stderr, "%d\n", fp());
 	}
 
 	return true;

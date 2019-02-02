@@ -5,13 +5,17 @@ declare i1 @printnum(i32)
 
 declare i1 @printr(i32)
 
+declare i1 @print(i32)
+
 declare i1 @wait(i32)
 
 declare i32 @usclock()
 
-declare i1 @confirm()
+declare i32 @getPID()
 
-declare i1 @Close()
+declare i1 @Start()
+
+declare i1 @End()
 
 declare i1 @gpioMode(i32, i32)
 
@@ -139,22 +143,21 @@ entry:
   br i1 %ifcond, label %loop, label %afterloop
 
 loop:                                             ; preds = %ifcont, %entry
-  %call_tmp4 = call i1 @SCK_WRITE(i1 false)
-  %var_tmp5 = load i9, i9* %data
-  %1 = zext i9 %var_tmp5 to i32
-  %var_tmp6 = load i4, i4* %size
-  %sub_tmp = sub i4 %var_tmp6, 1
-  %2 = zext i4 %sub_tmp to i32
-  %shl_tmp = shl i32 1, %2
-  %and_tmp = and i32 %1, %shl_tmp
-  %var_tmp7 = load i9, i9* %data
-  %3 = zext i9 %var_tmp7 to i32
-  %var_tmp8 = load i4, i4* %size
-  %sub_tmp9 = sub i4 %var_tmp8, 1
-  %4 = zext i4 %sub_tmp9 to i32
-  %shl_tmp10 = shl i32 1, %4
-  %and_tmp11 = and i32 %3, %shl_tmp10
-  %ifcond12 = icmp ne i32 %and_tmp11, 0
+  %var_tmp4 = load i4, i4* %size
+  %sub_tmp = sub i4 %var_tmp4, 1
+  store i4 %sub_tmp, i4* %size
+  %call_tmp5 = call i1 @SCK_WRITE(i1 false)
+  %var_tmp6 = load i9, i9* %data
+  %1 = trunc i9 %var_tmp6 to i4
+  %var_tmp7 = load i4, i4* %size
+  %shl_tmp = shl i4 1, %var_tmp7
+  %and_tmp = and i4 %1, %shl_tmp
+  %var_tmp8 = load i9, i9* %data
+  %2 = trunc i9 %var_tmp8 to i4
+  %var_tmp9 = load i4, i4* %size
+  %shl_tmp10 = shl i4 1, %var_tmp9
+  %and_tmp11 = and i4 %2, %shl_tmp10
+  %ifcond12 = icmp ne i4 %and_tmp11, 0
   br i1 %ifcond12, label %then, label %else
 
 then:                                             ; preds = %loop
@@ -172,12 +175,9 @@ ifcont:                                           ; preds = %else, %then
   %call_tmp18 = call i1 @SCK_WRITE(i1 true)
   %call_tmp19 = call i1 @delay(i32 1)
   %var_tmp20 = load i4, i4* %size
-  %sub_tmp21 = sub i4 %var_tmp20, 1
-  store i4 %sub_tmp21, i4* %size
-  %var_tmp22 = load i4, i4* %size
-  %var_tmp23 = load i4, i4* %size
-  %ifcond24 = icmp ugt i4 %var_tmp23, 0
-  br i1 %ifcond24, label %loop, label %afterloop
+  %var_tmp21 = load i4, i4* %size
+  %ifcond22 = icmp ugt i4 %var_tmp21, 0
+  br i1 %ifcond22, label %loop, label %afterloop
 
 afterloop:                                        ; preds = %ifcont, %entry
   ret i1 false
@@ -337,12 +337,12 @@ loop8:                                            ; preds = %loop8, %loop
   %2 = zext i1 %call_tmp14 to i32
   %call_tmp15 = call i1 @printnum(i32 %2)
   %var_tmp16 = load i9, i9* %data
-  %3 = zext i9 %var_tmp16 to i32
-  %shl_tmp = shl i32 %3, 1
+  %shl_tmp = shl i9 %var_tmp16, 1
+  %3 = zext i9 %shl_tmp to i33
   %call_tmp17 = call i1 @SDA_READ()
-  %4 = zext i1 %call_tmp17 to i32
-  %add_tmp = add i32 %shl_tmp, %4
-  %5 = trunc i32 %add_tmp to i9
+  %4 = zext i1 %call_tmp17 to i33
+  %add_tmp = add i33 %3, %4
+  %5 = trunc i33 %add_tmp to i9
   store i9 %5, i9* %data
   %call_tmp18 = call i1 @SCK_WRITE(i1 true)
   %call_tmp19 = call i1 @delay(i32 1)
@@ -401,16 +401,15 @@ entry:
   store i9 72, i9* %slave
   %register = alloca i9
   store i9 3, i9* %register
-  %call_tmp = call i1 @printnum(i32 1024)
-  %call_tmp1 = call i1 @confirm()
+  %call_tmp = call i1 @Start()
   %var_tmp = load i9, i9* %slave
   %0 = zext i9 %var_tmp to i32
-  %call_tmp2 = call i1 @printnum(i32 %0)
-  %var_tmp3 = load i9, i9* %slave
-  %var_tmp4 = load i9, i9* %register
-  %call_tmp5 = call i9 @i2cRead(i9 %var_tmp3, i9 %var_tmp4)
-  %1 = zext i9 %call_tmp5 to i32
-  %call_tmp6 = call i1 @printnum(i32 %1)
-  %call_tmp7 = call i1 @Close()
+  %call_tmp1 = call i1 @printnum(i32 %0)
+  %var_tmp2 = load i9, i9* %slave
+  %var_tmp3 = load i9, i9* %register
+  %call_tmp4 = call i9 @i2cRead(i9 %var_tmp2, i9 %var_tmp3)
+  %1 = zext i9 %call_tmp4 to i32
+  %call_tmp5 = call i1 @printnum(i32 %1)
+  %call_tmp6 = call i1 @End()
   ret i32 0
 }

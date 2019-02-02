@@ -1,10 +1,10 @@
 import stdlib.arow
 
 int fibo(int6 x) {
-	match x {
+	match &x {
 		0 => return 0,
 		1 => return 1,
-		_ => return fibo(x - 1) + fibo(x - 2)
+		_ => return fibo(&x - 1) + fibo(&x - 2)
 	}
 }
 

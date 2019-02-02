@@ -13,6 +13,7 @@ TokenStream *LexicalAnalysis(std::string input_filename) {
 	std::string token_str;
 	int line_num = 0;
 	bool iscomment = false;
+	bool isstring = false;
 
 	ifs.open(input_filename.c_str(), std::ios::in);
 	if (!ifs)
@@ -36,6 +37,21 @@ TokenStream *LexicalAnalysis(std::string input_filename) {
 				}else{
 					iscomment = false;
 				}
+			}
+
+			if (isstring) {
+				token_str += next_char;
+				if (index < length) {
+					next_char = cur_line.at(index++);
+					while (next_char == '\"') {
+						token_str += next_char;
+						if (index == length) {index++;break;}
+						next_char = cur_line.at(index++);
+					}
+					index--;
+				}
+				isstring = false;
+				next_token = new Token(token_str, TOK_STRING, line_num, input_filename);
 			}
 		
 			//EOF
@@ -394,6 +410,7 @@ TokenStream *LexicalAnalysis(std::string input_filename) {
 
 					case '\"':
 						token_str += next_char;
+						isstring = true;
 						next_token = new Token(token_str, TOK_SYMBOL, line_num, input_filename);
 						break;
 

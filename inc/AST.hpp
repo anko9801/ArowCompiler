@@ -244,9 +244,10 @@ class VariableDeclAST: public BaseAST {
 		Types Type;
 		std::string Name;
 		DeclType Decltype;
+		bool Ownership = true;
 
 	public:
-		VariableDeclAST(const Types &type, const std::string &name) : BaseAST(VariableDeclID), Type(type), Name(name) {}
+		VariableDeclAST(const Types &type, const std::string &name) : BaseAST(VariableDeclID), Type(type), Name(name), Ownership(true) {}
 		static inline bool classof(VariableDeclAST const*) {return true;}
 		static inline bool classof(BaseAST const* base) {
 			return base->getValueID() == VariableDeclID;
@@ -255,10 +256,12 @@ class VariableDeclAST: public BaseAST {
 
 		bool setDeclType(DeclType type) {Decltype = type;return true;};
 		bool setType(Types type) {Type = type;return true;}
+		bool setOwner(bool own) {Ownership = own;return true;}
 
 		std::string getName() {return Name;}
 		Types getType() {return Type;}
 		DeclType getDeclType() {return Decltype;}
+		bool getOwner() {return Ownership;}
 };
 
 
@@ -543,9 +546,11 @@ class PlaceholderAST : public BaseAST {
 class ValueAST : public BaseAST {
 	Types Type;
 	double Val;
+	std::string Str;
 
 	public:
 	ValueAST(double val, Types Type) : BaseAST(ValueID), Type(Type), Val(val) {};
+	ValueAST(std::string val, Types Type) : BaseAST(ValueID), Type(Type), Str(val) {};
 	~ValueAST() {}
 	static inline bool classof(ValueAST const*) {return true;}
 	static inline bool classof(BaseAST const* base) {
@@ -555,6 +560,7 @@ class ValueAST : public BaseAST {
 	bool setType(Types type) {Type = type;return true;}
 	Types getType() {return Type;}
 	double getValue() {return Val;}
+	std::string getString() {return Str;}
 };
 
 

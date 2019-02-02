@@ -17,6 +17,7 @@ enum TokenType{
 	TOK_IDENTIFIER,		//識別子
 	TOK_DIGIT,			//数字
 	TOK_FLOAT,
+	TOK_STRING,
 	TOK_TRUTH,
 	TOK_IMPORT,
 	TOK_SYMBOL,			//記号
